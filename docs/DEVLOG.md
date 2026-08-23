@@ -1305,4 +1305,5 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - 全量测试 731/731，fail 0，skipped 0；packed 激活/重启/回滚三启动 E2E 通过；四项门禁通过。
 - 发布资料收口：`docs/release-notes/0.4.4.md` 新增；`compat.json`/`PROGRESS.md`/`BLOCKED.md` 同步。
 - 插件 Release 收口：现有 `plugins-v2026.08.24.1`（.1）不修改、不删除；后续发布 `.2`，两个插件递增版本，`minClient=0.4.4`。
-- 仍不 commit、push、发布或安装真实 Stable；`release-staging/` 仅作上传来源，不 git add/提交其中的大文件。
+- 已授权并完成 commit、push、v0.4.4 GitHub Release：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4
+- 未安装 v0.4.4 到宿主机，未创建 plugins-v .2 Release；`release-staging/` 仅作上传来源，不 git add/提交其中的大文件。
