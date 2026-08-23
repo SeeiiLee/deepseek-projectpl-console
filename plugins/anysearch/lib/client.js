@@ -6,8 +6,8 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region \0dsh-css:D:\Deepseek Harness Personal\plugins\anysearch\src\client\AnySearchSection.module.css.mjs
-		const css = ".QYGzpG_section{flex-direction:column;gap:14px;display:flex}.QYGzpG_header{justify-content:space-between;align-items:flex-start;gap:16px;display:flex}.QYGzpG_header h2{margin:0;font-size:18px}.QYGzpG_header p{color:var(--dsh-text-secondary,#666);margin:4px 0 0;line-height:1.5}.QYGzpG_beta{opacity:.8;border:1px solid;border-radius:999px;flex:none;padding:2px 10px;font-size:12px}.QYGzpG_form{flex-direction:column;gap:12px;display:flex}.QYGzpG_form label{flex-direction:column;gap:6px;display:flex}.QYGzpG_form input{box-sizing:border-box;border:1px solid var(--dsh-border,#ccc);background:var(--dsh-input-bg,#fff);width:100%;color:var(--dsh-text,#111);border-radius:6px;padding:8px 10px}.QYGzpG_form small{color:var(--dsh-text-secondary,#666);line-height:1.4}.QYGzpG_actions{flex-wrap:wrap;gap:10px;display:flex}.QYGzpG_actions button{border:1px solid var(--dsh-border,#ccc);background:var(--dsh-button-bg,#f5f5f5);color:var(--dsh-text,#111);cursor:pointer;border-radius:6px;padding:7px 12px}.QYGzpG_actions button:disabled{cursor:not-allowed;opacity:.55}.QYGzpG_primaryButton{font-weight:600}.QYGzpG_notice{background:color-mix(in srgb, var(--dsh-accent,#4d6bfe) 12%, transparent);color:var(--dsh-text,#111);border-radius:6px;margin:0;padding:8px 10px}.QYGzpG_status{color:var(--dsh-text-secondary,#666);margin:0}";
+		//#region \0dsh-css:D:\dsh-v0.4.3-clean\plugins\anysearch\src\client\AnySearchSection.module.css.mjs
+		const css = ".UyAuUW_section{flex-direction:column;gap:14px;display:flex}.UyAuUW_header{justify-content:space-between;align-items:flex-start;gap:16px;display:flex}.UyAuUW_header h2{margin:0;font-size:18px}.UyAuUW_header p{color:var(--dsh-text-secondary,#666);margin:4px 0 0;line-height:1.5}.UyAuUW_beta{opacity:.8;border:1px solid;border-radius:999px;flex:none;padding:2px 10px;font-size:12px}.UyAuUW_form{flex-direction:column;gap:12px;display:flex}.UyAuUW_form label{flex-direction:column;gap:6px;display:flex}.UyAuUW_form input{box-sizing:border-box;border:1px solid var(--dsh-border,#ccc);background:var(--dsh-input-bg,#fff);width:100%;color:var(--dsh-text,#111);border-radius:6px;padding:8px 10px}.UyAuUW_form small{color:var(--dsh-text-secondary,#666);line-height:1.4}.UyAuUW_actions{flex-wrap:wrap;gap:10px;display:flex}.UyAuUW_actions button{border:1px solid var(--dsh-border,#ccc);background:var(--dsh-button-bg,#f5f5f5);color:var(--dsh-text,#111);cursor:pointer;border-radius:6px;padding:7px 12px}.UyAuUW_actions button:disabled{cursor:not-allowed;opacity:.55}.UyAuUW_primaryButton{font-weight:600}.UyAuUW_notice{background:color-mix(in srgb, var(--dsh-accent,#4d6bfe) 12%, transparent);color:var(--dsh-text,#111);border-radius:6px;margin:0;padding:8px 10px}.UyAuUW_status{color:var(--dsh-text-secondary,#666);margin:0}";
 		const tagId = "@cyrus/dsh-anysearch/AnySearchSection.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -17,14 +17,14 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var AnySearchSection_module_css_default = {
-			"actions": "QYGzpG_actions",
-			"beta": "QYGzpG_beta",
-			"form": "QYGzpG_form",
-			"header": "QYGzpG_header",
-			"notice": "QYGzpG_notice",
-			"primaryButton": "QYGzpG_primaryButton",
-			"section": "QYGzpG_section",
-			"status": "QYGzpG_status"
+			"actions": "UyAuUW_actions",
+			"beta": "UyAuUW_beta",
+			"form": "UyAuUW_form",
+			"header": "UyAuUW_header",
+			"notice": "UyAuUW_notice",
+			"primaryButton": "UyAuUW_primaryButton",
+			"section": "UyAuUW_section",
+			"status": "UyAuUW_status"
 		};
 		//#endregion
 		//#region src/client/AnySearchSection.tsx

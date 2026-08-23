@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-anysearch",
   "description": "AnySearch-backed web search provider for DeepSeek Harness Personal (beta)",
-  "version": "0.1.0-beta",
+  "version": "0.1.1-beta",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -57,7 +57,7 @@
         "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
       ]
     },
-    "minClient": "0.4.2",
+    "minClient": "0.4.3",
     "seams": [
       {
         "name": "web.searchProvider",
@@ -102,9 +102,9 @@
         "package.json"
       ],
       "sha256": {
-        "package.json": "6656e29afe6ec2ce8c94461c1a11908cb0439273e81457af19fc8f54de3d3d40",
+        "package.json": "11825506b7f95f37bf9c9db27bbe78049efc6f56f4959531574406e3890be4c2",
         "lib/index.js": "fe90505e47fc34d4f5ababb73893808720bdbf08cd6fcc18a640fc94bb090ba1",
-        "lib/client.js": "f5d86158baac56db7928e49638a5ce6e7f0a9136948c116bc41491be1c57b7ea",
+        "lib/client.js": "eea569bdf2a6302ea0277780b09b6b4aad1a0ca12f240b8279de78d7d93b30d5",
         "lib/client.js.map": "63e2298faa178c6328fa6f53aab757c030d81693c43775ee08e4f6c561a695bc",
         "cordis.patch.yml": "8aadbe724c00e9116653cc0d546b6cbee6a0fbb22898957d8aa9cff697e2dffd",
         "LICENSE": "82530383ef117c6cc07a2ed79c0957b6d2f0c979eb2e1a5edd2477a4c401b975",

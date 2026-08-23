@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
   "preset": "personal-desktop",
-  "generatedAt": "2026-08-21T16:17:05.596Z",
+  "generatedAt": "2026-08-23T20:14:02.970Z",
   "compatibleHarness": {
     "version": "0.1.1-rc.2",
     "commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
   },
   "packages": {
     "@cyrus/dsh-anysearch": {
-      "version": "0.1.0-beta",
-      "integrity": "f39f03ad1058c1e84d12ecd8e8054d64d95b9b8a31b0ec210a307b5b90a312ff",
+      "version": "0.1.1-beta",
+      "integrity": "b16de27ff502c279c6aa8f4751156cc012a79c62108b43bc3f135dc660fa3a7e",
       "source": "tgz",
       "role": "adapter",
       "bundle": true
@@ -37,7 +37,7 @@
     },
     "@cyrus/dsh-memory": {
       "version": "0.1.0",
-      "integrity": "0deeb4a94942b3edc875484e18c6f2ca5c975410c69a5a829a3afdd46dcbf35e",
+      "integrity": "65357be7b753ab83db25222e087e36acf7c7090a19604095512698c8f5b1b380",
       "source": "tgz",
       "role": "core",
       "bundle": false
@@ -72,7 +72,7 @@
     },
     "@cyrus/dsh-plugin-organizer": {
       "version": "0.1.0-rc.8",
-      "integrity": "ef43ecdb84fbac3f77ed6b8b8c73cb08e83f5a3d3659d82658f7894183fb26ae",
+      "integrity": "d72e686f520435eda9cd6dc33d48fba8ac58d48ce12acbb56dc408999d052a9d",
       "source": "tgz",
       "role": "adapter",
       "bundle": false
@@ -99,15 +99,15 @@
       "bundle": false
     },
     "@cyrus/dsh-trajectory-island": {
-      "version": "0.1.0",
-      "integrity": "1579e36a587379090eed5fe72281b41f1547d3f6af43d678722055e7211c1d5c",
+      "version": "0.1.1",
+      "integrity": "656e6aa21245f70340061ad06b486fa47060f43d29c73c8719c35b5043d70412",
       "source": "tgz",
       "role": "adapter",
       "bundle": true
     },
     "@cyrus/dsh-update-center": {
       "version": "0.1.0",
-      "integrity": "1939353fee844d588a95801a0e4c342736149c31cf6cffdc79a63f8acf89c1d1",
+      "integrity": "5cc8beefbaf86ecfc26a32e769aa63151b94bda8418b200aefc6ab54c46d1f6b",
       "source": "tgz",
       "role": "adapter",
       "bundle": false
