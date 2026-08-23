@@ -15,7 +15,10 @@ if (mode === 'early-exit') {
   process.disconnect()
 } else if (mode === 'invalid-ready') {
   process.stdout.write('dsh web: http://127.1:54321\n')
-} else if (mode === 'ready' || mode === 'ack-exit-one' || mode === 'ignore-shutdown') {
+} else if (mode === 'ready' || mode === 'ack-exit-one' || mode === 'ignore-shutdown' || mode === 'echo-env') {
+  if (mode === 'echo-env') {
+    process.stdout.write(`ENV:${process.env.DSH_PERSONAL_PLUGINS_EXTERNAL ?? ''}:${process.env.DSH_DESKTOP_FLAVOR ?? ''}\n`)
+  }
   process.stdout.write('booting\ndsh web: http://127.0.0.1:54321\n')
   process.send({ type: 'booted' })
 } else if (mode === 'delayed-booted') {

@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { BUILD_FLAVOR } from './build-flavor.js'
 import { abortActivatingGeneration, ensurePersonalPluginLinks, resolvePersonalPatch } from './personal-plugins.js'
-import { loadCurrentGeneration, resolveExternalRoot, verifyGenerationDoctor } from './personal-plugin-validation.js'
+import { assertExternalRootProvided, loadCurrentGeneration, verifyGenerationDoctor } from './personal-plugin-validation.js'
 import { webProfileArgs } from './harness-cli-args.js'
 
 let runtime
@@ -49,6 +50,13 @@ process.on('disconnect', () => {
 const sourceRoot = process.env.DSH_SOURCE_ROOT
 if (!sourceRoot) throw new Error('DSH_SOURCE_ROOT is required.')
 
+// Helper 是子进程，拿不到 Electron app.getPath('userData')。主进程必须注入
+// DSH_PERSONAL_PLUGINS_EXTERNAL 和可信 DSH_DESKTOP_FLAVOR。这里不能无条件用
+// BUILD_FLAVOR 覆盖主进程传来的 flavor：源码/未打包 Dev 必须保留 dev 行为；
+// 已安装 Stable 的身份由主进程在打包态忽略用户 env 后传入 stable。
+const helperEnv = { ...process.env }
+const helperFlavor = helperEnv.DSH_DESKTOP_FLAVOR?.trim() || BUILD_FLAVOR
+
 const [bootModule, appBootModule] = await Promise.all([
   import(pathToFileURL(join(sourceRoot, 'apps', 'cli', 'src', 'profile-boot.ts')).href),
   import(pathToFileURL(join(sourceRoot, 'packages', 'boot', 'app-boot', 'src', 'index.ts')).href),
@@ -62,7 +70,8 @@ if (stopRequested) {
   }
 } else {
   bootStarted = true
-  ensurePersonalPluginLinks()
+  const externalRoot = assertExternalRootProvided({ env: helperEnv, flavor: helperFlavor })
+  ensurePersonalPluginLinks({ env: helperEnv })
   runtime = await bootModule.runProfile({
     environment: appBootModule.loadLayeredEnv('dsh'),
     profile: 'web',
@@ -76,7 +85,7 @@ if (stopRequested) {
   // fiber doctor and atomic current.json commit happen in the desktop main
   // process after the UI is ready. If this offline doctor fails, stop Harness,
   // restore the fallback, quarantine the candidate, and fail the boot.
-  const externalRoot = resolveExternalRoot({ env: process.env })
+  // externalRoot 已在启动前由 assertExternalRootProvided 解析；这里直接复用。
   if (externalRoot !== null) {
     const dshHome = process.env.DSH_HOME === undefined || process.env.DSH_HOME === ''
       ? undefined

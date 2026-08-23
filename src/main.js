@@ -43,7 +43,9 @@ const APP_ICON_PATH = fileURLToPath(new URL(
 ))
 const PRELOAD_PATH = fileURLToPath(new URL('./preload.cjs', import.meta.url))
 const PROJECT_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const appFlavor = loadAppFlavor(process.env.DSH_DESKTOP_FLAVOR?.trim() || undefined)
+// 已安装包的身份由构建期 BUILD_FLAVOR 决定，不允许用户用 DSH_DESKTOP_FLAVOR
+// 把 Stable 伪装成 Dev 绕过外部插件激活；源码/冒烟（未打包）仍允许显式覆盖。
+const appFlavor = loadAppFlavor(app.isPackaged ? undefined : (process.env.DSH_DESKTOP_FLAVOR?.trim() || undefined))
 const explicitUserData = process.env.DSH_DESKTOP_USER_DATA?.trim()
 const userDataOverride = resolveUserDataOverride({ flavor: appFlavor, isPackaged: app.isPackaged })
 if (explicitUserData !== undefined && explicitUserData !== '') {
@@ -187,6 +189,11 @@ async function start() {
   mark('harness-launch')
   supervisor = launchHarness({
     sourceRoot: activeSourceRoot,
+    // Trusted main -> helper injection: actual Electron userData is the only
+    // source for the stable external plugin root; the helper never sees a
+    // user-supplied DSH_PERSONAL_PLUGINS_EXTERNAL or DSH_DESKTOP_FLAVOR.
+    desktopFlavor: appFlavor.flavor,
+    externalPluginsRoot: join(app.getPath('userData'), 'plugins-external'),
     startupTimeoutMs: process.env.DSH_DESKTOP_STARTUP_TIMEOUT_MS
       ? Number(process.env.DSH_DESKTOP_STARTUP_TIMEOUT_MS)
       : undefined,

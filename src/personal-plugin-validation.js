@@ -17,12 +17,32 @@ export function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
 }
 
-/** 解析外部插件根目录：显式 env 优先，否则 userData/plugins-external。 */
+/**
+ * 解析外部插件根目录。
+ *
+ * 安全顺序：调用方显式传入的 Electron userData 优先（普通 Stable 必须从实际
+ * userData 派生，不能被用户手工设置的 DSH_PERSONAL_PLUGINS_EXTERNAL 劫持）；
+ * 只有未提供 userData 时才回退到 env seam（由主进程注入 helper 的可信路径，
+ * 或单元测试直接指定）。
+ */
 export function resolveExternalRoot({ env = process.env, userData } = {}) {
+  if (userData !== undefined && userData !== '') return join(resolve(userData), 'plugins-external')
   const explicit = env.DSH_PERSONAL_PLUGINS_EXTERNAL
   if (explicit !== undefined && explicit !== '') return resolve(explicit)
-  if (userData !== undefined && userData !== '') return join(resolve(userData), 'plugins-external')
   return null
+}
+
+/**
+ * Stable 启动路径的 fail-closed 守卫：helper 进程拿不到 Electron userData，
+ * 必须由主进程注入 DSH_PERSONAL_PLUGINS_EXTERNAL。缺路径时不允许静默回退
+ * 内置并保留 pending，直接抛错终止启动。
+ */
+export function assertExternalRootProvided({ env = process.env, userData, flavor = 'stable' } = {}) {
+  const externalRoot = resolveExternalRoot({ env, userData })
+  if (flavor !== 'dev' && externalRoot === null) {
+    throw new Error('Stable desktop requires an external plugin root (userData/plugins-external or DSH_PERSONAL_PLUGINS_EXTERNAL).')
+  }
+  return externalRoot
 }
 
 /**

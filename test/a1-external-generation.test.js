@@ -7,6 +7,7 @@ import { afterEach, test } from 'node:test'
 
 import { assemblePersonalScopeView, commitActivatingGeneration, ensurePersonalPluginLinks, PERSONAL_PLUGINS, promotePendingGeneration } from '../src/personal-plugins.js'
 import {
+  assertExternalRootProvided,
   getPluginStatus,
   loadCurrentGeneration,
   normalizeExternalState,
@@ -74,9 +75,26 @@ function makeExternalRoot(root, { corruptHash = false, extraPlugin = false } = {
   return externalRoot
 }
 
-test('resolveExternalRoot honors env override', () => {
-  assert.equal(resolveExternalRoot({ env: { DSH_PERSONAL_PLUGINS_EXTERNAL: 'C:\\ext' } }), resolve('C:\\ext'))
+test('resolveExternalRoot prefers userData-derived path and keeps env as fallback', () => {
+  assert.equal(
+    resolveExternalRoot({ env: { DSH_PERSONAL_PLUGINS_EXTERNAL: 'C:\\ext' }, userData: 'C:\\ud' }),
+    resolve('C:\\ud\\plugins-external'),
+  )
   assert.equal(resolveExternalRoot({ env: {}, userData: 'C:\\ud' }), resolve('C:\\ud\\plugins-external'))
+  assert.equal(resolveExternalRoot({ env: { DSH_PERSONAL_PLUGINS_EXTERNAL: 'C:\\ext' } }), resolve('C:\\ext'))
+})
+
+test('stable external root is mandatory when main-to-helper path injection is missing', () => {
+  assert.throws(() => assertExternalRootProvided({ env: {}, flavor: 'stable' }), /external plugin root/u)
+  assert.equal(
+    assertExternalRootProvided({ env: { DSH_PERSONAL_PLUGINS_EXTERNAL: 'C:\\ext' }, flavor: 'stable' }),
+    resolve('C:\\ext'),
+  )
+  assert.equal(
+    assertExternalRootProvided({ env: {}, userData: 'C:\\ud', flavor: 'stable' }),
+    resolve('C:\\ud\\plugins-external'),
+  )
+  assert.equal(assertExternalRootProvided({ env: {}, flavor: 'dev' }), null)
 })
 
 test('normalizeExternalState removes activating.json residue', () => {
@@ -273,7 +291,8 @@ test('ensurePersonalPluginLinks falls back to builtin when current generation sc
   const links = ensurePersonalPluginLinks({
     dshHome,
     pluginRoot,
-    env: { DSH_PERSONAL_PLUGINS_EXTERNAL: externalRoot, DSH_DESKTOP_FLAVOR: 'stable' },
+    env: { DSH_DESKTOP_FLAVOR: 'stable' },
+    userData: root,
   })
   const anysearch = links.find(link => link.packageName === '@cyrus/dsh-anysearch')
   assert.ok(anysearch.target.includes('plugins'))
@@ -297,7 +316,8 @@ test('ensurePersonalPluginLinks normalizes activating residue to current generat
   const links = ensurePersonalPluginLinks({
     dshHome,
     pluginRoot,
-    env: { DSH_PERSONAL_PLUGINS_EXTERNAL: externalRoot, DSH_DESKTOP_FLAVOR: 'stable' },
+    env: { DSH_DESKTOP_FLAVOR: 'stable' },
+    userData: root,
   })
   assert.equal(existsSync(join(externalRoot, 'activating.json')), false)
   const anysearch = links.find(link => link.packageName === '@cyrus/dsh-anysearch')
@@ -323,7 +343,8 @@ test('ensurePersonalPluginLinks uses external scope only for stable flavor', () 
   const stableLinks = ensurePersonalPluginLinks({
     dshHome: stableHome,
     pluginRoot,
-    env: { DSH_PERSONAL_PLUGINS_EXTERNAL: externalRoot, DSH_DESKTOP_FLAVOR: 'stable' },
+    env: { DSH_DESKTOP_FLAVOR: 'stable' },
+    userData: root,
   })
   const anysearch = stableLinks.find(link => link.packageName === '@cyrus/dsh-anysearch')
   assert.ok(anysearch.target.includes('generations'))
@@ -333,9 +354,40 @@ test('ensurePersonalPluginLinks uses external scope only for stable flavor', () 
   const devLinks = ensurePersonalPluginLinks({
     dshHome: devHome,
     pluginRoot,
-    env: { DSH_PERSONAL_PLUGINS_EXTERNAL: externalRoot, DSH_DESKTOP_FLAVOR: 'dev' },
+    env: { DSH_DESKTOP_FLAVOR: 'dev' },
   })
   const devAnysearch = devLinks.find(link => link.packageName === '@cyrus/dsh-anysearch')
   assert.ok(devAnysearch.target.includes('plugins'))
   assert.ok(!devAnysearch.target.includes('generations'))
+})
+
+test('dev flavor keeps builtin plugins even when a pending generation exists', () => {
+  const root = mkdtempSync(join(tmpdir(), 'a1-dev-pending-'))
+  owned.push(root)
+  const externalRoot = makeExternalRoot(root)
+  writeFileSync(join(externalRoot, 'pending.json'), JSON.stringify({
+    generationId: 'gen-1',
+    candidateId: 'gen-1',
+    createdAt: new Date().toISOString(),
+  }, null, 2))
+  const dshHome = join(root, 'home-dev')
+  const pluginRoot = join(root, 'plugins')
+  for (const { packageName, directoryName } of PERSONAL_PLUGINS) {
+    const dir = join(pluginRoot, directoryName)
+    mkdirSync(join(dir, 'lib'), { recursive: true })
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: packageName }))
+    writeFileSync(join(dir, 'lib', 'index.js'), '')
+    writeFileSync(join(dir, 'lib', 'client.js'), '')
+  }
+
+  const links = ensurePersonalPluginLinks({
+    dshHome,
+    pluginRoot,
+    env: { DSH_DESKTOP_FLAVOR: 'dev' },
+  })
+  const anysearch = links.find(link => link.packageName === '@cyrus/dsh-anysearch')
+  assert.ok(anysearch.target.includes('plugins'))
+  assert.ok(!anysearch.target.includes('generations'))
+  assert.equal(existsSync(join(externalRoot, 'pending.json')), true, 'dev must not consume pending')
+  assert.equal(existsSync(join(externalRoot, 'activating.json')), false, 'dev must not start activation')
 })

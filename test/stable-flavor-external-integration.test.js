@@ -82,7 +82,6 @@ test('stable flavor + temp userData external generation activates and rolls back
 
   const env = {
     DSH_DESKTOP_FLAVOR: 'stable',
-    DSH_PERSONAL_PLUGINS_EXTERNAL: externalRoot,
     DSH_HOME: dshHome,
   }
   const links = ensurePersonalPluginLinks({ dshHome, pluginRoot, env, userData })

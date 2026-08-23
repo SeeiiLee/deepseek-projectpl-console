@@ -1296,3 +1296,13 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - 每次功能完成后记录：变更、验证命令、实际结果、遗留问题和上游兼容版本。
 - 自动测试必须使用临时数据目录；不得读取、打印或覆盖真实凭据和会话。
 - 未经 Cyrus 明确同意，不提交、不推送、不发布，也不执行系统级配置修改。
+
+## 2026-08-24：v0.4.4 生产缺陷修复与发布资料收口
+
+- 修复真实 Stable pending 插件 generation 无法激活：main→helper 可信传递 userData 派生的 `plugins-external`；Stable 缺路径 fail-closed。
+- runtime-preflight 注入隔离临时 `externalPluginsRoot` 与可信 `desktopFlavor`；真实 preflight 输出 `PREFLIGHT_OK` 且 `PREFLIGHT_CLEANUP_OK`。
+- Dev flavor 保持 dev 行为，新增「Dev + pending 仍用内置插件」反向测试。
+- 全量测试 731/731，fail 0，skipped 0；packed 激活/重启/回滚三启动 E2E 通过；四项门禁通过。
+- 发布资料收口：`docs/release-notes/0.4.4.md` 新增；`compat.json`/`PROGRESS.md`/`BLOCKED.md` 同步。
+- 插件 Release 收口：现有 `plugins-v2026.08.24.1`（.1）不修改、不删除；后续发布 `.2`，两个插件递增版本，`minClient=0.4.4`。
+- 仍不 commit、push、发布或安装真实 Stable；`release-staging/` 仅作上传来源，不 git add/提交其中的大文件。

@@ -192,7 +192,8 @@ test('ensurePersonalPluginLinks falls back to builtin when pending candidate is 
   const links = ensurePersonalPluginLinks({
     dshHome,
     pluginRoot,
-    env: { DSH_PERSONAL_PLUGINS_EXTERNAL: externalRoot, DSH_DESKTOP_FLAVOR: 'stable' },
+    env: { DSH_DESKTOP_FLAVOR: 'stable' },
+    userData: root,
   })
   const anysearch = links.find(link => link.packageName === '@cyrus/dsh-anysearch')
   assert.ok(anysearch.target.includes('plugins'))

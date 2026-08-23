@@ -80,6 +80,8 @@ export function resolveNodeExecutable(env = process.env) {
  *   sourceRoot?: string,
  *   workspaceRoot?: string,
  *   env?: NodeJS.ProcessEnv,
+ *   externalPluginsRoot?: string,
+ *   desktopFlavor?: string,
  *   startupTimeoutMs?: number,
  *   shutdownTimeoutMs?: number,
  *   forceExitTimeoutMs?: number,
@@ -126,6 +128,15 @@ export function launchHarness(options = {}) {
       ...inheritedEnv,
       DSH_SOURCE_ROOT: sourceRoot,
       TSX_TSCONFIG_PATH: join(sourceRoot, 'tsconfig.json'),
+      // Trusted main -> helper injection: the helper cannot call
+      // app.getPath('userData'), so the desktop main passes the actual
+      // userData-derived external root and the immutable build flavor.
+      ...(options.externalPluginsRoot !== undefined && options.externalPluginsRoot !== ''
+        ? { DSH_PERSONAL_PLUGINS_EXTERNAL: options.externalPluginsRoot }
+        : {}),
+      ...(options.desktopFlavor !== undefined && options.desktopFlavor !== ''
+        ? { DSH_DESKTOP_FLAVOR: options.desktopFlavor }
+        : {}),
     },
     shell: false,
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],

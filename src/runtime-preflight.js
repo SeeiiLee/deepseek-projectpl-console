@@ -11,6 +11,7 @@ export async function preflightHarnessRuntime(sourceRoot, options = {}) {
   const dshHome = join(root, 'dsh-home')
   const agentsHome = join(root, 'agents-home')
   const projectControlHome = join(root, 'project-control')
+  const externalPluginsRoot = join(root, 'plugins-external')
   const processHome = join(root, 'process-home')
   const roamingData = join(processHome, 'AppData', 'Roaming')
   const localData = join(processHome, 'AppData', 'Local')
@@ -26,6 +27,7 @@ export async function preflightHarnessRuntime(sourceRoot, options = {}) {
   await Promise.all([
     mkdir(workspaceRoot),
     mkdir(agentsHome),
+    mkdir(externalPluginsRoot, { recursive: true }),
     mkdir(roamingData, { recursive: true }),
     mkdir(localData, { recursive: true }),
     mkdir(processTemp, { recursive: true }),
@@ -79,6 +81,12 @@ export async function preflightHarnessRuntime(sourceRoot, options = {}) {
       sourceRoot,
       workspaceRoot,
       env,
+      // Preflight is fully isolated: the helper must never see the real
+      // userData external root or a user-supplied flavor. The external root is
+      // inside this run's temporary root, and the flavor is the caller-trusted
+      // desktop flavor (stable by default for candidate runtime preflight).
+      externalPluginsRoot,
+      desktopFlavor: options.desktopFlavor ?? 'stable',
       startupTimeoutMs: options.startupTimeoutMs ?? 120_000,
       shutdownTimeoutMs: options.shutdownTimeoutMs ?? 10_000,
     })

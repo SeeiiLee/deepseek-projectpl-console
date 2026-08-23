@@ -36,3 +36,10 @@
 - Gate 0 的普通 `cmd.exe` 无 pnpm PATH 双击入口、真实聊天和双 Session 切换已经签收，继续作为历史证据；它们不替代 Gate 1 当前源码门禁。
 - rc.5 ChatView/工具卡仍未从真实点击调用 `openDetails`。Gate 1 已把官方 Details 子树与 `openDetails/closeDetails` 兼容命令统一路由到 Workbench 的 `Details` 页签，但这只是详情容器与状态契约，不是工具卡业务已接通。
 - `compat.json` 仍保持 Harness rc.5/`47f943`，本轮不更新。`artifacts\win-unpacked` 已按 Gate 2C 重建并通过 packed smoke；NSIS 和 Portable 没有重建，仍是此前 Gate 的制品。
+
+## 2026-08-24 v0.4.4 生产缺陷修复（main→helper 外部插件根未注入）
+- 目标：修复 v0.4.3 真实 Stable 重启后 pending 不激活（helper 拿不到 userData/plugins-external），产出 v0.4.4 候选与红→绿真实进程证据。
+- 顺序：①基线 727/727（skipped=0）②写 packed 回归（不注入 DSH_PERSONAL_PLUGINS_EXTERNAL）在旧代码红 ③修复 resolveExternalRoot userData 优先 + main 注入 helper + stable 缺路径 fail-closed ④全量门禁 + 构建 v0.4.4 Stable 候选 ⑤文档/评估 minClient；最终全量 731/731（新增 4 项）。
+- 最大风险：packed E2E 重建 stable win-unpacked 与真实进程验证耗时；必须全程临时 userData/DSH_HOME，禁止触碰真实 Stable/F 盘 pending。
+- Codex 复核三项已修复：runtime-preflight 隔离注入（真实 PREFLIGHT_OK + CLEANUP_OK）、Dev+pending 反向测试、`release-staging/v0.4.4-final` 独立 0.4.4 资产全集（无 0.4.3 混入）。
+- minClient 收口：现有 plugins-v2026.08.24.1（.1）Release 不修改、不删除；后续发布 .2，两个插件递增版本，minClient=0.4.4。

@@ -44,6 +44,25 @@ test('runtime preflight removes inherited credentials and uses isolated director
     launchOptions.env.PROJECT_CONTROL_SELECTION_SECRET,
     process.env.PROJECT_CONTROL_SELECTION_SECRET,
   )
+  assert.match(launchOptions.externalPluginsRoot, /dsh-personal-runtime-preflight-[^\\/]*[\\/]plugins-external$/u)
+  assert.equal(launchOptions.desktopFlavor, 'stable')
+})
+
+test('runtime preflight accepts a trusted desktop flavor and keeps external root inside the temp root', async () => {
+  let launchOptions
+  await preflightHarnessRuntime('D:\\candidate', {
+    environment: { PATH: 'kept' },
+    desktopFlavor: 'dev',
+    launch(options) {
+      launchOptions = options
+      return {
+        ready: Promise.resolve(new URL('http://127.0.0.1:12345/')),
+        stop: async () => ({ graceful: true, forced: false, code: 0, signal: null }),
+      }
+    },
+  })
+  assert.equal(launchOptions.desktopFlavor, 'dev')
+  assert.match(launchOptions.externalPluginsRoot, /dsh-personal-runtime-preflight-[^\\/]*[\\/]plugins-external$/u)
 })
 
 test('minimal child environment keeps only process-launch and locale settings', () => {

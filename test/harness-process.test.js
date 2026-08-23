@@ -17,6 +17,8 @@ function launchFake(mode, options = {}) {
     forceExitTimeoutMs: options.forceExitTimeoutMs,
     processGuardFactory: options.processGuardFactory,
     terminateProcessTree: options.terminateProcessTree,
+    externalPluginsRoot: options.externalPluginsRoot,
+    desktopFlavor: options.desktopFlavor,
     env: { ...process.env, FAKE_HARNESS_MODE: mode },
   })
 }
@@ -29,6 +31,18 @@ test('supervisor reaches readiness and acknowledges one idempotent stop', async 
   assert.equal(first.graceful, true)
   assert.equal(first.forced, false)
   assert.equal(first.code, 0)
+})
+
+test('launchHarness injects the trusted external root and flavor into the helper env', async () => {
+  const supervisor = launchFake('echo-env', {
+    externalPluginsRoot: 'C:\\ext\\plugins-external',
+    desktopFlavor: 'stable',
+  })
+  await supervisor.ready
+  const output = supervisor.recentOutput()
+  assert.match(output, /ENV:C:\\ext\\plugins-external:stable/u)
+  const result = await supervisor.stop()
+  assert.equal(result.graceful, true)
 })
 
 test('supervisor rejects an invalid readiness line and cleans up', async () => {
@@ -90,8 +104,8 @@ test('an unresponsive helper is forcibly terminated', async () => {
 test('a failed forced stop can be retried until the helper exit is confirmed', async () => {
   let terminationAttempts = 0
   const supervisor = launchFake('ignore-shutdown', {
-    shutdownTimeoutMs: 50,
-    forceExitTimeoutMs: 50,
+    shutdownTimeoutMs: 100,
+    forceExitTimeoutMs: 1_000,
     processGuardFactory: () => ({ active: false, error: 'disabled by test', close() {} }),
     async terminateProcessTree(pid) {
       terminationAttempts += 1
