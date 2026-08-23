@@ -1,0 +1,6 @@
+# @cyrus/dsh-anysearch bundle patch（D-02：row name = package name；单 row 单 owner）
+- insert:
+    - id: '@cyrus/dsh-anysearch'
+      name: '@cyrus/dsh-anysearch'
+      config:
+        apiKeyEnv: ANYSEARCH_API_KEY

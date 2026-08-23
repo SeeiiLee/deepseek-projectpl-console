@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:plugin-index:v1",
+  "title": "plugin-index/v1 — 插件发布索引",
+  "description": "A2 生成的机器索引；资产只存相对文件名，下载 URL 由消费侧按 release tag 拼 GitHub host 并过白名单。未知 schemaVersion 整体拒绝。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "releaseTag",
+    "minClient",
+    "compatibleHarness",
+    "plugins"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "releaseTag": {
+      "type": "string",
+      "pattern": "^plugins-v\\d{4}\\.\\d{2}\\.\\d{2}\\.\\d+$"
+    },
+    "minClient": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compatibleHarness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "commit"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "packageName",
+          "version",
+          "assetName",
+          "assetSize",
+          "sha256",
+          "minClient",
+          "compatibleHarness",
+          "externalEligible"
+        ],
+        "properties": {
+          "packageName": {
+            "type": "string",
+            "pattern": "^@cyrus/dsh-[a-z0-9-]+$"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "assetName": {
+            "type": "string",
+            "pattern": "^@?[A-Za-z0-9._/-]+\\.tgz$"
+          },
+          "assetSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "minClient": {
+            "type": "string",
+            "minLength": 1
+          },
+          "compatibleHarness": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "versionRange",
+              "commits"
+            ],
+            "properties": {
+              "versionRange": {
+                "type": "string",
+                "minLength": 1
+              },
+              "commits": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            }
+          },
+          "seams": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "dataSchema": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "modelAssets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "uniqueItems": true
+          },
+          "externalEligible": {
+            "type": "boolean"
+          }
+        }
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  }
+}

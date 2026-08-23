@@ -1,0 +1,51 @@
+{
+  "apiVersion": "project-control.dsh/v1alpha1",
+  "kind": "ProjectManifest",
+  "metadata": {
+    "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+    "name": "DeepSeek Harness Personal",
+    "createdAt": "2026-08-14T14:00:00.000Z",
+    "createdBy": {
+      "kind": "human",
+      "id": "cyrus",
+      "displayName": "Cyrus"
+    },
+    "origin": {
+      "kind": "template",
+      "templateId": "dsh.software",
+      "templateVersion": "1.0.0"
+    }
+  },
+  "spec": {
+    "documents": {
+      "docsRoot": ".",
+      "entries": [
+        {
+          "role": "readme",
+          "path": "README.md",
+          "required": true
+        },
+        {
+          "role": "prd",
+          "path": "PROJECT_CONTROL_SPEC.md",
+          "required": true
+        },
+        {
+          "role": "devlog",
+          "path": "DEVLOG.md",
+          "required": true
+        },
+        {
+          "role": "current_architecture",
+          "path": "docs/ARCHITECTURE.md",
+          "required": false
+        }
+      ],
+      "standardOutputs": {
+        "updatesRoot": ".dsh-project/updates",
+        "decisionsRoot": ".dsh-project/decisions",
+        "artifactsRoot": ".dsh-project/artifacts"
+      }
+    }
+  }
+}

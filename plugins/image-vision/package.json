@@ -1,0 +1,50 @@
+{
+  "name": "@cyrus/dsh-image-vision",
+  "description": "聊天旁识图：上传图片，调用已配置的视觉模型完成 OCR、内容描述与 UI 分析。",
+  "version": "0.1.0-rc.8",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@cyrus/dsh-personal-shell",
+        "@deepseek-ai/dsh-client-runtime"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "tsdown"
+  },
+  "peerDependencies": {
+    "@cyrus/dsh-personal-shell": "*",
+    "@cyrus/dsh-personal-foundation": "*",
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+    "react": "^18.2.0"
+  },
+  "dshComposable": {
+    "schemaVersion": 1,
+    "role": "core",
+    "supports": {
+      "harness": [
+        "0.1.1-rc.2"
+      ]
+    }
+  }
+}

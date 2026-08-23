@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:progress-update-frontmatter",
+  "title": "Project Control Progress Update Frontmatter v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "schemaVersion",
+    "kind",
+    "updateId",
+    "category",
+    "projectId",
+    "workItemId",
+    "runId",
+    "threadId",
+    "sourceEventId",
+    "commandId",
+    "aggregateRevision",
+    "occurredAt",
+    "recordedAt",
+    "actor",
+    "summary",
+    "generatedBy"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "const": "project-control.dsh/v1alpha1"
+    },
+    "schemaVersion": {
+      "const": "progress-update-frontmatter/v1alpha1"
+    },
+    "kind": {
+      "const": "ProgressUpdate"
+    },
+    "updateId": {
+      "type": "string",
+      "pattern": "^upd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "category": {
+      "enum": [
+        "progress",
+        "blocker",
+        "completion_declared"
+      ]
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "workItemId": {
+      "type": "string",
+      "pattern": "^wrk_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^run_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "threadId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "sourceEventId": {
+      "type": "string",
+      "pattern": "^evt_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "commandId": {
+      "type": "string",
+      "pattern": "^cmd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "aggregateRevision": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "occurredAt": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "recordedAt": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "actor": {
+      "$ref": "#/$defs/actorRef"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/evidenceRef"
+      }
+    },
+    "generatedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicationId",
+        "applicationVersion",
+        "applicationInstanceId",
+        "rendererVersion"
+      ],
+      "properties": {
+        "applicationId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+        },
+        "applicationVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "applicationInstanceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "rendererVersion": {
+          "const": "progress-markdown/v1alpha1"
+        }
+      }
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "$defs": {
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{3})?Z$"
+    },
+    "actorRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "applicationId"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "human",
+            "agent",
+            "system",
+            "application"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "applicationId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "evidenceRef": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "ref"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "artifact",
+                "event",
+                "test"
+              ]
+            },
+            "ref": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$"
+            },
+            "contentHash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "workspaceRef",
+            "relativePath"
+          ],
+          "properties": {
+            "kind": {
+              "const": "workspace_file"
+            },
+            "workspaceRef": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "contentHash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          }
+        }
+      ]
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*[:\\\\])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\/$)[^/]+(?:/[^/]+)*$"
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 50,
+      "propertyNames": {
+        "pattern": "^(?:[a-z][a-z0-9-]*\\.)+[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": true
+    }
+  }
+}

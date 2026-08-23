@@ -1,0 +1,113 @@
+/* Workbench 编辑偏好设置卡片（scoped；无全局选择器逃逸） */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.header h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.header p {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+}
+
+.group h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > span {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.field input[type='text'],
+.field select {
+  padding: 4px 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  font-size: 12px;
+}
+
+.field input[type='range'] {
+  flex: 1;
+}
+
+.radioRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.radioItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.subFields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 2px solid var(--dsw-alias-border-l2);
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.smallButton {
+  padding: 3px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.smallButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hint {
+  color: var(--dsw-alias-label-tertiary);
+}

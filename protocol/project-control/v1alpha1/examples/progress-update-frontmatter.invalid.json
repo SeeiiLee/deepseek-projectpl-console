@@ -1,0 +1,29 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "progress-update-frontmatter/v1alpha1",
+  "kind": "ProgressUpdate",
+  "updateId": "upd_0198f4b2-7c3a-7d16-a5c6-6b6f39e34716",
+  "category": "progress",
+  "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "workItemId": "wrk_0198f4b2-7c3a-7d12-a5c6-6b6f39e34712",
+  "runId": "run_0198f4b2-7c3a-7d13-a5c6-6b6f39e34713",
+  "threadId": "session:gate2a",
+  "sourceEventId": "evt_0198f4b2-7c3a-7d15-a5c6-6b6f39e34715",
+  "commandId": "cmd_0198f4b2-7c3a-7d14-a5c6-6b6f39e34714",
+  "aggregateRevision": 4,
+  "occurredAt": "2026-08-14T14:05:00.000Z",
+  "recordedAt": "2026-08-14T14:05:01.000Z",
+  "actor": {
+    "kind": "agent",
+    "id": "agent:primary",
+    "applicationId": "dsh.personal"
+  },
+  "summary": "未知顶层字段必须被拒绝。",
+  "generatedBy": {
+    "applicationId": "dsh.personal",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "dsh-personal:local-01",
+    "rendererVersion": "progress-markdown/v1alpha1"
+  },
+  "approval": "approved"
+}

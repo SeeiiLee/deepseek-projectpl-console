@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "preset": "personal-desktop",
+  "generatedAt": "2026-08-21T16:17:05.596Z",
+  "compatibleHarness": {
+    "version": "0.1.1-rc.2",
+    "commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+  },
+  "packages": {
+    "@cyrus/dsh-anysearch": {
+      "version": "0.1.0-beta",
+      "integrity": "f39f03ad1058c1e84d12ecd8e8054d64d95b9b8a31b0ec210a307b5b90a312ff",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": true
+    },
+    "@cyrus/dsh-connection-center": {
+      "version": "0.1.0-rc.8",
+      "integrity": "0cb55a1cc5ba411e02246bace426a99e9a591a1f6e7fffd1bea8efc7178780a6",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-desktop-integration": {
+      "version": "0.1.0",
+      "integrity": "7c72e20008983041f9469e44ad329d984929c356399a0d3f5ffc61e45c2d8092",
+      "source": "tgz",
+      "role": "bridge",
+      "bundle": false
+    },
+    "@cyrus/dsh-image-vision": {
+      "version": "0.1.0-rc.8",
+      "integrity": "2532c3bc58c932a2f41e70bda38bf4e4ff65be0dceb5a3bb3b519e551effc3c3",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-memory": {
+      "version": "0.1.0",
+      "integrity": "0deeb4a94942b3edc875484e18c6f2ca5c975410c69a5a829a3afdd46dcbf35e",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-personal-foundation": {
+      "version": "0.1.0",
+      "integrity": "42965b21ec2f89f7dd1752359c3f0d314cccefb3e58fa1695fc3928df53c5390",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-personal-policy": {
+      "version": "0.1.0",
+      "integrity": "06f41f33c9fca014e1c4c64915fd5d789e3f85dd7a19952ecb251afeaee6e3bf",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-personal-shell": {
+      "version": "0.1.0-rc.8",
+      "integrity": "8650399fb5de2d44faf785f6888efe86fb8ffcb8a68f1543a68f39144ac7a0f7",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": true
+    },
+    "@cyrus/dsh-personal-theme": {
+      "version": "0.1.0",
+      "integrity": "17d06d7e62a192e83e02970e568c05879ca8cabaa31a57ad8e90cf51051c8af5",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": false
+    },
+    "@cyrus/dsh-plugin-organizer": {
+      "version": "0.1.0-rc.8",
+      "integrity": "ef43ecdb84fbac3f77ed6b8b8c73cb08e83f5a3d3659d82658f7894183fb26ae",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": false
+    },
+    "@cyrus/dsh-project-control": {
+      "version": "0.1.0-rc.8",
+      "integrity": "38e03fc3ed6951326c11a44f1590603b967fe822d69bd3a15862d7a5e7e7b0b1",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-session-terminal": {
+      "version": "0.1.0-rc.8",
+      "integrity": "942f7b655d04f3266e5f51610434418ec30e66ec175e04496f5500649f443ab7",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-skill-library": {
+      "version": "0.1.0-rc.8",
+      "integrity": "69a6569ba6a600bbf2c5cc7cab9058029a4d3ec2e3681c696e39787f03ee78e4",
+      "source": "tgz",
+      "role": "core",
+      "bundle": false
+    },
+    "@cyrus/dsh-trajectory-island": {
+      "version": "0.1.0",
+      "integrity": "1579e36a587379090eed5fe72281b41f1547d3f6af43d678722055e7211c1d5c",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": true
+    },
+    "@cyrus/dsh-update-center": {
+      "version": "0.1.0",
+      "integrity": "1939353fee844d588a95801a0e4c342736149c31cf6cffdc79a63f8acf89c1d1",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": false
+    },
+    "@cyrus/dsh-usage-balance": {
+      "version": "0.1.0",
+      "integrity": "8e01b569f5d0e84dc615d55fd312353b55bca3d61889165a9daf40e69aceafe7",
+      "source": "tgz",
+      "role": "adapter",
+      "bundle": false
+    },
+    "@cyrus/dsh-workbench": {
+      "version": "0.1.0-rc.8",
+      "integrity": "3a1b4617928f527acdd85656e817d87241a15a3ec9a2ea91ef0ad9ea3d984825",
+      "source": "tgz",
+      "role": "core",
+      "bundle": true,
+      "requires": [
+        "@cyrus/dsh-personal-shell",
+        "@cyrus/dsh-workspace-hub"
+      ]
+    },
+    "@cyrus/dsh-workspace-hub": {
+      "version": "0.1.0-rc.8",
+      "integrity": "b54727d6b2d56982bda12f5534a748fe13f0971ccec0cedf26f0d2f81a639704",
+      "source": "tgz",
+      "role": "core",
+      "bundle": true
+    }
+  },
+  "installOrder": [
+    "@cyrus/dsh-anysearch",
+    "@cyrus/dsh-connection-center",
+    "@cyrus/dsh-desktop-integration",
+    "@cyrus/dsh-image-vision",
+    "@cyrus/dsh-memory",
+    "@cyrus/dsh-personal-foundation",
+    "@cyrus/dsh-personal-policy",
+    "@cyrus/dsh-personal-shell",
+    "@cyrus/dsh-personal-theme",
+    "@cyrus/dsh-plugin-organizer",
+    "@cyrus/dsh-project-control",
+    "@cyrus/dsh-session-terminal",
+    "@cyrus/dsh-skill-library",
+    "@cyrus/dsh-trajectory-island",
+    "@cyrus/dsh-update-center",
+    "@cyrus/dsh-usage-balance",
+    "@cyrus/dsh-workspace-hub",
+    "@cyrus/dsh-workbench"
+  ]
+}

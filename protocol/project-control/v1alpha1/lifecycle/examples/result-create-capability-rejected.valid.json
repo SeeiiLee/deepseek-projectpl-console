@@ -1,0 +1,20 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-result/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d23-a5c6-6b6f39e34723",
+  "correlationId": "corr.lifecycle.create-template",
+  "kind": "project.createFromTemplate",
+  "status": "rejected",
+  "recordedAt": "2026-08-14T12:02:00.100Z",
+  "currentRevision": 0,
+  "error": {
+    "code": "CAPABILITY_NOT_NEGOTIATED",
+    "message": "Atomic template synchronization is not enabled by this Host."
+  },
+  "fileSync": {
+    "status": "planned",
+    "planId": "pln_0198f4b2-7c3a-7d61-a5c6-6b6f39e34761",
+    "planHash": "sha256:f238e027d68d189d8b75d5f6a3fe3b7ac3d2b0821b7d016639e8342aea1e73dc",
+    "manifestHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  }
+}

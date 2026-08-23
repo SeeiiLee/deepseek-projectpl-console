@@ -1,0 +1,53 @@
+{
+  "schemaBase": "schemas/template-manifest.schema.json",
+  "cases": [
+    {
+      "name": "minimal-standard",
+      "fixture": "template-minimal.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "software-standard",
+      "fixture": "template-software.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "bad-version",
+      "fixture": "template-invalid-version.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "pattern"
+    },
+    {
+      "name": "bad-template-id",
+      "fixture": "template-invalid-id.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "pattern"
+    },
+    {
+      "name": "path-escape",
+      "fixture": "template-invalid-path-escape.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "pattern"
+    },
+    {
+      "name": "absolute-path",
+      "fixture": "template-invalid-absolute-path.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "pattern"
+    },
+    {
+      "name": "duplicate-entries",
+      "fixture": "template-invalid-duplicate.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "uniqueItems"
+    },
+    {
+      "name": "unknown-field",
+      "fixture": "template-invalid-unknown-field.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "additionalProperties"
+    }
+  ]
+}

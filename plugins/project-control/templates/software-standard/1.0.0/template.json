@@ -1,0 +1,87 @@
+{
+  "apiVersion": "project-template.dsh/v1alpha1",
+  "kind": "ProjectTemplate",
+  "metadata": {
+    "templateId": "software-standard",
+    "templateVersion": "1.0.0",
+    "displayName": "软件项目",
+    "description": "在最小模板上增加当前架构与 ADR 目录。",
+    "protocolVersion": "project-control.dsh/v1alpha1"
+  },
+  "files": [
+    {
+      "kind": "directory",
+      "relativePath": ".dsh-project"
+    },
+    {
+      "kind": "file",
+      "relativePath": ".dsh-project/project.yaml",
+      "content": "apiVersion: project-control.dsh/v1alpha1\nkind: ProjectManifest\nmetadata:\n  projectId: {{PROJECT_ID}}\n  name: {{PROJECT_NAME}}\n  createdAt: {{CREATED_AT}}\n  createdBy:\n    kind: human\n    id: cyrus\n  origin:\n    kind: template\n    templateId: {{TEMPLATE_ID}}\n    templateVersion: {{TEMPLATE_VERSION}}\nspec:\n  documents:\n    docsRoot: docs\n    entries:\n      - role: readme\n        path: README.md\n      - role: prd\n        path: docs/PRD.md\n        required: true\n      - role: devlog\n        path: docs/DEVLOG.md\n      - role: next\n        path: docs/NEXT.md\n      - role: current_architecture\n        path: docs/ARCHITECTURE.md\n      - role: decision\n        path: docs/decisions\n    standardOutputs:\n      updatesRoot: .dsh-project/updates\n      decisionsRoot: .dsh-project/decisions\n      artifactsRoot: .dsh-project/artifacts\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": ".dsh-project/updates"
+    },
+    {
+      "kind": "file",
+      "relativePath": ".dsh-project/updates/README.md",
+      "content": "# 标准进展更新\n\n> 该目录由 Project Protocol 生成“一事件/一记录文件”的标准进展更新；不要手工编辑生成文件。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": ".dsh-project/decisions"
+    },
+    {
+      "kind": "file",
+      "relativePath": ".dsh-project/decisions/README.md",
+      "content": "# 决策目录\n\n> 该目录存放 ADR 等决策记录。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": ".dsh-project/artifacts"
+    },
+    {
+      "kind": "file",
+      "relativePath": ".dsh-project/artifacts/README.md",
+      "content": "# 产物目录\n\n> 该目录存放产物元数据或受控引用；不复制所有大文件。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "docs"
+    },
+    {
+      "kind": "file",
+      "relativePath": "docs/PRD.md",
+      "content": "# {{PROJECT_NAME}} 产品需求\n\n> 待填写：本项目要解决的问题、目标用户与范围。\n\n## 目标\n\n> 待填写：可衡量的成功标准。本文由 {{TEMPLATE_ID}}@{{TEMPLATE_VERSION}} 创建于 {{CREATED_AT}}，是 PRD 的事实源；请在正式开工前补齐。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "docs/DEVLOG.md",
+      "content": "# 开发日志\n\n> 待填写：按日期记录决策、验证结果与已知边界。本文件是人工维护的长期日志。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "docs/NEXT.md",
+      "content": "# 下一步\n\n> 待填写：下一阶段执行清单与验收顺序。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "README.md",
+      "content": "# {{PROJECT_NAME}}\n\n> 待填写：项目说明、运行方式与关键入口。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "docs/ARCHITECTURE.md",
+      "content": "# 当前架构\n\n> 待填写：组件、边界、依赖、约束、风险与改进计划。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "docs/decisions"
+    },
+    {
+      "kind": "file",
+      "relativePath": "docs/decisions/README.md",
+      "content": "# 架构决策记录\n\n> 待填写：ADRs。旧决定被推翻时只建立 supersededBy，不修改历史结论。\n"
+    }
+  ]
+}

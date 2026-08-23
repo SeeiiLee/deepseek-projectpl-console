@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:upstream-impact-map:v1",
+  "title": "upstream-impact-map/v1 — 上游变更影响图",
+  "description": "A0 冻结的机器映射：上游路径/导出/schema/依赖与工具链 → seam/capability → Personal 消费插件闭包 → 最低门禁等级。规划器只产计划，不自行激活或发布。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "mapVersion",
+    "defaultGate",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "mapVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "defaultGate": {
+      "type": "string",
+      "enum": [
+        "G0",
+        "G1",
+        "G2",
+        "G3"
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "patternType",
+          "pattern",
+          "surface",
+          "minGate"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "patternType": {
+            "type": "string",
+            "enum": [
+              "path-prefix",
+              "path-glob",
+              "export",
+              "schema",
+              "dependency"
+            ]
+          },
+          "pattern": {
+            "type": "string",
+            "minLength": 1
+          },
+          "surface": {
+            "type": "string",
+            "minLength": 1
+          },
+          "seam": {
+            "type": "string",
+            "minLength": 1
+          },
+          "consumerPlugins": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "minGate": {
+            "type": "string",
+            "enum": [
+              "G0",
+              "G1",
+              "G2",
+              "G3"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

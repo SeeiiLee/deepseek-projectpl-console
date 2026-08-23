@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "mapVersion": "",
+  "defaultGate": "G4",
+  "rules": [
+    {
+      "id": "bad",
+      "patternType": "unknown-type",
+      "pattern": "",
+      "surface": "unknown",
+      "minGate": "G9"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "apiVersion": "project-template.dsh/v1alpha1",
+  "kind": "ProjectTemplate",
+  "metadata": {
+    "templateId": "minimal-standard",
+    "templateVersion": "1.0.0",
+    "displayName": "最小标准项目",
+    "description": "项目说明、PRD、进展入口、下一步与受管理元数据。",
+    "protocolVersion": "project-control.dsh/v1alpha1"
+  },
+  "files": [
+    {
+      "kind": "file",
+      "relativePath": "../PRD.md",
+      "content": "x"
+    }
+  ]
+}

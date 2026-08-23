@@ -1,0 +1,619 @@
+/* R-ED Phase 1：TipTap 富文本编辑器样式。阅读偏好通过父级 CSS 变量注入。 */
+.editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1, transparent);
+  flex-wrap: wrap;
+  font-size: 0.857rem;
+}
+
+/* 分组：类内紧凑、类间竖线分隔（与 Kimi Work 工具栏同一视觉逻辑）。 */
+.toolbarGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.toolbarDivider {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 5px;
+  background: var(--dsw-alias-border-l2);
+}
+
+.toolbar button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toolbar button:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.toolbar button svg {
+  width: 13.5px;
+  height: 13.5px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+/* B / I / S 字形按钮：与 SVG 图标同尺寸同灰度。 */
+.glyph {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.glyph[data-glyph='bold'] { font-weight: 700; }
+.glyph[data-glyph='italic'] { font-style: italic; }
+.glyph[data-glyph='strike'] { text-decoration: line-through; }
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 28px;
+}
+
+.documentColumn {
+  max-width: var(--wb-reader-width, 900px);
+  margin-inline: auto;
+}
+
+.sourceEditor {
+  display: block;
+  width: 100%;
+  min-height: 60vh;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--wb-reader-color, var(--dsw-alias-label-primary));
+  background: var(--dsw-alias-bg-layer-1, transparent);
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+
+.sourceEditor:focus {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+.editor :global(.ProseMirror) {
+  min-height: 100%;
+  outline: none;
+  color: var(--wb-reader-color, var(--dsw-alias-label-primary));
+  font-size: var(--wb-reader-font-size, 13.5px);
+  font-family: var(--wb-reader-font-family, inherit);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.editor :global(.ProseMirror > *:first-child) {
+  margin-top: 0;
+}
+
+.editor :global(.ProseMirror > *:last-child) {
+  margin-bottom: 0;
+}
+
+.editor :global(.ProseMirror h1),
+.editor :global(.ProseMirror h2),
+.editor :global(.ProseMirror h3),
+.editor :global(.ProseMirror h4),
+.editor :global(.ProseMirror h5),
+.editor :global(.ProseMirror h6) {
+  margin-block: 1.3em 0.5em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: inherit;
+}
+
+.editor :global(.ProseMirror h1) {
+  font-size: 1.5em;
+}
+
+.editor :global(.ProseMirror h2) {
+  font-size: 1.3em;
+}
+
+.editor :global(.ProseMirror h3) {
+  font-size: 1.15em;
+}
+
+.editor :global(.ProseMirror h4),
+.editor :global(.ProseMirror h5),
+.editor :global(.ProseMirror h6) {
+  font-size: 1em;
+}
+
+.editor :global(.ProseMirror p) {
+  margin-block: 0.6em;
+}
+
+.editor :global(.ProseMirror ul),
+.editor :global(.ProseMirror ol) {
+  margin-block: 0.6em;
+  padding-inline-start: 1.6em;
+}
+
+.editor :global(.ProseMirror li) {
+  margin-block: 0.25em;
+}
+
+.editor :global(.ProseMirror blockquote) {
+  margin-block: 0.8em;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--dsw-alias-border-l2);
+  color: inherit;
+  opacity: 0.92;
+}
+
+.editor :global(.ProseMirror pre) {
+  overflow-x: auto;
+  margin-block: 0.8em;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-2);
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  font-size: 0.92em;
+}
+
+.editor :global(.ProseMirror code) {
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  font-size: 0.92em;
+}
+
+.editor :global(.ProseMirror pre code) {
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+
+.editor :global(.ProseMirror a) {
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: none;
+}
+
+.editor :global(.ProseMirror a:hover) {
+  text-decoration: underline;
+}
+
+.editor :global(.ProseMirror hr) {
+  border: none;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  margin-block: 1.2em;
+}
+
+.editor :global(.ProseMirror .tableWrapper) {
+  overflow-x: auto;
+}
+
+.editor :global(.ProseMirror table) {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-block: 0.8em;
+  font-size: 0.95em;
+}
+
+.editor :global(.ProseMirror th),
+.editor :global(.ProseMirror td) {
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.editor :global(.ProseMirror th),
+.editor :global(.ProseMirror td) {
+  border: 1px solid var(--dsw-alias-border-l2);
+  padding: 4px 10px;
+  text-align: left;
+}
+
+.editor :global(.ProseMirror th) {
+  background: var(--dsw-alias-bg-layer-2);
+  font-weight: 600;
+}
+
+.editor :global(.ProseMirror img) {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.editor :global(.ProseMirror .file-attachment) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block: 0.4em;
+  padding: 8px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  font-size: 0.95em;
+}
+
+.editor :global(.ProseMirror .file-attachment-icon) {
+  flex: none;
+}
+
+.editor :global(.ProseMirror .file-attachment-link) {
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.editor :global(.ProseMirror .file-attachment-link:hover) {
+  text-decoration: underline;
+}
+
+.editor :global(.ProseMirror .file-attachment-failed) {
+  border-color: var(--dsw-alias-state-feedback-error, #d4533f);
+}
+
+.editor :global(.ProseMirror .file-attachment-error) {
+  color: var(--dsw-alias-state-feedback-error, #d4533f);
+  font-size: 0.85em;
+  flex: none;
+}
+
+.editor :global(.ProseMirror .image-load-failed) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary, #666);
+  font-size: 0.9em;
+}
+
+/* 本地图片经桌面桥读取中的过渡态：浅色呼吸块，避免破图闪烁。 */
+.editor :global(.ProseMirror .image-loading) {
+  display: block;
+  width: 100%;
+  min-height: 72px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  animation: wb-image-loading-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes wb-image-loading-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+.editor :global(.ProseMirror .math-inline) {
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  font-style: italic;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);
+  border-radius: 4px;
+  padding: 0 3px;
+}
+
+.editor :global(.ProseMirror .footnote-ref) {
+  font-size: 0.85em;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--dsw-alias-label-tertiary, #888);
+  cursor: pointer;
+}
+
+.editor :global(.ProseMirror .footnote-def) {
+  margin-block: 0.2em 0.4em;
+  padding-inline-start: 1.2em;
+  color: var(--dsw-alias-label-tertiary, #888);
+  font-size: 0.9em;
+}
+
+.editor :global(.ProseMirror .footnote-def-id) {
+  display: inline-block;
+  min-width: 1.2em;
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary, #666);
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"]) {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"] li) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.editor :global(.ProseMirror ul[data-type="taskList"] li > label) {
+  flex: none;
+  margin-top: 0.2em;
+}
+
+.bubbleMenu {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 4px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1, #26282e);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 25%);
+  font-size: 0.857rem;
+}
+
+/* 悬浮菜单按钮与主工具栏同一图标口径。 */
+.bubbleMenu button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.bubbleMenu button:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.bubbleMenu button svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.bubbleDivider {
+  flex: none;
+  width: 1px;
+  height: 14px;
+  margin: 0 3px;
+  background: var(--dsw-alias-border-l2);
+}
+
+/* 段落类型自定义下拉（原生 select 弹层在深色主题下是白底白字，不可用）。
+   菜单卡片本身已沉淀进 ui/controls（PopupMenu）。 */
+.paragraphWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.toolbar button.paragraphButton {
+  width: auto;
+  gap: 4px;
+  padding: 0 4px 0 8px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.toolbar button.paragraphButton:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+.toolbar button.paragraphButton svg {
+  width: 11px;
+  height: 11px;
+}
+
+.tableInsertButton {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 50%;
+  background: var(--dsw-alias-bg-layer-1, #26282e);
+  color: var(--dsw-alias-state-business-primary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+}
+
+:global(.dsh-slash-menu) {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: auto;
+  min-width: 180px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1, #26282e);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
+}
+
+:global(.dsh-slash-menu button) {
+  pointer-events: auto;
+  appearance: none;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 0.857rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+:global(.dsh-slash-menu button:hover),
+:global(.dsh-slash-menu button.selected) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+:global(.dsh-slash-input-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 30%);
+  pointer-events: auto;
+}
+
+:global(.dsh-slash-input) {
+  width: min(420px, calc(100vw - 40px));
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1, #26282e);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+  font: inherit;
+}
+
+:global(.dsh-slash-input-title) {
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+:global(.dsh-slash-input label) {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 0.857rem;
+}
+
+:global(.dsh-slash-input input) {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-background-panel, transparent);
+  font: inherit;
+  font-size: 0.929rem;
+  outline: none;
+}
+
+:global(.dsh-slash-input input:focus) {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+:global(.dsh-slash-input-actions) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+:global(.dsh-slash-input label button) {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-state-business-primary);
+  padding: 2px 0;
+  font: inherit;
+  font-size: 0.857rem;
+  cursor: pointer;
+}
+
+:global(.dsh-slash-input label button:hover) {
+  text-decoration: underline;
+}
+
+:global(.dsh-slash-input-actions button) {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  border-radius: 5px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 0.857rem;
+  cursor: pointer;
+}
+
+:global(.dsh-slash-input-actions button:hover) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+:global(.dsh-slash-menu button) {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+:global(.dsh-slash-menu button.selected),
+:global(.dsh-slash-menu button:hover) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+:global(.dsh-slash-menu .empty) {
+  padding: 6px 8px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+}

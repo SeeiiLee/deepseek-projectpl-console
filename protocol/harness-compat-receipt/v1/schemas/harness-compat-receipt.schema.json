@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:harness-compat-receipt:v1",
+  "title": "harness-compat-receipt/v1 — 候选资格兼容回执",
+  "description": "A0 冻结的机器回执：候选提升前由资格 runner 生成，启动激活门只读回执、hash、撤销/失效状态与回退目标；禁止在启动时重跑构建/测试/联网/模型。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptId",
+    "harnessVersion",
+    "harnessCommit",
+    "parentCommit",
+    "diffSha256",
+    "impactMapVersion",
+    "gateRuleVersion",
+    "changedSurfaces",
+    "gateLevel",
+    "personalVersion",
+    "personalArtifactSha256",
+    "pluginGenerationHash",
+    "dependencyToolchainHash",
+    "evidence",
+    "conclusion",
+    "generatedAt",
+    "validUntil",
+    "revoked",
+    "g3Anchor"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "receiptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "harnessVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "harnessCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "parentCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "diffSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "impactMapVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gateRuleVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "changedSurfaces": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "gateLevel": {
+      "type": "string",
+      "enum": [
+        "G0",
+        "G1",
+        "G2",
+        "G3"
+      ]
+    },
+    "personalVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "personalArtifactSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pluginGenerationHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dependencyToolchainHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "check",
+          "status"
+        ],
+        "properties": {
+          "check": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^(executed|reused:[A-Za-z0-9._-]+)$"
+          }
+        }
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "conclusion": {
+      "type": "string",
+      "enum": [
+        "compatible",
+        "fallback_available",
+        "blocked"
+      ]
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revoked": {
+      "type": "boolean"
+    },
+    "revocationReason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "g3Anchor": {
+      "description": "强制 G3 锚点：最近一次全量门禁回执；G3 回执必须指向自身或有效前序 G3，缺省视为拒绝。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lastG3At",
+        "lastG3ReceiptId"
+      ],
+      "properties": {
+        "lastG3At": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastG3ReceiptId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

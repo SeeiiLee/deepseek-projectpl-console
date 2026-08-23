@@ -1,0 +1,139 @@
+{
+  "name": "deepseek-harness-personal-desktop",
+  "version": "0.4.3",
+  "private": true,
+  "type": "module",
+  "description": "Personal desktop launcher for a local DeepSeek Harness checkout",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "build:plugins": "node scripts/build-plugins.js",
+    "check:plugins": "pnpm run build:plugins && node scripts/check-plugins.js",
+    "check:governance": "node scripts/check-governance.js",
+    "stage:releases": "node scripts/stage-releases.js",
+    "release:plugins": "node scripts/release-plugins.mjs",
+    "release:client-manifest": "node scripts/generate-client-release-manifest.mjs",
+    "start": "pnpm run build:plugins && node scripts/verify-launch.js && electron .",
+    "test": "node --test \"test/*.test.js\" \"plugins/*/test/*.test.js\"",
+    "smoke": "pnpm run build:plugins && node scripts/smoke.js",
+    "pack:win:dir": "node scripts/pack-desktop.js stable dir",
+    "pack:win": "node scripts/pack-desktop.js stable nsis portable",
+    "pack:win:installer": "node scripts/pack-desktop.js stable nsis",
+    "pack:win:portable": "node scripts/pack-desktop.js stable portable",
+    "pack:dev:dir": "node scripts/pack-desktop.js dev dir",
+    "pack:dev:installer": "node scripts/pack-desktop.js dev nsis",
+    "pack:dev:portable": "node scripts/pack-desktop.js dev portable",
+    "smoke:packed:dir": "node scripts/smoke.js \"artifacts/win-unpacked/DeepSeek Harness Personal.exe\"",
+    "smoke:packed:dir:dev": "node scripts/smoke.js \"artifacts-dev/win-unpacked/DeepSeek Harness Personal Dev.exe\"",
+    "smoke:packed": "node scripts/smoke.js \"artifacts/DeepSeek-Harness-Personal-0.2.1-portable-x64.exe\""
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.11.0",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/search": "6.7.1",
+    "@codemirror/state": "6.7.1",
+    "@codemirror/view": "6.43.9",
+    "@huggingface/transformers": "4.2.0",
+    "@koromix/koffi-win32-x64": "3.1.5",
+    "@tiptap/core": "2.27.2",
+    "@tiptap/extension-link": "2.27.2",
+    "@tiptap/extension-table": "2.27.2",
+    "@tiptap/extension-table-cell": "2.27.2",
+    "@tiptap/extension-table-header": "2.27.2",
+    "@tiptap/extension-table-row": "2.27.2",
+    "@tiptap/extension-task-item": "2.27.2",
+    "@tiptap/extension-task-list": "2.27.2",
+    "@tiptap/pm": "2.27.2",
+    "@tiptap/react": "2.27.2",
+    "@tiptap/starter-kit": "2.27.2",
+    "@tiptap/suggestion": "2.27.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "better-sqlite3-multiple-ciphers": "^13.0.3",
+    "koffi": "3.1.5",
+    "onnxruntime-node": "1.24.3",
+    "prosemirror-markdown": "1.13.6",
+    "prosemirror-tables": "1.8.5",
+    "tiptap-markdown": "0.8.10"
+  },
+  "devDependencies": {
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.cyrus.deepseek-harness-personal",
+    "productName": "DeepSeek Harness Personal",
+    "asar": false,
+    "forceCodeSigning": false,
+    "files": [
+      "package.json",
+      "src/**/*.js",
+      "src/**/*.cjs",
+      "assets/app-icon.ico",
+      "assets/app-icon.png",
+      "plugins/cordis.patch.yml",
+      "vendor/pnpm/bin/*",
+      "vendor/pnpm/dist/**/*",
+      "vendor/pnpm/package.json",
+      "plugins/*/package.json",
+      "plugins/*/lib/**/*",
+      "plugins/*/migrations/**/*",
+      "plugins/*/templates/**/*",
+      "protocol/project-control/v1alpha1/**/*.json",
+      "protocol/client-release-manifest/**/*.json",
+      "protocol/plugin-index/**/*.json"
+    ],
+    "directories": {
+      "output": "artifacts"
+    },
+    "win": {
+      "icon": "assets/app-icon.ico",
+      "signExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeepSeek Harness Personal",
+      "installerIcon": "assets/app-icon.ico",
+      "uninstallerIcon": "assets/app-icon.ico",
+      "installerHeaderIcon": "assets/app-icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "artifactName": "DeepSeek-Harness-Personal-${version}-setup-${arch}.${ext}"
+    },
+    "portable": {
+      "requestExecutionLevel": "user",
+      "artifactName": "DeepSeek-Harness-Personal-${version}-portable-${arch}.${ext}"
+    }
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "electron-winstaller"
+    ],
+    "onlyBuiltDependencies": [
+      "better-sqlite3-multiple-ciphers"
+    ]
+  }
+}

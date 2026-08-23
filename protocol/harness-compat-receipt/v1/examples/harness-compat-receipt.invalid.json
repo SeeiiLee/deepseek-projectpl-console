@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "bad-receipt",
+  "harnessVersion": "0.1.1-rc.2",
+  "harnessCommit": "short-commit",
+  "parentCommit": "141eb6fef83422698aef7a981029e843e8161534",
+  "diffSha256": "not-a-hash",
+  "impactMapVersion": "1.0.0",
+  "gateRuleVersion": "1.0.0",
+  "changedSurfaces": [],
+  "gateLevel": "G4",
+  "personalVersion": "0.4.2",
+  "personalArtifactSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "pluginGenerationHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "dependencyToolchainHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "evidence": [
+    {
+      "check": "candidate-build",
+      "status": "skipped"
+    }
+  ],
+  "conclusion": "compatible",
+  "generatedAt": "2026-08-21T12:00:00.000Z",
+  "validUntil": "2026-08-28T12:00:00.000Z",
+  "revoked": false,
+  "g3Anchor": {
+    "lastG3At": "2026-08-21T06:00:00.000Z",
+    "lastG3ReceiptId": "rc2-g3-20260821-000"
+  }
+}

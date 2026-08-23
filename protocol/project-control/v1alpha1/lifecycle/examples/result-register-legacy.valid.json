@@ -1,0 +1,17 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-result/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d21-a5c6-6b6f39e34721",
+  "correlationId": "corr.lifecycle.register-legacy",
+  "kind": "project.registerLegacy",
+  "status": "accepted",
+  "recordedAt": "2026-08-14T12:00:00.100Z",
+  "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "projectMode": "linked_legacy",
+  "aggregateRevision": 1,
+  "eventId": "evt_0198f4b2-7c3a-7d71-a5c6-6b6f39e34771",
+  "outcome": "legacy_registered",
+  "fileSync": {
+    "status": "not_required"
+  }
+}

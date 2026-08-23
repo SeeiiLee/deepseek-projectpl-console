@@ -1,0 +1,31 @@
+{
+  "extends": "../../harness-src/tsconfig.base.client.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "types": [
+      "node",
+      "react"
+    ],
+    "typeRoots": [
+      "../../harness-src/node_modules/@types",
+      "../../harness-src/packages/client/ui-theme/node_modules/@types"
+    ]
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../harness-src/vendor/cordis"
+    },
+    {
+      "path": "../../harness-src/packages/client/runtime"
+    },
+    {
+      "path": "../../harness-src/packages/client/ui-slots"
+    }
+  ]
+}

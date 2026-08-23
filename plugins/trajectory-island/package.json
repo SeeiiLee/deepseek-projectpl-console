@@ -1,0 +1,101 @@
+{
+  "name": "@cyrus/dsh-trajectory-island",
+  "description": "会话页右侧细垂直导航轨：按轮次刻度快速定位聊天位置",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-trajectory"
+      ],
+      "platform": "web"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map",
+    "cordis.patch.yml"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "tsdown"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-layout": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-trajectory": "0.1.1-rc.2",
+    "react": "^18.2.0"
+  },
+  "dshComposable": {
+    "schemaVersion": 2,
+    "role": "adapter",
+    "compatibleHarness": {
+      "versionRange": "0.1.1-rc.2",
+      "commits": [
+        "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+      ]
+    },
+    "minClient": "0.4.2",
+    "seams": [
+      {
+        "name": "dsh-client-ui-trajectory",
+        "minVersion": "0.1.1-rc.2"
+      }
+    ],
+    "desktopCapabilities": [],
+    "requires": {
+      "packages": [],
+      "services": []
+    },
+    "dependencies": {},
+    "peerDependencies": {
+      "@deepseek-ai/cordis": "^4.0.1",
+      "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-ui-layout": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-ui-trajectory": "0.1.1-rc.2",
+      "react": "^18.2.0"
+    },
+    "nativeDependencies": [],
+    "externalCommands": [],
+    "dataSchema": {
+      "owned": false,
+      "readableVersions": [],
+      "migrations": [],
+      "rollbackCompatible": true
+    },
+    "modelAssets": [],
+    "files": {
+      "list": [
+        "cordis.patch.yml",
+        "lib/client.js",
+        "lib/client.js.map",
+        "lib/index.js",
+        "package.json"
+      ],
+      "sha256": {
+        "package.json": "9069c954c53107f9476ac51e344b0c64365107cea20a6c7f87614524d3358ea3",
+        "lib/index.js": "094ce5b56a90b8ed05503a6d9839e5757ba4ec9eab27b934dcd416d6cac48626",
+        "lib/client.js": "58922b8aa5ab1c64f044719089be5b49a72095c495c093caaeefd34e8da09f83",
+        "lib/client.js.map": "c486225f682a9687a86479abe069587ea9d8c7a9521d86fb97279e08a421aec4",
+        "cordis.patch.yml": "d60f6f941173b8159c842e0c90d72de313718589d57445898f56a39960485948"
+      }
+    }
+  }
+}

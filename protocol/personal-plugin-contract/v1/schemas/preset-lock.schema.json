@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:personal-plugin-contract:v1:presetLock",
+  "title": "plugin-set.lock.json（Preset lock）v1",
+  "description": "D-12/D-04：Preset 是机器可读安装集合与版本锁，不承载运行时状态、不插 Cordis row；installer 展开为多个直接 Profile 依赖。Personal Desktop 构建从它生成插件清单/overlay。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "preset",
+    "compatibleHarness",
+    "packages",
+    "installOrder"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "preset": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "compatibleHarness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "commit"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "packages": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "integrity",
+          "role",
+          "bundle"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "integrity": {
+            "description": "发布 tarball 的 SHA-256（hex，64 字符）。",
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source": {
+            "enum": [
+              "registry",
+              "tgz",
+              "workspace"
+            ]
+          },
+          "role": {
+            "enum": [
+              "core",
+              "adapter",
+              "bridge",
+              "preset",
+              "contracts"
+            ]
+          },
+          "bundle": {
+            "type": "boolean"
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "bridges": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "dataDir": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "installOrder": {
+      "description": "必需依赖先于消费者安装；由 installer 做环检测后展开。",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

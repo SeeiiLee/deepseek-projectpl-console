@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "clientVersion": "0.4.2",
+  "supportedHarnessCommits": [
+    "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+  ],
+  "builtinGenerationHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pluginContractVersion": "2",
+  "seamCapabilities": {
+    "web.searchProvider": "0.1.1-rc.2",
+    "dsh-client-ui-trajectory": "0.1.1-rc.2"
+  },
+  "installerSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

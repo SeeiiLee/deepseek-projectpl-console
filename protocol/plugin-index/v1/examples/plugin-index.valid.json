@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-21T16:00:00.000Z",
+  "releaseTag": "plugins-v2026.08.21.1",
+  "minClient": "0.4.2",
+  "compatibleHarness": {
+    "version": "0.1.1-rc.2",
+    "commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+  },
+  "plugins": [
+    {
+      "packageName": "@cyrus/dsh-anysearch",
+      "version": "0.1.0-beta",
+      "assetName": "cyrus-dsh-anysearch-0.1.0-beta.tgz",
+      "assetSize": 11233,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "minClient": "0.4.2",
+      "compatibleHarness": {
+        "versionRange": "0.1.1-rc.2",
+        "commits": [
+          "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+        ]
+      },
+      "seams": [
+        "web.searchProvider"
+      ],
+      "requires": [],
+      "externalEligible": true
+    }
+  ]
+}

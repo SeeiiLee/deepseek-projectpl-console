@@ -1,0 +1,42 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "normalized-event/v1alpha1",
+  "eventId": "evt_0198f4b2-7c3a-7d15-a5c6-6b6f39e34715",
+  "eventType": "progress.recorded",
+  "occurredAt": "2026-08-14T14:05:00.000Z",
+  "recordedAt": "2026-08-14T14:05:01.000Z",
+  "sequence": 17,
+  "actor": {
+    "kind": "agent",
+    "id": "agent:primary",
+    "applicationId": "dsh.personal"
+  },
+  "target": {
+    "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+    "workItemId": "wrk_0198f4b2-7c3a-7d12-a5c6-6b6f39e34712",
+    "runId": "run_0198f4b2-7c3a-7d13-a5c6-6b6f39e34713",
+    "threadId": "session:gate2a",
+    "aggregateType": "run",
+    "aggregateId": "run_0198f4b2-7c3a-7d13-a5c6-6b6f39e34713"
+  },
+  "beforeRevision": 3,
+  "afterRevision": 4,
+  "causation": {
+    "commandId": "cmd_0198f4b2-7c3a-7d14-a5c6-6b6f39e34714",
+    "idempotencyKey": "dsh.personal:progress:run-01:1",
+    "correlationId": "gate2a:run-01"
+  },
+  "provenance": {
+    "sourceType": "agent",
+    "sourceId": "session:gate2a",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "dsh-personal:local-01",
+    "adapterId": "dsh.runtime-update",
+    "adapterVersion": "1.0.0",
+    "observedAt": "2026-08-14T14:05:00.000Z"
+  },
+  "data": {
+    "summary": "未知顶层字段必须被拒绝。"
+  },
+  "unexpected": true
+}

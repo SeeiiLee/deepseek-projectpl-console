@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "role": "selected",
+  "modelId": "bge-m3-onnx-int8",
+  "source": {
+    "repository": "Xenova/bge-m3",
+    "revision": "4de13258303883538bd53b696b452bf8099f0858",
+    "upstreamRepository": "BAAI/bge-m3",
+    "upstreamRevision": "5617a9f61b028005a4858fdac845db406aefb181"
+  },
+  "license": "MIT",
+  "dimensions": 1024,
+  "maxInputTokens": 8192,
+  "dtype": "q8",
+  "pooling": "cls",
+  "normalization": "l2",
+  "queryInstruction": null,
+  "files": {
+    "model": {
+      "path": "onnx/model_quantized.onnx",
+      "bytes": 569694530,
+      "sha256": "0826f8c1ab9edf1801db86c61919d4d108e8bfc0b809ec823ad366882ff0b77d"
+    },
+    "tokenizer": {
+      "path": "tokenizer.json",
+      "bytes": 17082821,
+      "sha256": "6710678b12670bc442b99edc952c4d996ae309a7020c1fa0096dd245c2faf790"
+    },
+    "config": {
+      "path": "config.json",
+      "bytes": 770,
+      "sha256": "734a79bf12d388c1467a4e3ab625f45de7f6906cffcfb93a1eca1787504bed95"
+    }
+  },
+  "validatedRuntime": {
+    "transformersJs": "4.2.0",
+    "onnxruntimeNode": "1.24.3",
+    "node": "25.2.1",
+    "platform": "win32-x64",
+    "defaultExecutionProvider": "cpu"
+  },
+  "validatedAt": "2026-08-17"
+}

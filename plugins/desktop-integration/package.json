@@ -1,0 +1,47 @@
+{
+  "name": "@cyrus/dsh-desktop-integration",
+  "description": "管理托盘、快捷方式、应用标识和退出进程守护。",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "tsdown"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+    "react": "^18.2.0"
+  },
+  "dshComposable": {
+    "schemaVersion": 1,
+    "role": "bridge",
+    "supports": {
+      "harness": [
+        "0.1.1-rc.2"
+      ]
+    }
+  }
+}

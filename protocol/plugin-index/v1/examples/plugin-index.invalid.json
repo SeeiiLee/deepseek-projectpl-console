@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "not-a-date",
+  "releaseTag": "v0.4.2",
+  "minClient": "",
+  "compatibleHarness": {
+    "version": "0.1.1-rc.2",
+    "commit": "short"
+  },
+  "plugins": [
+    {
+      "packageName": "@cyrus/dsh-anysearch",
+      "version": "0.1.0-beta",
+      "assetName": "../escape.tgz",
+      "assetSize": -1,
+      "sha256": "bad",
+      "minClient": "0.4.2",
+      "compatibleHarness": {
+        "versionRange": "0.1.1-rc.2",
+        "commits": [
+          "short"
+        ]
+      },
+      "externalEligible": true
+    }
+  ]
+}

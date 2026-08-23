@@ -1,0 +1,48 @@
+- id: ui-layout
+  name: '@deepseek-ai/dsh-client-ui-layout'
+  disabled: true
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: anysearch
+- insert:
+    - id: cyrus-personal-foundation
+      name: '@cyrus/dsh-personal-foundation'
+    - id: cyrus-personal-policy
+      name: '@cyrus/dsh-personal-policy'
+    - id: cyrus-personal-shell
+      name: '@cyrus/dsh-personal-shell'
+    - id: cyrus-workspace-hub
+      name: '@cyrus/dsh-workspace-hub'
+    - id: cyrus-project-control
+      name: '@cyrus/dsh-project-control'
+    - id: cyrus-workbench
+      name: '@cyrus/dsh-workbench'
+    - id: cyrus-personal-theme
+      name: '@cyrus/dsh-personal-theme'
+    - id: cyrus-desktop-integration
+      name: '@cyrus/dsh-desktop-integration'
+    - id: cyrus-skill-library
+      name: '@cyrus/dsh-skill-library'
+    - id: cyrus-plugin-organizer
+      name: '@cyrus/dsh-plugin-organizer'
+    - id: cyrus-connection-center
+      name: '@cyrus/dsh-connection-center'
+    - id: cyrus-session-terminal
+      name: '@cyrus/dsh-session-terminal'
+    - id: cyrus-usage-balance
+      name: '@cyrus/dsh-usage-balance'
+    - id: cyrus-trajectory-island
+      name: '@cyrus/dsh-trajectory-island'
+    - id: cyrus-update-center
+      name: '@cyrus/dsh-update-center'
+    - id: cyrus-image-vision
+      name: '@cyrus/dsh-image-vision'
+    - id: cyrus-anysearch
+      name: '@cyrus/dsh-anysearch'
+      config:
+        apiKeyEnv: ANYSEARCH_API_KEY
+    - id: cyrus-memory
+      name: '@cyrus/dsh-memory'
+      config:
+        dbRoot: ''

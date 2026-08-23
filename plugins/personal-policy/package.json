@@ -1,0 +1,41 @@
+{
+  "name": "@cyrus/dsh-personal-policy",
+  "description": "Personal System Policy：跨项目工作红线（personal:cross-project-policy，order -50）",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "tsdown"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*"
+  },
+  "dshComposable": {
+    "schemaVersion": 1,
+    "role": "core",
+    "supports": {
+      "harness": [
+        "0.1.1-rc.2"
+      ]
+    }
+  }
+}

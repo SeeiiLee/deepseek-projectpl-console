@@ -1,0 +1,44 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-envelope/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d21-a5c6-6b6f39e34721",
+  "correlationId": "corr.lifecycle.register-legacy",
+  "idempotencyKey": "project.register-legacy.001",
+  "kind": "project.registerLegacy",
+  "occurredAt": "2026-08-14T12:00:00.000Z",
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711"
+  },
+  "expectedRevision": 0,
+  "provenance": {
+    "sourceType": "human",
+    "sourceId": "project-console:import-confirmation",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "observedAt": "2026-08-14T11:59:59.000Z"
+  },
+  "payload": {
+    "locationRef": "loc_0198f4b2-7c3a-7d31-a5c6-6b6f39e34731",
+    "sourceRootRef": "srt_0198f4b2-7c3a-7d41-a5c6-6b6f39e34741",
+    "candidateRef": "can_0198f4b2-7c3a-7d51-a5c6-6b6f39e34751",
+    "name": "Legacy Project",
+    "documentBindings": [
+      {
+        "role": "readme",
+        "relativePath": "README.md",
+        "contentHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "role": "prd",
+        "relativePath": "docs/PRD.md",
+        "contentHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  }
+}

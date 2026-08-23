@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "role": "quality-challenger",
+  "modelId": "qwen3-embedding-0.6b-onnx-int8",
+  "source": {
+    "repository": "onnx-community/Qwen3-Embedding-0.6B-ONNX",
+    "revision": "c25a394dd583836952667c12f008335071b3f43d",
+    "upstreamRepository": "Qwen/Qwen3-Embedding-0.6B",
+    "upstreamRevision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  "license": "Apache-2.0",
+  "dimensions": 1024,
+  "maxInputTokens": 32768,
+  "dtype": "q8",
+  "pooling": "last_token",
+  "normalization": "l2",
+  "queryInstruction": "Instruct: Given a memory recall query, retrieve relevant stored memories that help answer the query\nQuery:{query}",
+  "files": {
+    "model": {
+      "path": "onnx/model_quantized.onnx",
+      "bytes": 613527631,
+      "sha256": "87cd124e0ef1fd1f223ebc283efccbaeac386d0b08344701c46975d0657b591f"
+    },
+    "tokenizer": {
+      "path": "tokenizer.json",
+      "bytes": 11423705,
+      "sha256": "def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a"
+    },
+    "config": {
+      "path": "config.json",
+      "bytes": 1576,
+      "sha256": "66a10929782f3c9a3cd5dec90e2a95c60e05736134a63cd54479eeae80bed175"
+    }
+  },
+  "validatedRuntime": {
+    "transformersJs": "4.2.0",
+    "onnxruntimeNode": "1.24.3",
+    "node": "25.2.1",
+    "platform": "win32-x64",
+    "defaultExecutionProvider": "cpu"
+  },
+  "validatedAt": "2026-08-17"
+}

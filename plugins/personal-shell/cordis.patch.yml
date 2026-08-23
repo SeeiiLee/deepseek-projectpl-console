@@ -1,0 +1,4 @@
+# @cyrus/dsh-personal-shell bundle patch（D-02：row name = package name；单 row 单 owner）
+- insert:
+    - id: '@cyrus/dsh-personal-shell'
+      name: '@cyrus/dsh-personal-shell'

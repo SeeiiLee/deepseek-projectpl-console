@@ -1,0 +1,32 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-envelope/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d26-a5c6-6b6f39e34726",
+  "correlationId": "corr.lifecycle.absolute-path",
+  "idempotencyKey": "project.absolute-path.001",
+  "kind": "project.registerLegacy",
+  "occurredAt": "2026-08-14T12:05:00.000Z",
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d16-a5c6-6b6f39e34716"
+  },
+  "expectedRevision": 0,
+  "provenance": {
+    "sourceType": "human",
+    "sourceId": "project-console:import-confirmation",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "observedAt": "2026-08-14T12:04:59.000Z"
+  },
+  "payload": {
+    "locationRef": "D:\\Projects\\Legacy Project",
+    "sourceRootRef": "srt_0198f4b2-7c3a-7d46-a5c6-6b6f39e34746",
+    "name": "Unsafe Legacy Project",
+    "documentBindings": []
+  }
+}

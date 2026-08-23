@@ -1,0 +1,52 @@
+{
+  "name": "@cyrus/dsh-usage-balance",
+  "description": "显示 DeepSeek 当前轮次与会话预计成本，并通过 Host 安全查询官方余额",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-trajectory"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "tsdown"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-trajectory": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-credentials": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-token-meter": "0.1.1-rc.2",
+    "react": "^18.2.0"
+  },
+  "dshComposable": {
+    "schemaVersion": 1,
+    "role": "adapter",
+    "supports": {
+      "harness": [
+        "0.1.1-rc.2"
+      ]
+    }
+  }
+}

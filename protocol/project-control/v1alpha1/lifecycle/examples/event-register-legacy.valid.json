@@ -1,0 +1,49 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-normalized-event/v1alpha1",
+  "eventId": "evt_0198f4b2-7c3a-7d71-a5c6-6b6f39e34771",
+  "eventType": "project.legacy.registered",
+  "occurredAt": "2026-08-14T12:00:00.000Z",
+  "recordedAt": "2026-08-14T12:00:00.100Z",
+  "sequence": 1,
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711"
+  },
+  "beforeRevision": 0,
+  "afterRevision": 1,
+  "causation": {
+    "commandId": "cmd_0198f4b2-7c3a-7d21-a5c6-6b6f39e34721",
+    "commandKind": "project.registerLegacy",
+    "idempotencyKey": "project.register-legacy.001",
+    "correlationId": "corr.lifecycle.register-legacy"
+  },
+  "provenance": {
+    "sourceType": "human",
+    "sourceId": "project-console:import-confirmation",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "observedAt": "2026-08-14T11:59:59.000Z"
+  },
+  "data": {
+    "projectMode": "linked_legacy",
+    "name": "Legacy Project",
+    "locationRef": "loc_0198f4b2-7c3a-7d31-a5c6-6b6f39e34731",
+    "sourceRootRef": "srt_0198f4b2-7c3a-7d41-a5c6-6b6f39e34741",
+    "documentBindings": [
+      {
+        "role": "readme",
+        "relativePath": "README.md",
+        "contentHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "fileSync": {
+      "status": "not_required"
+    }
+  }
+}

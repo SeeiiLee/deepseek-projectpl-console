@@ -1,0 +1,306 @@
+/* R-PV1 文档排版层：scoped 排版只作用于本组件容器；:global 仅用于平台渲染的语义元素，
+   全部为容器后代选择器（无全局逃逸）。
+   阅读列 = 整个文档容器 900px 居中（min(100%, 900px)）：窄栏全宽、拖动平滑自适应、
+   全屏封顶居中。所有内容（段落/表格/代码/裸文本）天然对齐，无需逐元素规则。 */
+.document {
+  padding: 12px 16px 28px;
+  /* R-ED：以下值由编辑偏好 CSS 变量覆盖（默认值与偏好一致）。
+     背景与文字色由审阅容器（查看器）设置，文档继承。 */
+  font-size: var(--wb-reader-font-size, 13.5px);
+  font-family: var(--wb-reader-font-family, inherit);
+  background: transparent;
+  line-height: 1.7;
+  max-width: var(--wb-reader-width, 900px);
+  margin-inline: auto;
+  color: var(--wb-reader-color, var(--dsw-alias-label-primary));
+  overflow-wrap: anywhere;
+  /* 显式左对齐：杜绝任何 justify/继承干扰（块级公式另行居中，见 .katex-display） */
+  text-align: start;
+}
+
+.document :global(.katex-display) {
+  text-align: center;
+}
+
+.notice {
+  margin: 8px 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+}
+
+/* 本地图片：data URL 补上前/读取失败时都不出现破图图标。 */
+.document :global(.md-image-local) {
+  display: inline-block;
+  min-width: 48px;
+  min-height: 24px;
+  vertical-align: middle;
+}
+
+.document :global(.md-image-missing) {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px dashed var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary, #666);
+  font-size: 0.85em;
+  vertical-align: middle;
+}
+
+.document :global(h1),
+.document :global(h2),
+.document :global(h3),
+.document :global(h4),
+.document :global(h5),
+.document :global(h6) {
+  line-height: 1.35;
+  margin-block: 1.3em 0.5em;
+  font-weight: 600;
+  color: inherit;
+}
+
+.document :global(h1) {
+  font-size: 1.5em;
+}
+
+.document :global(h2) {
+  font-size: 1.3em;
+}
+
+.document :global(h3) {
+  font-size: 1.15em;
+}
+
+.document :global(h4),
+.document :global(h5),
+.document :global(h6) {
+  font-size: 1em;
+}
+
+.document :global(p) {
+  margin-block: 0.6em;
+}
+
+.document :global(ul),
+.document :global(ol) {
+  margin-block: 0.6em;
+  padding-inline-start: 1.6em;
+}
+
+.document :global(li) {
+  margin-block: 0.25em;
+}
+
+.document :global(blockquote) {
+  margin-block: 0.8em;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--dsw-alias-border-l2);
+  color: inherit;
+  opacity: 0.92;
+}
+
+/* 表格：容器内横向滚动，不破坏阅读列对齐 */
+.document :global(table) {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin-block: 0.8em;
+  font-size: 0.95em;
+}
+
+.document :global(th),
+.document :global(td) {
+  border: 1px solid var(--dsw-alias-border-l2);
+  padding: 4px 10px;
+  text-align: left;
+}
+
+.document :global(th) {
+  background: var(--dsw-alias-bg-layer-2);
+  font-weight: 600;
+}
+
+.document :global(pre) {
+  overflow-x: auto;
+  margin-block: 0.8em;
+}
+
+.document :global(code) {
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  font-size: 0.92em;
+}
+
+.document :global(a) {
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: none;
+}
+
+.document :global(a:hover) {
+  text-decoration: underline;
+}
+
+.document :global(hr) {
+  border: none;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  margin-block: 1.2em;
+}
+
+.document :global(.md-code-block) {
+  margin-block: 0.8em;
+}
+
+.document :global(img) {
+  max-width: 100%;
+}
+
+.document :global([data-document-footer]) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+.document :global(.footnotes) {
+  margin-top: 1.2em;
+  padding-top: 0.8em;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  font-size: 0.9em;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.document :global(.footnote-def) {
+  margin-block: 0.2em;
+}
+
+.document :global(.footnote-def-link) {
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: none;
+}
+
+.document :global(.footnote-ref) {
+  font-size: 0.85em;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.document :global(.math-inline) {
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  background: var(--dsw-alias-bg-layer-2);
+  padding: 0 0.2em;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+
+
+/* MarkdownText 平台样式覆盖：让阅读偏好（字号/字体/颜色/行高）真正作用到正文 */
+.document :global([class*="markdown"]) {
+  font: inherit;
+  color: inherit;
+}
+
+.document :global([class*="markdown"] h1),
+.document :global([class*="markdown"] h2),
+.document :global([class*="markdown"] h3),
+.document :global([class*="markdown"] h4),
+.document :global([class*="markdown"] h5),
+.document :global([class*="markdown"] h6) {
+  margin-block: 1.3em 0.5em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: inherit;
+}
+
+.document :global([class*="markdown"] h1) {
+  font-size: 1.5em;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.document :global([class*="markdown"] h2) {
+  font-size: 1.3em;
+}
+
+.document :global([class*="markdown"] h3) {
+  font-size: 1.15em;
+}
+
+.document :global([class*="markdown"] h4),
+.document :global([class*="markdown"] h5),
+.document :global([class*="markdown"] h6) {
+  font-size: 1em;
+}
+
+.document :global([class*="markdown"] p) {
+  margin-block: 0.6em;
+}
+
+.document :global([class*="markdown"] ul),
+.document :global([class*="markdown"] ol) {
+  margin-block: 0.6em;
+  padding-inline-start: 1.6em;
+}
+
+.document :global([class*="markdown"] li) {
+  margin-block: 0.25em;
+}
+
+.document :global([class*="markdown"] blockquote) {
+  margin-block: 0.8em;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--dsw-alias-border-l2);
+  color: inherit;
+  opacity: 0.92;
+}
+
+.document :global([class*="markdown"] a) {
+  color: var(--dsw-alias-state-business-primary);
+  text-decoration: none;
+}
+
+.document :global([class*="markdown"] a:hover) {
+  text-decoration: underline;
+}
+
+.document :global([class*="markdown"] hr) {
+  border: none;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  margin-block: 1.2em;
+}
+
+.document :global([class*="markdown"] pre) {
+  overflow-x: auto;
+  margin-block: 0.8em;
+}
+
+.document :global([class*="markdown"] code) {
+  font-family: var(--wb-code-font-family, ui-monospace, Consolas, monospace);
+  font-size: 0.92em;
+}
+
+.document :global([class*="markdown"] table) {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin-block: 0.8em;
+  font-size: 0.95em;
+}
+
+.document :global([class*="markdown"] th),
+.document :global([class*="markdown"] td) {
+  border: 1px solid var(--dsw-alias-border-l2);
+  padding: 4px 10px;
+  text-align: left;
+}
+
+.document :global([class*="markdown"] th) {
+  background: var(--dsw-alias-bg-layer-2);
+  font-weight: 600;
+}
+

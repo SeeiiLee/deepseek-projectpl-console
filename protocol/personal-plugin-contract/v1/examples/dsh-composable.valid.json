@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "role": "bridge",
+  "requires": {
+    "packages": [
+      "@cyrus/dsh-project-control",
+      "@cyrus/dsh-workbench"
+    ],
+    "services": []
+  },
+  "supports": {
+    "harness": [
+      "0.1.0-rc.7"
+    ]
+  }
+}

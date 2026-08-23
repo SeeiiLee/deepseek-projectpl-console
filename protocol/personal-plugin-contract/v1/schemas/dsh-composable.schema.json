@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:personal-plugin-contract:v1:dshComposable",
+  "title": "dshComposable/v1 — Personal 插件安装器元数据",
+  "description": "ADR-09 A/B/C/E 与 §8.11 D-01/D-03/D-05/D-07/D-09 的机器可读化。rc.7 官方并不消费本字段，仅由 Personal installer/doctor 读取；必需依赖仍以 peer + Profile 直接依赖为准。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "role"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "role": {
+      "description": "Core=领域状态/Host API/稳定 Client service；Adapter=接入 UI/平台容器；Bridge=连接两个可独立工作的插件；Preset=安装集合（不承载运行时状态，不插 row）；contracts=纯类型/Schema 包（非 runtime）。",
+      "type": "string",
+      "enum": [
+        "core",
+        "adapter",
+        "bridge",
+        "preset",
+        "contracts"
+      ]
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "packages": {
+          "description": "必需运行时插件的包名；installer 展开为 Profile 直接依赖并同步 Client boot graph/Cordis service contract。",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "services": {
+          "description": "必需 Cordis service 名（供 doctor 启动后核对）。",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "bridges": {
+      "description": "本 Core 可参与的可选 Bridge 包；拔掉只损失联动，不阻断两端核心。",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "conflicts": {
+      "description": "冲突包：installer 检测到已安装即拒绝。",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "supports": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "harness": {
+          "description": "兼容的 Harness 版本（如 0.1.0-rc.7）；peer range 必须与之一致。",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "data": {
+      "description": "D-07：程序包与用户数据分离。卸载保留数据；purge 独立显式执行。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dirName",
+        "preserveOnUninstall"
+      ],
+      "properties": {
+        "dirName": {
+          "description": "从官方 DSH home 合同派生的包专属数据目录名。",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "preserveOnUninstall": {
+          "const": true
+        }
+      }
+    },
+    "platform": {
+      "description": "D-09：含原生依赖（node-pty/SQLCipher/ONNX 等）的包必须声明矩阵。",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "os": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "win32",
+              "darwin",
+              "linux"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "cpu": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "x64",
+              "arm64"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "native": {
+          "description": "原生模块名清单（声明用，installer 据此提示构建环境）。",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

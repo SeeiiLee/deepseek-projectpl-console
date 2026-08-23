@@ -1,0 +1,137 @@
+{
+  "cases": [
+    {
+      "name": "command-register-legacy-valid",
+      "schema": "../schemas/lifecycle-command-envelope.schema.json",
+      "fixture": "./command-register-legacy.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "command-register-managed-valid",
+      "schema": "../schemas/lifecycle-command-envelope.schema.json",
+      "fixture": "./command-register-managed.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "command-create-template-valid",
+      "schema": "../schemas/lifecycle-command-envelope.schema.json",
+      "fixture": "./command-create-template.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "command-rebind-location-valid",
+      "schema": "../schemas/lifecycle-command-envelope.schema.json",
+      "fixture": "./command-rebind-location.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "command-upgrade-managed-valid",
+      "schema": "../schemas/lifecycle-command-envelope.schema.json",
+      "fixture": "./command-upgrade-managed.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "command-absolute-location-invalid",
+      "schema": "../schemas/lifecycle-command-envelope.schema.json",
+      "fixture": "./command-absolute-location.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "pattern"
+    },
+    {
+      "name": "result-register-legacy-valid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-register-legacy.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "result-register-managed-valid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-register-managed.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "result-create-template-valid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-create-template.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "result-rebind-location-valid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-rebind-location.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "result-upgrade-managed-valid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-upgrade-managed.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "result-create-capability-rejected-valid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-create-capability-rejected.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "result-create-uncommitted-invalid",
+      "schema": "../schemas/lifecycle-command-result.schema.json",
+      "fixture": "./result-create-uncommitted.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "const"
+    },
+    {
+      "name": "event-register-legacy-valid",
+      "schema": "../schemas/lifecycle-normalized-event.schema.json",
+      "fixture": "./event-register-legacy.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "event-register-managed-valid",
+      "schema": "../schemas/lifecycle-normalized-event.schema.json",
+      "fixture": "./event-register-managed.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "event-create-template-valid",
+      "schema": "../schemas/lifecycle-normalized-event.schema.json",
+      "fixture": "./event-create-template.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "event-rebind-location-valid",
+      "schema": "../schemas/lifecycle-normalized-event.schema.json",
+      "fixture": "./event-rebind-location.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "event-upgrade-managed-valid",
+      "schema": "../schemas/lifecycle-normalized-event.schema.json",
+      "fixture": "./event-upgrade-managed.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "event-create-command-kind-invalid",
+      "schema": "../schemas/lifecycle-normalized-event.schema.json",
+      "fixture": "./event-create-command-kind.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "const"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:project-manifest",
+  "title": "Project Control Project Manifest v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "project-control.dsh/v1alpha1"
+    },
+    "kind": {
+      "const": "ProjectManifest"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "name",
+        "createdAt",
+        "createdBy",
+        "origin"
+      ],
+      "properties": {
+        "projectId": {
+          "$ref": "#/$defs/projectId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "createdAt": {
+          "$ref": "#/$defs/utcTimestamp"
+        },
+        "createdBy": {
+          "$ref": "#/$defs/actorRef"
+        },
+        "origin": {
+          "$ref": "#/$defs/origin"
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "documents"
+      ],
+      "properties": {
+        "documents": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "docsRoot",
+            "entries",
+            "standardOutputs"
+          ],
+          "properties": {
+            "docsRoot": {
+              "$ref": "#/$defs/docsRootPath"
+            },
+            "entries": {
+              "type": "array",
+              "maxItems": 200,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role",
+                  "path"
+                ],
+                "properties": {
+                  "role": {
+                    "enum": [
+                      "readme",
+                      "prd",
+                      "devlog",
+                      "progress",
+                      "next",
+                      "current_architecture",
+                      "decision",
+                      "other"
+                    ]
+                  },
+                  "path": {
+                    "$ref": "#/$defs/relativePath"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "standardOutputs": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "updatesRoot",
+                "decisionsRoot",
+                "artifactsRoot"
+              ],
+              "properties": {
+                "updatesRoot": {
+                  "$ref": "#/$defs/relativePath"
+                },
+                "decisionsRoot": {
+                  "$ref": "#/$defs/relativePath"
+                },
+                "artifactsRoot": {
+                  "$ref": "#/$defs/relativePath"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "$defs": {
+    "projectId": {
+      "type": "string",
+      "pattern": "^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{3})?Z$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*[:\\\\])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\/$)[^/]+(?:/[^/]+)*$"
+    },
+    "docsRootPath": {
+      "oneOf": [
+        {
+          "const": "."
+        },
+        {
+          "$ref": "#/$defs/relativePath"
+        }
+      ]
+    },
+    "actorRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "human",
+            "agent",
+            "system",
+            "application"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "origin": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "imported"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "templateId",
+            "templateVersion"
+          ],
+          "properties": {
+            "kind": {
+              "const": "template"
+            },
+            "templateId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+            },
+            "templateVersion": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "forkedFromProjectId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "fork"
+            },
+            "forkedFromProjectId": {
+              "$ref": "#/$defs/projectId"
+            }
+          }
+        }
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 50,
+      "propertyNames": {
+        "pattern": "^(?:[a-z][a-z0-9-]*\\.)+[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": true
+    }
+  }
+}

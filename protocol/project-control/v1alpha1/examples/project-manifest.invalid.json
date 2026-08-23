@@ -1,0 +1,28 @@
+{
+  "apiVersion": "project-control.dsh/v1alpha1",
+  "kind": "ProjectManifest",
+  "metadata": {
+    "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+    "name": "DeepSeek Harness Personal",
+    "createdAt": "2026-08-14T14:00:00.000Z",
+    "createdBy": {
+      "kind": "human",
+      "id": "cyrus"
+    },
+    "origin": {
+      "kind": "imported"
+    }
+  },
+  "spec": {
+    "documents": {
+      "docsRoot": ".",
+      "entries": [],
+      "standardOutputs": {
+        "updatesRoot": ".dsh-project/updates",
+        "decisionsRoot": ".dsh-project/decisions",
+        "artifactsRoot": ".dsh-project/artifacts"
+      }
+    }
+  },
+  "goal": "manifest 不得复制 PRD 目标"
+}

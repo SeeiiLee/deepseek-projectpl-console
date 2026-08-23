@@ -1,0 +1,138 @@
+/* 会话导航轨（SessionMinimap）：Codex 式右侧细垂直 minimap。
+   位置由组件按会话滚动容器实测定位（贴右缘内侧），这里只管外观。 */
+
+.rail {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  width: 14px;
+  padding: 2px 0;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: transparent;
+  opacity: 0.5;
+  transition: opacity 160ms ease, background-color 160ms ease;
+  pointer-events: auto;
+}
+
+.rail:hover,
+.rail:focus-within {
+  opacity: 1;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/* 刻度群以轨道垂直中轴为中心向上下发散：轮次少时聚在正中，轮次增多逐渐向两端铺开。 */
+.track {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  overflow: hidden;
+}
+
+/* 每轮一条横刻度：按钮本体撑满可点区域，<i> 是可见刻度线，水平居中。 */
+.tick {
+  appearance: none;
+  flex: 1 1 0;
+  min-height: 4px;
+  max-height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 默认刻度很短（约为悬停长度的 1/3～1/4），悬停/激活时拉长形成动态对比。 */
+.tick i {
+  display: block;
+  flex: none;
+  width: 3px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--dsw-alias-label-tertiary);
+  transition: width 140ms ease, background-color 140ms ease;
+}
+
+/* 用户轮比助手轮略长略亮：一眼区分“我问的”和“模型答的”。 */
+.tick[data-kind='user'] i {
+  width: 4px;
+  background: var(--dsw-alias-label-secondary);
+}
+
+.tick:hover i {
+  width: 12px;
+  background: var(--dsw-alias-label-primary);
+}
+
+.tick[data-status='running'] i {
+  background: var(--dsw-alias-state-business-primary);
+  animation: minimapPulse 1.1s ease-in-out infinite;
+}
+
+.tick[data-status='error'] i {
+  background: var(--dsw-alias-state-danger, #e5534b);
+}
+
+.tick[data-active='true'] i {
+  width: 12px;
+  background: var(--dsw-alias-state-business-primary);
+}
+
+.rail:hover .tick i {
+  height: 3px;
+}
+
+/* 悬停缩略卡：弹在轨道左侧，展示该轮问答内容片段。 */
+.preview {
+  position: absolute;
+  right: 22px;
+  width: 212px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1, #26282e);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
+  pointer-events: none;
+}
+
+.preview strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.preview p {
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 1.5;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+@keyframes minimapPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail,
+  .tick i {
+    transition: none;
+  }
+
+  .tick[data-status='running'] i {
+    animation: none;
+  }
+}

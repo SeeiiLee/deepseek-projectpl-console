@@ -1,0 +1,23 @@
+{
+  "apiVersion": "project-template.dsh/v1alpha1",
+  "kind": "ProjectTemplate",
+  "metadata": {
+    "templateId": "minimal-standard",
+    "templateVersion": "1.0.0",
+    "displayName": "最小标准项目",
+    "description": "项目说明、PRD、进展入口、下一步与受管理元数据。",
+    "protocolVersion": "project-control.dsh/v1alpha1"
+  },
+  "files": [
+    {
+      "kind": "file",
+      "relativePath": "docs/PRD.md",
+      "content": "# {{PROJECT_NAME}} 产品需求\n\n> 待填写：目标、成功标准与范围。本文由 {{TEMPLATE_ID}}@{{TEMPLATE_VERSION}} 创建于 {{CREATED_AT}}，请在此补齐后作为 PRD 事实源。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "docs/PRD.md",
+      "content": "# {{PROJECT_NAME}} 产品需求\n\n> 待填写：目标、成功标准与范围。本文由 {{TEMPLATE_ID}}@{{TEMPLATE_VERSION}} 创建于 {{CREATED_AT}}，请在此补齐后作为 PRD 事实源。\n"
+    }
+  ]
+}

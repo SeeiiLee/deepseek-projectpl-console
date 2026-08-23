@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "description": "v1 → v2 迁移规则：v2 是外部更新准入门槛，禁止把 v1 的 supports.harness 当作 compatibleHarness 的别名；缺失/未知字段必须显式补齐或标 unknown，禁止默认兼容。",
+  "rules": [
+    {
+      "from": "v1.supports.harness",
+      "to": "v2.compatibleHarness.versionRange",
+      "action": "copy-if-exact",
+      "note": "仅当 v1 supports.harness 恰好是单一精确版本时可复制为 versionRange；必须由发布者补充 40 位 commits 白名单，不能从 supports.harness 推导 commit。"
+    },
+    {
+      "from": "v1.role",
+      "to": "v2.role",
+      "action": "copy",
+      "note": "role 枚举不变。"
+    },
+    {
+      "from": "v1.requires",
+      "to": "v2.requires",
+      "action": "copy",
+      "note": "requires.packages/services 结构不变；v2 中二者均为必填，缺省必须显式空数组。"
+    },
+    {
+      "from": "v1.bridges",
+      "to": "v2.bridges",
+      "action": "copy",
+      "note": "可选，缺省为空数组。"
+    },
+    {
+      "from": "v1.conflicts",
+      "to": "v2.conflicts",
+      "action": "copy",
+      "note": "可选，缺省为空数组。"
+    },
+    {
+      "from": "v1.data",
+      "to": "v2.dataSchema",
+      "action": "transform",
+      "note": "v1.data.dirName/preserveOnUninstall 需转换为 v2.dataSchema.owned/readableVersions/migrations；不能自动生成 readableVersions/migrations，缺失必须显式声明或 fail closed。"
+    },
+    {
+      "from": "v1.platform",
+      "to": "v2.platform",
+      "action": "copy",
+      "note": "平台矩阵结构不变；nativeDependencies 与 externalCommands 必须另行显式声明。"
+    },
+    {
+      "from": "absent",
+      "to": "v2.compatibleHarness/minClient/seams/desktopCapabilities/dependencies/peerDependencies/nativeDependencies/externalCommands/dataSchema/modelAssets",
+      "action": "require-explicit",
+      "note": "v1 不承载这些字段，迁移时任何缺失字段都视为 unknown，不得默认兼容。"
+    }
+  ]
+}

@@ -1,0 +1,778 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:lifecycle-command-envelope",
+  "title": "Project Control Lifecycle Command Envelope v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "schemaVersion",
+    "commandId",
+    "correlationId",
+    "idempotencyKey",
+    "kind",
+    "occurredAt",
+    "actor",
+    "target",
+    "expectedRevision",
+    "provenance",
+    "payload"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "const": "project-control.dsh/v1alpha1"
+    },
+    "schemaVersion": {
+      "const": "lifecycle-command-envelope/v1alpha1"
+    },
+    "commandId": {
+      "$ref": "#/$defs/commandId"
+    },
+    "correlationId": {
+      "$ref": "#/$defs/correlationId"
+    },
+    "idempotencyKey": {
+      "$ref": "#/$defs/idempotencyKey"
+    },
+    "kind": {
+      "enum": [
+        "project.registerLegacy",
+        "project.registerManaged",
+        "project.createFromTemplate",
+        "project.rebindLocation",
+        "project.upgradeManaged"
+      ]
+    },
+    "occurredAt": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "actor": {
+      "$ref": "#/$defs/actorRef"
+    },
+    "target": {
+      "$ref": "#/$defs/projectTarget"
+    },
+    "expectedRevision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/registerLegacyPayload"
+        },
+        {
+          "$ref": "#/$defs/registerManagedPayload"
+        },
+        {
+          "$ref": "#/$defs/createFromTemplatePayload"
+        },
+        {
+          "$ref": "#/$defs/rebindLocationPayload"
+        },
+        {
+          "$ref": "#/$defs/upgradeManagedPayload"
+        }
+      ]
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "project.registerLegacy"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedRevision": {
+            "const": 0
+          },
+          "payload": {
+            "$ref": "#/$defs/registerLegacyPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "project.registerManaged"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedRevision": {
+            "const": 0
+          },
+          "payload": {
+            "$ref": "#/$defs/registerManagedPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "project.createFromTemplate"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedRevision": {
+            "const": 0
+          },
+          "payload": {
+            "$ref": "#/$defs/createFromTemplatePayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "project.rebindLocation"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "payload": {
+            "$ref": "#/$defs/rebindLocationPayload"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "project.upgradeManaged"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "payload": {
+            "$ref": "#/$defs/upgradeManagedPayload"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "commandId": {
+      "type": "string",
+      "pattern": "^cmd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "locationRef": {
+      "type": "string",
+      "pattern": "^loc_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sourceRootRef": {
+      "type": "string",
+      "pattern": "^srt_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "candidateRef": {
+      "type": "string",
+      "pattern": "^can_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "planId": {
+      "type": "string",
+      "pattern": "^pln_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,199}$"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{3})?Z$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*[:\\\\])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\/$)[^/]+(?:/[^/]+)*$"
+    },
+    "directoryName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^(?!\\.{1,2}$)(?!.*[ .]$)[^<>:\"/\\\\|?*\\u0000-\\u001F]+$"
+    },
+    "projectTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "aggregateType",
+        "projectId"
+      ],
+      "properties": {
+        "aggregateType": {
+          "const": "project"
+        },
+        "projectId": {
+          "$ref": "#/$defs/projectId"
+        }
+      }
+    },
+    "actorRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "applicationId"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "human",
+            "agent",
+            "system",
+            "application"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "applicationId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceType",
+        "sourceId",
+        "applicationVersion",
+        "applicationInstanceId",
+        "observedAt"
+      ],
+      "properties": {
+        "sourceType": {
+          "enum": [
+            "human",
+            "agent",
+            "harness",
+            "imported_document",
+            "system"
+          ]
+        },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^(?![A-Za-z]:[\\\\/])(?!/)(?!\\\\\\\\)[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+        },
+        "sourceRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "applicationVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "applicationInstanceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "adapterId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+        },
+        "adapterVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observedAt": {
+          "$ref": "#/$defs/utcTimestamp"
+        }
+      },
+      "dependentRequired": {
+        "adapterId": [
+          "adapterVersion"
+        ],
+        "adapterVersion": [
+          "adapterId"
+        ]
+      }
+    },
+    "documentBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "relativePath",
+        "contentHash"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "readme",
+            "prd",
+            "devlog",
+            "progress",
+            "next",
+            "current_architecture",
+            "decision",
+            "other"
+          ]
+        },
+        "relativePath": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "documentBindings": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/documentBinding"
+      }
+    },
+    "templateRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateId",
+        "templateVersion",
+        "templateHash"
+      ],
+      "properties": {
+        "templateId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+        },
+        "templateVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "templateHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "writeOperation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "relativePath",
+            "expectedState"
+          ],
+          "properties": {
+            "kind": {
+              "const": "create_directory"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "expectedState": {
+              "const": "absent"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "relativePath",
+            "expectedState",
+            "contentHash"
+          ],
+          "properties": {
+            "kind": {
+              "const": "create_file"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "expectedState": {
+              "const": "absent"
+            },
+            "contentHash": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        }
+      ]
+    },
+    "writePlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planId",
+        "planHash",
+        "manifestHash",
+        "syncPolicy",
+        "operations"
+      ],
+      "properties": {
+        "planId": {
+          "$ref": "#/$defs/planId"
+        },
+        "planHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifestHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "syncPolicy": {
+          "enum": [
+            "atomic_create",
+            "atomic_additive"
+          ]
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": {
+            "$ref": "#/$defs/writeOperation"
+          }
+        }
+      }
+    },
+    "managedIdentityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "manifestHash"
+      ],
+      "properties": {
+        "kind": {
+          "const": "managed_manifest"
+        },
+        "manifestHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "legacyIdentityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "fingerprintHash",
+        "contentHashes"
+      ],
+      "properties": {
+        "kind": {
+          "const": "legacy_fingerprint"
+        },
+        "fingerprintHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contentHashes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    },
+    "registerLegacyPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locationRef",
+        "sourceRootRef",
+        "name",
+        "documentBindings"
+      ],
+      "properties": {
+        "locationRef": {
+          "$ref": "#/$defs/locationRef"
+        },
+        "sourceRootRef": {
+          "$ref": "#/$defs/sourceRootRef"
+        },
+        "candidateRef": {
+          "$ref": "#/$defs/candidateRef"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "documentBindings": {
+          "$ref": "#/$defs/documentBindings"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "registerManagedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locationRef",
+        "sourceRootRef",
+        "manifestHash"
+      ],
+      "properties": {
+        "locationRef": {
+          "$ref": "#/$defs/locationRef"
+        },
+        "sourceRootRef": {
+          "$ref": "#/$defs/sourceRootRef"
+        },
+        "candidateRef": {
+          "$ref": "#/$defs/candidateRef"
+        },
+        "manifestHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "createFromTemplatePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceRootRef",
+        "targetLocationRef",
+        "directoryName",
+        "name",
+        "template",
+        "writePlan"
+      ],
+      "properties": {
+        "sourceRootRef": {
+          "$ref": "#/$defs/sourceRootRef"
+        },
+        "targetLocationRef": {
+          "$ref": "#/$defs/locationRef"
+        },
+        "directoryName": {
+          "$ref": "#/$defs/directoryName"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "template": {
+          "$ref": "#/$defs/templateRef"
+        },
+        "writePlan": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/writePlan"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "syncPolicy": {
+                  "const": "atomic_create"
+                }
+              }
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "rebindLocationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expectedMode",
+        "currentLocationRef",
+        "currentLocationRevision",
+        "newLocationRef",
+        "sourceRootRef",
+        "reason",
+        "identityEvidence"
+      ],
+      "properties": {
+        "expectedMode": {
+          "enum": [
+            "linked_legacy",
+            "managed"
+          ]
+        },
+        "currentLocationRef": {
+          "$ref": "#/$defs/locationRef"
+        },
+        "currentLocationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "newLocationRef": {
+          "$ref": "#/$defs/locationRef"
+        },
+        "sourceRootRef": {
+          "$ref": "#/$defs/sourceRootRef"
+        },
+        "reason": {
+          "enum": [
+            "moved",
+            "renamed",
+            "recovered"
+          ]
+        },
+        "identityEvidence": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/managedIdentityEvidence"
+            },
+            {
+              "$ref": "#/$defs/legacyIdentityEvidence"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "expectedMode": {
+                "const": "managed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "identityEvidence": {
+                "$ref": "#/$defs/managedIdentityEvidence"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "expectedMode": {
+                "const": "linked_legacy"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "identityEvidence": {
+                "$ref": "#/$defs/legacyIdentityEvidence"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "upgradeManagedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locationRef",
+        "locationRevision",
+        "legacyFingerprintHash",
+        "writePlan"
+      ],
+      "properties": {
+        "locationRef": {
+          "$ref": "#/$defs/locationRef"
+        },
+        "locationRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "legacyFingerprintHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "writePlan": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/writePlan"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "syncPolicy": {
+                  "const": "atomic_additive"
+                }
+              }
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 50,
+      "propertyNames": {
+        "pattern": "^(?:[a-z][a-z0-9-]*\\.)+[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": true
+    }
+  }
+}

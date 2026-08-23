@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:personal-plugin-contract:v2:dshComposable",
+  "title": "dshComposable/v2 — Personal 插件外部更新准入门槛",
+  "description": "A0 冻结的机器合同：插件包内 dshComposable/v2 是外部更新唯一声明处；plugin-index.json 与 .install.json 必须从同一 manifest 1:1 无损派生，禁止别名分叉。v2 只用于外部更新资格，v1 继续服务内部门禁。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "role",
+    "compatibleHarness",
+    "minClient",
+    "seams",
+    "desktopCapabilities",
+    "requires",
+    "dependencies",
+    "peerDependencies",
+    "nativeDependencies",
+    "externalCommands",
+    "dataSchema",
+    "modelAssets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "role": {
+      "description": "Core=领域状态/Host API/稳定 Client service；Adapter=接入 UI/平台容器；Bridge=连接两个可独立工作的插件；Preset=安装集合（不承载运行时状态，不插 row）；contracts=纯类型/Schema 包（非 runtime）。",
+      "type": "string",
+      "enum": [
+        "core",
+        "adapter",
+        "bridge",
+        "preset",
+        "contracts"
+      ]
+    },
+    "compatibleHarness": {
+      "description": "v2 唯一规范字段名；禁止 supports.harness 等别名分叉。versionRange 是 semver range，commits 是已验证的 40 位 commit 白名单。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "versionRange",
+        "commits"
+      ],
+      "properties": {
+        "versionRange": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "minClient": {
+      "type": "string",
+      "minLength": 1
+    },
+    "maxClient": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seams": {
+      "description": "使用的官方 Personal/Harness seam 与最小 capability 版本。",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "minVersion"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minVersion": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "uniqueItems": true
+    },
+    "desktopCapabilities": {
+      "description": "所需的 preload/bridge 能力，无则空数组。",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packages",
+        "services"
+      ],
+      "properties": {
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "bridges": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "peerDependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "nativeDependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "externalCommands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "dataSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owned",
+        "readableVersions",
+        "migrations"
+      ],
+      "properties": {
+        "owned": {
+          "type": "boolean"
+        },
+        "readableVersions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "migrations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to",
+              "script"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1
+              },
+              "script": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "uniqueItems": true
+        },
+        "rollbackCompatible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "modelAssets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "version",
+          "fetch"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fetch": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "uniqueItems": true
+    },
+    "files": {
+      "description": "插件包文件清单与逐文件 SHA-256。发布/安装快照必须与本字段一致；缺省表示尚未生成外部发布快照，不视为默认兼容。",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "list",
+        "sha256"
+      ],
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "sha256": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "batch",
+        "source"
+      ],
+      "properties": {
+        "batch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "os": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "win32",
+              "darwin",
+              "linux"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "cpu": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "x64",
+              "arm64"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "native": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

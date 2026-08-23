@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "A线 · 插件独立更新通道 · 首批三任务架构",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1000,
+      900
+    ]
+  },
+  "components": [
+    {
+      "id": "release-plugins",
+      "type": "backend",
+      "label": "A2 发布管线",
+      "sublabel": "release:plugins · 离线命令链",
+      "pos": [
+        60,
+        90
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "staging",
+      "type": "database",
+      "label": "release-staging 产物",
+      "sublabel": "14 tgz + plugin-index.json + .sha256",
+      "pos": [
+        280,
+        90
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "github-release",
+      "type": "cloud",
+      "label": "GitHub plugins-v* Release",
+      "sublabel": "Cyrus 手动创建 · 唯一发布源",
+      "pos": [
+        530,
+        90
+      ],
+      "size": [
+        180,
+        64
+      ]
+    },
+    {
+      "id": "update-center",
+      "type": "frontend",
+      "label": "A3 更新中心插件卡",
+      "sublabel": "三态比对（内置 / 外部 / 可更新）",
+      "pos": [
+        530,
+        250
+      ],
+      "size": [
+        180,
+        64
+      ]
+    },
+    {
+      "id": "download-verify",
+      "type": "backend",
+      "label": "下载 + SHA-256 校验",
+      "sublabel": "host 白名单 · fetcher 可 mock",
+      "pos": [
+        760,
+        250
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "online-segment",
+      "type": "backend",
+      "label": "A1 在线段",
+      "sublabel": "staging 就绪 → 批次 pending（不动 junction）",
+      "pos": [
+        530,
+        430
+      ],
+      "size": [
+        180,
+        64
+      ]
+    },
+    {
+      "id": "startup-segment",
+      "type": "backend",
+      "label": "A1 启动段",
+      "sublabel": "整批校验 → 重指 junction（all-or-none）",
+      "pos": [
+        760,
+        430
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "external-active",
+      "type": "backend",
+      "label": "外部插件 ACTIVE",
+      "sublabel": "junction 指外部 · fiber ACTIVE",
+      "pos": [
+        760,
+        610
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "builtin-fallback",
+      "type": "backend",
+      "label": "内置基线回退",
+      "sublabel": "quarantine 留证 · degradedReason 可见",
+      "pos": [
+        530,
+        610
+      ],
+      "size": [
+        180,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "A2 · 发布管线（离线跑道）",
+      "wraps": [
+        "release-plugins",
+        "staging"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "A3 · 更新中心插件区（消费侧）",
+      "wraps": [
+        "update-center",
+        "download-verify"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "A1 · 装配运行时（重启边界）",
+      "wraps": [
+        "online-segment",
+        "startup-segment",
+        "external-active",
+        "builtin-fallback"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "pipeline-staging",
+      "from": "release-plugins",
+      "to": "staging",
+      "label": "离线产出 staging",
+      "labelDy": 56
+    },
+    {
+      "id": "staging-release",
+      "from": "staging",
+      "to": "github-release",
+      "label": "Cyrus 手动创建 release",
+      "labelDy": 56
+    },
+    {
+      "id": "release-check",
+      "from": "github-release",
+      "to": "update-center",
+      "label": "读 plugin-index.json",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "check-download",
+      "from": "update-center",
+      "to": "download-verify",
+      "label": "触发下载",
+      "variant": "emphasis"
+    },
+    {
+      "id": "verify-online",
+      "from": "download-verify",
+      "to": "online-segment",
+      "label": "SHA-256 通过",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "online-startup",
+      "from": "online-segment",
+      "to": "startup-segment",
+      "label": "批次 pending → 重启",
+      "variant": "dashed",
+      "labelDy": 56
+    },
+    {
+      "id": "startup-active",
+      "from": "startup-segment",
+      "to": "external-active",
+      "label": "整批通过 → 重指 junction",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 82
+    },
+    {
+      "id": "startup-fallback",
+      "from": "startup-segment",
+      "to": "builtin-fallback",
+      "label": "任一失败 → 整批回退",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "三任务串行",
+      "items": [
+        "A1 装配运行时 → A2 发布管线 → A3 更新中心插件区",
+        "A3 依赖 A1 目录契约与 A2 索引格式；最后并跑端到端验收"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "关键红线",
+      "items": [
+        "不改只读上游 D:\\Deepseek Harness；自动化不写稳定版受保护路径",
+        "dev 打包产物永不当发布资产；smoke 只用 -Smoke.exe 改名副本"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "失败语义（all-or-none）",
+      "items": [
+        "任一失败 → 整批落回内置 + quarantine 留证，杜绝半集合",
+        "回滚也走启动段，运行中永不动 junction；degradedReason 用户可见"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# @cyrus/dsh-workspace-hub bundle patch（D-02：row name = package name；单 row 单 owner）
+- insert:
+    - id: '@cyrus/dsh-workspace-hub'
+      name: '@cyrus/dsh-workspace-hub'

@@ -1,0 +1,72 @@
+{
+  "verifiedAt": "2026-08-21",
+  "verificationScope": "0.1.1-rc.2 baseline (b150a551): dev runtime activated by Cyrus and confirmed working; stable runtime offline-staged and built; 18 personal plugins rebuilt against rc.2; full test suite 615/615; check-plugins passed; verify-launch launch-ready; smoke passed. Earlier same-day: stable 0.4.2 patch (vendored pnpm + npm config split) published; stable runtime rc.5→rc.8.",
+  "handoverStatus": "in-development",
+  "handoverEntry": "HANDOVER_TO_DEEPSEEK_HARNESS.md",
+  "nextEntry": "NEXT.md",
+  "harnessVersion": "0.1.1-rc.2",
+  "harnessCommit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+  "previousHarnessCommit": "141eb6fef83422698aef7a981029e843e8161534",
+  "previousHarnessVersion": "0.1.0-rc.8",
+  "electronVersion": "43.4.0",
+  "electronBuilderVersion": "26.15.3",
+  "nodeVersion": "25.2.1",
+  "pnpmVersion": "11.19.0",
+  "personalPluginCount": 18,
+  "projectControlSchemaVersion": 8,
+  "baselineDecision": {
+    "compat": "rc.2-only for all personal plugins; rc.8 kept as the Personal overall rollback seam only",
+    "distribution": "local .tgz only (no npm registry publish)",
+    "buildRoot": "DSH_SOURCE_ROOT explicit or active managed runtime (update-center.json), verified commit b150a551, harness-src junction"
+  },
+  "verifiedPlatformExports": [
+    "@deepseek-ai/dsh-client-ui-primitives (MarkdownText, CodeBlock, MarkdownFileMentions) in PLATFORM_MODULES [rc.2-verified]",
+    "sessions.list / workspaces.list observable snapshot contracts [rc.2-verified]",
+    "dsh plugin --profile add/remove/update (pnpm forwarder + dsh.profile.bundles reconciliation) [rc.2-verified]"
+  ],
+  "testStatus": {
+    "full": "passed 723/723 on rc.2 (0.4.2 gate + A0 baseline + A1/A2/A3 fixes + build adaptation + stable packed E2E + bootstrap audit + Dev NSIS E2E Task 0-4 2026-08-22)",
+    "workspaceHub": "passed",
+    "pluginGates": "18/18 build-plugins + verify-launch passed on rc.2",
+    "developmentSmoke": "passed (rc.2 runtime, 18 plugins, dev/stable home boot)"
+  },
+  "rc2ProfilePluginChain": {
+    "harness": "0.1.1-rc.2",
+    "commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+    "profile": "a0test",
+    "home": "temp DSH_HOME only",
+    "addRemoveUpdate": {
+      "anysearch": "add/update/remove exit 0; profile bundles reconciled",
+      "trajectory-island": "add/update/remove exit 0; profile bundles reconciled"
+    },
+    "verifiedAt": "2026-08-21"
+  },
+  "packagingTargets": [
+    "nsis",
+    "portable"
+  ],
+  "codeSigningStatus": "not-configured",
+  "notes": [
+    "D:\\Deepseek Harness remains the read-only upstream rollback checkout (rc.5, 47f9438).",
+    "2026-08-20: test version upgraded to rc.8 (141eb6f); rc.7 (99f6f02) kept as previous/rollback in dev update-center.json.",
+    "2026-08-20: 18 personal plugins package.json rc.7->rc.8; scripts/build-kit.mjs baseline updated to rc.8.",
+    "2026-08-20: local patch in rc.8 managed runtime packages/client/tsdown.client.ts allows non-workspace personal plugins to build.",
+    "2026-08-20: src/harness-helper.js adds --no-open for rc.8 dsh web compatibility.",
+    "2026-08-20: @tt-a1i/archify-dsh@0.1.0 installed in test web profile (skill-only bundle).",
+    "2026-08-20: stable client upgraded to rc.8 and version 0.4.0; full gates passed; released to GitHub.",
+    "2026-08-21: v0.4.1 startup/packaging patch and v0.4.2 vendored-pnpm/npm-config patch released; current stable client is 0.4.2 with 615/615 tests and packed smoke passed.",
+    "2026-08-21 A0: frozen dshComposable/v2 + harness-compat-receipt/v1 + upstream-impact-map/v1; plugin-set.lock.json regenerated on rc.2/b150a551 with all 18 roles; two pilots (anysearch, trajectory-island) carry v2 manifests; trajectory-island un-private and bundle patch added; docs/compat.json baselineDecision/exports/testStatus aligned to rc.2.",
+    "2026-08-22 A1: personal-plugin-validation + atomic pending→activating(record fallback)→assemble/switch→boot→fiber/doctor→atomic current commit; failure/crash restores fallback, quarantines candidate, writes failure.json. Added test/a1-atomic-activation.test.js (7) and updated A1 tests; A1 unit matrix green. Real packed Harness E2E remains local/partial.",
+    "2026-08-22 A2: consumer now downloads plugin assets from a verified GitHub plugins-v* Release (tag match, unique asset names, schema/size/SHA-256 checks, staging before generation); mock happy path + 404/duplicate/tag mismatch/missing/abort/ENOSPC negatives added. Real plugins-v* release NOT created.",
+    "2026-08-22 A3: client rollback lifecycle now persists installPending/rollbackPending and confirms only after target version boots; normal upgrade clears the installed candidate and retains previousDesktop long-term. Added A->B->multiple restarts->rollback A test, plugin generation GC, reinstall recovery, and cross-line Harness/client compatibility blocking. E2E plan revised to Dev NSIS with cancel/startup-failure/SHA-tamper/repeated-rollback/stable-zero-write coverage. Real install rollback E2E and real plugins-v* release NOT complete/authorized.",
+    "2026-08-22 last round: knownGoodDesktop added as the independent current known-good installer; previousDesktop is produced naturally by downloadDesktop from knownGoodDesktop. readActivePluginGeneration fails closed on incomplete active-generation evidence and client manifest cross-line checks (Harness commit/plugin contract/seams). GC refuses corrupt journals and previews quarantine scope; reinstall recovery uses legal activation entry. Full suite 684/684; stable packed E2E BLOCKED because pack:win:dir cannot rebuild plugin-organizer (harness tsdown workspace resolution).",
+    "2026-08-22 second round: 18-plugin shared tsdown.client.ts workspace adaptation fixed via scripts/apply-harness-tsdown-fallback.mjs (hash-verified, fail-closed, managed-runtime-only). node scripts/build-plugins.js --force rebuilt all 18 plugins. pack:win:dir succeeded; test/stable-flavor-packed-e2e.test.js passed with real Electron/Harness fiber/doctor commit, restart ACTIVE, rollback to builtin. Added legacy 0.4.2 bootstrap state test; Cyrus chose bridge version + first-jump manual rollback. Full suite 707/707.",
+    "2026-08-22 third round: build receipt upgraded to schema v2 with resources/app tree hash/file count and flavor guard; receipt negative tests added; managed runtime path guard independently anchored to %APPDATA%\\DeepSeek Harness Personal Dev\\harness-runtimes and no longer trusts DSH_SOURCE_ROOT. Dev NSIS isolated install/rollback E2E was authorized but NOT executed because Windows Sandbox is unavailable (WindowsSandbox.exe missing, Containers-DisposableClientVM=Disabled); no host install fallback was used.",
+    "2026-08-22 stage 1: enabled Containers-DisposableClientVM with -NoRestart as admin; result RestartNeeded=True, feature=Enabled, WindowsSandbox.exe not yet present, Hyper-V/VMP still Disabled. Stopped and waiting for Cyrus to manually restart before Dev NSIS E2E.",
+    "2026-08-22 post-reboot: WindowsSandbox.exe present and Sandbox probe succeeded; Dev NSIS A/B lifecycle not executed because in-app UpdateService requires a real/mock GitHub release source for B and no local mock HTTPS update harness is prepared; not using hand-written update-center state.",
+    "2026-08-22 Dev NSIS E2E progress: implemented Dev-only local HTTP update seam (loopback only, stable fail-closed) with positive/negative tests; built C=0.4.0, A=0.4.1, B=0.4.2 Dev NSIS packages with matching EXE/SHA/manifest/receipt. Sandbox lifecycle not yet executed because update-bridge automation and real installer launch/restart orchestration are not implemented; no fake install was performed.",
+    "2026-08-22 latest partial: local update seam now requires immutable E2E_BUILD and compiled BUILD_FLAVOR (never DSH_DESKTOP_FLAVOR); seam limited to desktop release/asset downloads; server script preflight/contract updated. Main-process E2E driver, outer Sandbox orchestration, real server integration tests, and C→A→B→rollback A execution remain BLOCKED/incomplete.",
+    "2026-08-22 Dev NSIS E2E Task 0-4: strict raw loopback URL validation; sandbox-local-update-server releases array/object/path containment/preflight; per-hop redirect safety (manual redirect, local same-origin only, external rejected before request); build receipt now records e2eBuild/driver schema+version/installerSha256/resources app tree hash; real server integration tests pass; Dev-E2E-only main-process driver with atomic orchestration journal; Sandbox outer scripts added; new Dev NSIS C=0.4.0/A=0.4.1/B=0.4.2 with driver rebuilt. Real Windows Sandbox lifecycle and negatives passed as functional acceptance using earlier package builds (positive run e2e-autorun-015 used C=6e5816d9..., A=d4bbb8e8..., B=94b24440...). Final rebuilt Dev NSIS SHAs C=50875153..., A=ee80596d..., B=1e243ac3... are the strict artifact evidence set; a final positive Sandbox lifecycle against those exact binaries was required and is recorded in the latest note.",
+    "2026-08-23 Codex acceptance close-out: sandbox-e2e-host.ps1 now refuses existing run-id, always copies Harness (junction mode removed), verifies input/harness is not a reparse point, disables Networking and ClipboardRedirection in .wsb, verifies script/package SHA before/after copying, and writes run-input-manifest.json before launch. sandbox-e2e-outer.ps1 writes artifact-set.json, uses local evidence dir for journals to avoid network-share EPERM, waits for real main-window handle transition and writes real-window-verification-*.json, and asserts final update-center.json before E2E_OK. sandbox-local-update-server.test.js filters PS7 PSModulePath when spawning powershell.exe. Strict evidence closed with run e2e-autorun-022 using final C=50875153..., A=ee80596d..., B=1e243ac3...; evidence time order run-input-manifest/input SHA -> artifact-set -> lifecycle journals -> real-window-verification-* -> final-update-center-assertions.json -> E2E_OK is satisfied; real window transition was observed (not stuck on loading shell); final update-center knownGoodDesktop=0.4.1 with downloaded/previous/installPending/rollbackPending absent. Runs 016/020/021 remain process/functional evidence only, not strict original evidence."
+  ]
+}

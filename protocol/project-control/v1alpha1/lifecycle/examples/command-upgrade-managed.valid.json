@@ -1,0 +1,50 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-envelope/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d25-a5c6-6b6f39e34725",
+  "correlationId": "corr.lifecycle.upgrade-managed",
+  "idempotencyKey": "project.upgrade-managed.001",
+  "kind": "project.upgradeManaged",
+  "occurredAt": "2026-08-14T12:04:00.000Z",
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d15-a5c6-6b6f39e34715"
+  },
+  "expectedRevision": 2,
+  "provenance": {
+    "sourceType": "human",
+    "sourceId": "project-console:upgrade-confirmation",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "observedAt": "2026-08-14T12:03:59.000Z"
+  },
+  "payload": {
+    "locationRef": "loc_0198f4b2-7c3a-7d36-a5c6-6b6f39e34736",
+    "locationRevision": 1,
+    "legacyFingerprintHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "writePlan": {
+      "planId": "pln_0198f4b2-7c3a-7d62-a5c6-6b6f39e34762",
+      "planHash": "sha256:58616bd635fb42aca70dd87c7fa40abcc4c17607a900fd687dda85db93d67577",
+      "manifestHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "syncPolicy": "atomic_additive",
+      "operations": [
+        {
+          "kind": "create_directory",
+          "relativePath": ".dsh-project",
+          "expectedState": "absent"
+        },
+        {
+          "kind": "create_file",
+          "relativePath": ".dsh-project/project.yaml",
+          "expectedState": "absent",
+          "contentHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      ]
+    }
+  }
+}

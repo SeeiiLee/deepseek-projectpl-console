@@ -1,0 +1,18 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-result/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d22-a5c6-6b6f39e34722",
+  "correlationId": "corr.lifecycle.register-managed",
+  "kind": "project.registerManaged",
+  "status": "accepted",
+  "recordedAt": "2026-08-14T12:01:00.100Z",
+  "projectId": "prj_0198f4b2-7c3a-7d12-a5c6-6b6f39e34712",
+  "projectMode": "managed",
+  "aggregateRevision": 1,
+  "eventId": "evt_0198f4b2-7c3a-7d72-a5c6-6b6f39e34772",
+  "outcome": "managed_registered",
+  "fileSync": {
+    "status": "verified_existing",
+    "manifestHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

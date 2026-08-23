@@ -1,0 +1,25 @@
+{
+  "extends": "../../harness-src/tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "typeRoots": ["../../harness-src/node_modules/@types"]
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../harness-src/vendor/cordis" },
+    { "path": "../../harness-src/vendor/schemastery" },
+    { "path": "../../harness-src/packages/core/tools" },
+    { "path": "../../harness-src/packages/core/scope" },
+    { "path": "../../harness-src/packages/core/agent" },
+    { "path": "../../harness-src/packages/core/session" },
+    { "path": "../../harness-src/packages/llm/llm" },
+    { "path": "../../harness-src/packages/core/system-prompt" },
+    { "path": "../../harness-src/packages/code-runtime/code-runtime" },
+    { "path": "../../harness-src/packages/interaction/user-approval" }
+  ]
+}

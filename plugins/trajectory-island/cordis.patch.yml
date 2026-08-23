@@ -1,0 +1,4 @@
+# @cyrus/dsh-trajectory-island bundle patch (A0)
+- insert:
+    - id: '@cyrus/dsh-trajectory-island'
+      name: '@cyrus/dsh-trajectory-island'

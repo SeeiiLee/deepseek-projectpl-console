@@ -1,0 +1,360 @@
+.frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--dsw-alias-bg-base);
+  transition: grid-template-columns var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+.frame[data-dragging] {
+  transition: none;
+}
+
+.sidebarCol,
+.projectCol,
+.conversationCol,
+.workbenchCol {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebarCol {
+  background: var(--dsw-specific-sidebar-fill);
+  border-right: 1px solid var(--dsw-alias-border-l1);
+}
+
+.projectCol,
+.workbenchCol {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.projectCol {
+  border-right: 1px solid var(--dsw-alias-border-l2);
+}
+
+.workbenchCol {
+  border-left: 1px solid var(--dsw-alias-border-l2);
+}
+
+.projectCol[data-collapsed='true'],
+.workbenchCol[data-collapsed='true'] {
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 76%, transparent);
+}
+
+.conversationCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHeader {
+  position: relative;
+  z-index: 4;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 240px;
+  height: 48px;
+  padding: 0 12px 0 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 88%, transparent);
+}
+
+.panelHeader[data-collapsed='true'] {
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+  border-bottom-color: transparent;
+  background: transparent;
+}
+
+.panelHeading {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 9px;
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.projectAccent {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
+}
+
+.workbenchIcon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--dsw-alias-state-business-primary);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.panelTitle {
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panelCollapse,
+.panelExpand {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+.panelCollapse:hover,
+.panelExpand:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.panelCollapse:focus-visible,
+.panelExpand:focus-visible,
+.sidebarProjectAction:focus-visible,
+.divider:focus-visible,
+.layoutMenuSummary:focus-visible,
+.layoutMenuPopup button:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+
+.layoutMenu {
+  position: relative;
+}
+
+.layoutMenuSummary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  color: var(--dsw-alias-label-secondary);
+  border-radius: 9px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.layoutMenuSummary::-webkit-details-marker {
+  display: none;
+}
+
+.layoutMenuSummary:hover,
+.layoutMenu[open] .layoutMenuSummary {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.layoutMenuSummary svg {
+  width: 17px;
+  height: 17px;
+  fill: currentcolor;
+}
+
+.layoutMenuPopup {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  display: grid;
+  width: 136px;
+  padding: 6px;
+  box-sizing: border-box;
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 18%, transparent);
+}
+
+.layoutMenuPopup button {
+  width: 100%;
+  padding: 7px 9px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.layoutMenuPopup button:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.panelCollapse svg,
+.panelExpand svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panelBody[data-collapsed='true'] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Native sidebar footer contribution remains a second, persistent project
+   toggle. It never floats over Conversation. */
+.sidebarProjectAction {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% + 8px);
+  height: 34px;
+  margin: 4px -4px 0;
+  padding: 6px 2px 6px 10px;
+  box-sizing: border-box;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  overflow: hidden;
+}
+
+.sidebarProjectAction:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.sidebarProjectAction[data-wide='false'] {
+  justify-content: center;
+  gap: 0;
+  width: 36px;
+  height: 36px;
+  margin: 8px 0 0;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.sidebarProjectIcon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.sidebarProjectAction[data-wide='false'] .sidebarProjectIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebarProjectLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global([data-slot='sidebar.footer.action']):has(.sidebarProjectAction) {
+  display: flex !important;
+  flex-direction: column;
+  width: 100%;
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 8px;
+  margin-left: -4px;
+  cursor: col-resize;
+  touch-action: none;
+  transition: left var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 32px;
+  box-sizing: border-box;
+  background: var(--dsw-alias-button-floating-fill);
+  border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
+  border-radius: 10px;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity var(--ds-transition-duration-slow) var(--ds-ease-in-out),
+    background var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+.divider:hover::after,
+.divider:focus-visible::after,
+.divider[data-dragging='true']::after {
+  opacity: 1;
+  background: var(--dsw-alias-button-floating-hover);
+}
+
+.frame[data-dragging] .divider {
+  transition: none;
+}
+
+.overlayLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.overlayLayer > * {
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .panelCollapse,
+  .panelExpand,
+  .divider {
+    transition: none;
+  }
+}

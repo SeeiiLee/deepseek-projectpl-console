@@ -1,0 +1,821 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.tabs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.tabList {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.headerActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.contextBar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.contextPin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-tertiary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.contextPin:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.contextPin[aria-pressed='true'] {
+  color: var(--dsw-alias-state-business-primary);
+  border-color: var(--dsw-alias-state-business-primary);
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+.contextPinIcon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.contextTarget {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-tertiary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.contextTargetIcon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.contextTarget:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.contextTarget:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.contextStatus {
+  padding: 1px 8px;
+  font-size: 1rem;
+  border-radius: 999px;
+  color: var(--dsw-alias-state-business-primary);
+  border: 1px solid var(--dsw-alias-state-business-primary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tabWrap {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.tabWrap[data-active='true'] {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+.tab,
+.close {
+  appearance: none;
+  border: 0;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab {
+  min-height: 30px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.tabWrap[data-active='true'] .tab {
+  color: var(--dsw-alias-label-primary);
+}
+
+.tab:hover,
+.close:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.tab:focus-visible,
+.close:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.close {
+  width: 24px;
+  height: 24px;
+  margin-right: 3px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 1.143rem;
+  line-height: 24px;
+}
+
+/* 「＋」新建页签按钮：贴着页签列末尾的安静图标按钮（Codex 风格）。 */
+.newTabButton {
+  appearance: none;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--dsw-alias-label-tertiary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.newTabButton svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+
+.newTabButton:hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.newTabButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.view {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.filesToggle,
+.fullscreenToggle,
+.collapseButton,
+.detailsButton {
+  appearance: none;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.filesToggle svg,
+.fullscreenToggle svg,
+.collapseButton svg,
+.detailsButton svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.fullscreenToggle {
+  margin-left: auto;
+}
+
+.collapseButton {
+  margin-left: 2px;
+}
+
+.filesToggle:hover,
+.fullscreenToggle:hover,
+.collapseButton:hover,
+.detailsButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.filesToggle[aria-pressed='true'],
+.fullscreenToggle[aria-pressed='true'],
+.detailsButton[data-active='true'] {
+  color: var(--dsw-alias-state-business-primary);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 38%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent);
+}
+
+.detailsTabSlot {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/* 详情按钮带文字标签后不再固定 26px 见方。 */
+.detailsButton {
+  width: auto;
+  gap: 5px;
+  padding: 0 9px;
+}
+
+.detailsButtonLabel {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 详情空态：替代 vendor「点击消息流中的工具行查看详情」的占位文案。 */
+.detailsEmpty {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  min-height: 100%;
+  padding: 28px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.detailsEmptyIcon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  fill: none;
+  stroke: var(--dsw-alias-label-tertiary);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.2;
+}
+
+.detailsEmptyTitle {
+  margin: 0;
+  font-size: 1.143rem;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.detailsEmptyCopy {
+  max-width: 340px;
+  margin: 8px 0 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 0.929rem;
+  line-height: 20px;
+}
+
+/* 收起文件树按钮：位于路径行操作区（详情 / 布局选项右侧）。 */
+.filesDockCollapse {
+  appearance: none;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-tertiary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.filesDockCollapse svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.filesDockCollapse:hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* 新建页签浮层（Codex 风格居中面板）：遮罩 + 顶部居中卡片。 */
+.paletteOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 16vh;
+  background: color-mix(in srgb, #000 32%, transparent);
+}
+
+.paletteCard {
+  width: min(460px, calc(100vw - 64px));
+  padding: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 32%, transparent);
+}
+
+.paletteMenu {
+  display: grid;
+  gap: 2px;
+}
+
+.paletteRow {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.paletteRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.paletteIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.paletteIcon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.paletteLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.paletteShortcut {
+  flex: none;
+  padding: 2px 7px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-tertiary);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.paletteFiles {
+  display: grid;
+  gap: 6px;
+}
+
+.paletteInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+  font: inherit;
+  font-size: 13px;
+}
+
+.paletteInput:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
+.paletteNotice {
+  margin: 0;
+  padding: 2px 4px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+.paletteResults {
+  display: grid;
+  gap: 1px;
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.paletteResultRow {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.paletteResultRow[data-highlight='true'] {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.paletteFileName {
+  flex: none;
+  max-width: 45%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.paletteFilePath {
+  flex: 1;
+  min-width: 0;
+  color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pathRow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.pathBar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.pathActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+}
+
+.pathBarLabel {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 0.857rem;
+  margin-right: 6px;
+}
+
+.pathSegmentWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.pathSlash {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pathSegment {
+  appearance: none;
+  flex: none;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.pathSegment:hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.pathLeaf {
+  flex: none;
+  padding: 2px 6px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pathPopup {
+  position: fixed;
+  z-index: 70;
+  display: grid;
+  gap: 6px;
+  width: 300px;
+  max-height: 380px;
+  padding: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+}
+
+.pathPopupFilter {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.pathPopupFilter:focus-visible {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+.pathPopupList {
+  display: grid;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.pathPopupRow {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.pathPopupRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.pathPopupRow svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.pathPopupRowLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pathPopupNotice {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+}
+
+.layoutMenu {
+  position: relative;
+  flex: none;
+}
+
+.layoutMenuSummary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  color: var(--dsw-alias-label-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.layoutMenuSummary::-webkit-details-marker {
+  display: none;
+}
+
+.layoutMenuSummary:hover,
+.layoutMenu[open] .layoutMenuSummary {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.layoutMenuSummary svg {
+  width: 16px;
+  height: 16px;
+  fill: currentcolor;
+}
+
+.layoutMenuPopup {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  display: grid;
+  width: 136px;
+  padding: 6px;
+  box-sizing: border-box;
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 18%, transparent);
+  z-index: 65;
+}
+
+.layoutMenuPopup button {
+  width: 100%;
+  padding: 7px 9px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.layoutMenuPopup button:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+
+.filesDock {
+  flex: none;
+  /* 默认 352px（264 加宽三分之一）；实际宽度由 WorkbenchPanel 拖动分隔条行内 style 控制 */
+  min-width: 0;
+  overflow: auto;
+  border-left: 1px solid var(--dsw-alias-border-l2);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 46%, transparent);
+}
+
+/* 文件树与审阅区之间的可拖动分隔条 */
+.filesDockHandle {
+  flex: none;
+  width: 5px;
+  margin-left: -2px;
+  cursor: col-resize;
+  background: transparent;
+  border-left: 1px solid transparent;
+  transition: background 120ms ease;
+}
+
+.filesDockHandle:hover,
+.filesDockHandle:active {
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);
+}
+
+.placeholder {
+  display: grid;
+  place-content: center;
+  min-height: 100%;
+  padding: 28px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.placeholderTitle {
+  margin: 0;
+  font-size: 1.143rem;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.placeholderCopy {
+  max-width: 320px;
+  margin: 6px 0 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 0.929rem;
+  line-height: 20px;
+}
+
+.details {
+  min-height: 100%;
+}
+
+/* 插件查看器容器：确定高度链（min-height 会让子级 height:100% 退化为 auto） */
+.viewHost {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cyrus:dsh-personal:client-release-manifest:v1",
+  "title": "client-release-manifest/v1 — Personal 客户端 release 供应链清单",
+  "description": "A3 合同：每个 Personal 客户端 release 随附一个版本化 manifest；supportedHarnessCommits 只表示随包实测基线，后续官方 commit 由精确组合 compat receipt 扩展，禁止为追加 commit 重发客户端。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "clientVersion",
+    "supportedHarnessCommits",
+    "builtinGenerationHash",
+    "pluginContractVersion",
+    "seamCapabilities",
+    "installerSha256"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "clientVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "supportedHarnessCommits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{40}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "builtinGenerationHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pluginContractVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seamCapabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "installerSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

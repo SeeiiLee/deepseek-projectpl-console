@@ -1,0 +1,115 @@
+{
+  "name": "@cyrus/dsh-anysearch",
+  "description": "AnySearch-backed web search provider for DeepSeek Harness Personal (beta)",
+  "version": "0.1.0-beta",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map",
+    "cordis.patch.yml",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "tsdown"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-credentials": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-launch-environment": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-settings": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-web": "0.1.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.1",
+    "react": "^18.2.0"
+  },
+  "license": "MIT",
+  "dshComposable": {
+    "schemaVersion": 2,
+    "role": "adapter",
+    "compatibleHarness": {
+      "versionRange": "0.1.1-rc.2",
+      "commits": [
+        "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
+      ]
+    },
+    "minClient": "0.4.2",
+    "seams": [
+      {
+        "name": "web.searchProvider",
+        "minVersion": "0.1.1-rc.2"
+      }
+    ],
+    "desktopCapabilities": [],
+    "requires": {
+      "packages": [],
+      "services": []
+    },
+    "dependencies": {},
+    "peerDependencies": {
+      "@deepseek-ai/cordis": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-ui-settings": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-credentials": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-launch-environment": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-settings": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-web": "0.1.1-rc.2",
+      "@deepseek-ai/schemastery": "3.18.1",
+      "react": "^18.2.0"
+    },
+    "nativeDependencies": [],
+    "externalCommands": [],
+    "dataSchema": {
+      "owned": false,
+      "readableVersions": [],
+      "migrations": [],
+      "rollbackCompatible": true
+    },
+    "modelAssets": [],
+    "files": {
+      "list": [
+        "LICENSE",
+        "README.md",
+        "cordis.patch.yml",
+        "lib/client.js",
+        "lib/client.js.map",
+        "lib/index.js",
+        "package.json"
+      ],
+      "sha256": {
+        "package.json": "6656e29afe6ec2ce8c94461c1a11908cb0439273e81457af19fc8f54de3d3d40",
+        "lib/index.js": "fe90505e47fc34d4f5ababb73893808720bdbf08cd6fcc18a640fc94bb090ba1",
+        "lib/client.js": "f5d86158baac56db7928e49638a5ce6e7f0a9136948c116bc41491be1c57b7ea",
+        "lib/client.js.map": "63e2298faa178c6328fa6f53aab757c030d81693c43775ee08e4f6c561a695bc",
+        "cordis.patch.yml": "8aadbe724c00e9116653cc0d546b6cbee6a0fbb22898957d8aa9cff697e2dffd",
+        "LICENSE": "82530383ef117c6cc07a2ed79c0957b6d2f0c979eb2e1a5edd2477a4c401b975",
+        "README.md": "2a9bac94ba1e8bbc2875eac52209877c6722dc1df378b23e0ba267a81162888b"
+      }
+    }
+  }
+}

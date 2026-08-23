@@ -1,0 +1,44 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-normalized-event/v1alpha1",
+  "eventId": "evt_0198f4b2-7c3a-7d72-a5c6-6b6f39e34772",
+  "eventType": "project.managed.registered",
+  "occurredAt": "2026-08-14T12:01:00.000Z",
+  "recordedAt": "2026-08-14T12:01:00.100Z",
+  "sequence": 2,
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d12-a5c6-6b6f39e34712"
+  },
+  "beforeRevision": 0,
+  "afterRevision": 1,
+  "causation": {
+    "commandId": "cmd_0198f4b2-7c3a-7d22-a5c6-6b6f39e34722",
+    "commandKind": "project.registerManaged",
+    "idempotencyKey": "project.register-managed.001",
+    "correlationId": "corr.lifecycle.register-managed"
+  },
+  "provenance": {
+    "sourceType": "imported_document",
+    "sourceId": "manifest:.dsh-project/project.yaml",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "contentHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "observedAt": "2026-08-14T12:00:59.000Z"
+  },
+  "data": {
+    "projectMode": "managed",
+    "locationRef": "loc_0198f4b2-7c3a-7d32-a5c6-6b6f39e34732",
+    "sourceRootRef": "srt_0198f4b2-7c3a-7d42-a5c6-6b6f39e34742",
+    "manifestHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "fileSync": {
+      "status": "verified_existing",
+      "manifestHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "role": "efficiency-baseline",
+  "modelId": "gte-multilingual-base-onnx-int8",
+  "source": {
+    "repository": "onnx-community/gte-multilingual-base",
+    "revision": "2edbf5e672aab465f9ed4c154a8b61791c082c69",
+    "upstreamRepository": "Alibaba-NLP/gte-multilingual-base",
+    "upstreamRevision": "9bbca17d9273fd0d03d5725c7a4b0f6b45142062"
+  },
+  "license": "Apache-2.0",
+  "dimensions": 768,
+  "maxInputTokens": 8192,
+  "dtype": "q8",
+  "pooling": "mean",
+  "normalization": "l2",
+  "queryInstruction": "Represent this sentence for searching relevant passages: {query}",
+  "files": {
+    "model": {
+      "path": "onnx/model_quantized.onnx",
+      "bytes": 340318797,
+      "sha256": "ab2bd164ebd8ca9003dc49a981b611e849b5d326f504c8873ba76e07fa6c0082"
+    },
+    "tokenizer": {
+      "path": "tokenizer.json",
+      "bytes": 17082734,
+      "sha256": "3a56def25aa40facc030ea8b0b87f3688e4b3c39eb8b45d5702b3a1300fe2a20"
+    },
+    "config": {
+      "path": "config.json",
+      "bytes": 1648,
+      "sha256": "6ef2538d4286a7cd18d05225f659d8a1bceca7adb01c186868e53dbd4f822e17"
+    }
+  },
+  "validatedRuntime": {
+    "transformersJs": "4.2.0",
+    "onnxruntimeNode": "1.24.3",
+    "node": "25.2.1",
+    "platform": "win32-x64",
+    "defaultExecutionProvider": "cpu"
+  },
+  "validatedAt": "2026-08-17"
+}

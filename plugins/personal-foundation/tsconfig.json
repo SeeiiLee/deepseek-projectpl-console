@@ -1,0 +1,13 @@
+{
+  "extends": "../../harness-src/tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "typeRoots": ["../../harness-src/node_modules/@types"]
+  },
+  "include": ["src"]
+}

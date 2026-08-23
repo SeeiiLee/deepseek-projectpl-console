@@ -1,0 +1,47 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-normalized-event/v1alpha1",
+  "eventId": "evt_0198f4b2-7c3a-7d74-a5c6-6b6f39e34774",
+  "eventType": "project.location.rebound",
+  "occurredAt": "2026-08-14T12:03:00.000Z",
+  "recordedAt": "2026-08-14T12:03:00.100Z",
+  "sequence": 4,
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d14-a5c6-6b6f39e34714"
+  },
+  "beforeRevision": 3,
+  "afterRevision": 4,
+  "causation": {
+    "commandId": "cmd_0198f4b2-7c3a-7d24-a5c6-6b6f39e34724",
+    "commandKind": "project.rebindLocation",
+    "idempotencyKey": "project.rebind-location.001",
+    "correlationId": "corr.lifecycle.rebind-location"
+  },
+  "provenance": {
+    "sourceType": "human",
+    "sourceId": "project-console:rebind-confirmation",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "observedAt": "2026-08-14T12:02:59.000Z"
+  },
+  "data": {
+    "projectMode": "managed",
+    "previousLocationRef": "loc_0198f4b2-7c3a-7d34-a5c6-6b6f39e34734",
+    "newLocationRef": "loc_0198f4b2-7c3a-7d35-a5c6-6b6f39e34735",
+    "sourceRootRef": "srt_0198f4b2-7c3a-7d44-a5c6-6b6f39e34744",
+    "reason": "moved",
+    "identityEvidence": {
+      "kind": "managed_manifest",
+      "manifestHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "fileSync": {
+      "status": "not_required"
+    }
+  }
+}

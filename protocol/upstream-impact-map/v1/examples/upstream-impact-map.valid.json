@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "mapVersion": "1.0.0",
+  "defaultGate": "G3",
+  "rules": [
+    {
+      "id": "docs-only",
+      "patternType": "path-prefix",
+      "pattern": "docs/",
+      "surface": "docs",
+      "consumerPlugins": [],
+      "minGate": "G0"
+    },
+    {
+      "id": "client-runtime",
+      "patternType": "path-prefix",
+      "pattern": "packages/client/src/runtime.ts",
+      "surface": "client-runtime",
+      "seam": "dsh-client-runtime",
+      "consumerPlugins": [
+        "@cyrus/dsh-workbench"
+      ],
+      "minGate": "G2"
+    },
+    {
+      "id": "profile-schema",
+      "patternType": "schema",
+      "pattern": "dsh.profile.bundles",
+      "surface": "profile",
+      "seam": "dsh-plugin-profile",
+      "consumerPlugins": [
+        "*"
+      ],
+      "minGate": "G3"
+    },
+    {
+      "id": "storage-migration",
+      "patternType": "path-glob",
+      "pattern": "packages/host/src/migrations/*.sql",
+      "surface": "storage-migration",
+      "seam": "dsh-storage",
+      "consumerPlugins": [
+        "*"
+      ],
+      "minGate": "G3"
+    }
+  ]
+}

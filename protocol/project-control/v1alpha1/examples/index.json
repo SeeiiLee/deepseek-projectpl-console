@@ -1,0 +1,60 @@
+{
+  "cases": [
+    {
+      "name": "project-manifest-valid",
+      "schema": "../schemas/project-manifest.schema.json",
+      "fixture": "./project-manifest.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "project-manifest-unknown-field",
+      "schema": "../schemas/project-manifest.schema.json",
+      "fixture": "./project-manifest.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "additionalProperties"
+    },
+    {
+      "name": "command-envelope-valid",
+      "schema": "../schemas/command-envelope.schema.json",
+      "fixture": "./command-envelope.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "command-envelope-unknown-field",
+      "schema": "../schemas/command-envelope.schema.json",
+      "fixture": "./command-envelope.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "additionalProperties"
+    },
+    {
+      "name": "normalized-event-valid",
+      "schema": "../schemas/normalized-event.schema.json",
+      "fixture": "./normalized-event.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "normalized-event-unknown-field",
+      "schema": "../schemas/normalized-event.schema.json",
+      "fixture": "./normalized-event.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "additionalProperties"
+    },
+    {
+      "name": "progress-update-frontmatter-valid",
+      "schema": "../schemas/progress-update-frontmatter.schema.json",
+      "fixture": "./progress-update-frontmatter.valid.json",
+      "expectedValid": true,
+      "expectedErrorKeyword": null
+    },
+    {
+      "name": "progress-update-frontmatter-unknown-field",
+      "schema": "../schemas/progress-update-frontmatter.schema.json",
+      "fixture": "./progress-update-frontmatter.invalid.json",
+      "expectedValid": false,
+      "expectedErrorKeyword": "additionalProperties"
+    }
+  ]
+}

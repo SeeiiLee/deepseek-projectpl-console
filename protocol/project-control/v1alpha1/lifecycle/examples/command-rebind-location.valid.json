@@ -1,0 +1,38 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-envelope/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d24-a5c6-6b6f39e34724",
+  "correlationId": "corr.lifecycle.rebind-location",
+  "idempotencyKey": "project.rebind-location.001",
+  "kind": "project.rebindLocation",
+  "occurredAt": "2026-08-14T12:03:00.000Z",
+  "actor": {
+    "kind": "human",
+    "id": "cyrus",
+    "applicationId": "deepseek-harness-personal"
+  },
+  "target": {
+    "aggregateType": "project",
+    "projectId": "prj_0198f4b2-7c3a-7d14-a5c6-6b6f39e34714"
+  },
+  "expectedRevision": 3,
+  "provenance": {
+    "sourceType": "human",
+    "sourceId": "project-console:rebind-confirmation",
+    "applicationVersion": "0.1.0",
+    "applicationInstanceId": "host-01",
+    "observedAt": "2026-08-14T12:02:59.000Z"
+  },
+  "payload": {
+    "expectedMode": "managed",
+    "currentLocationRef": "loc_0198f4b2-7c3a-7d34-a5c6-6b6f39e34734",
+    "currentLocationRevision": 2,
+    "newLocationRef": "loc_0198f4b2-7c3a-7d35-a5c6-6b6f39e34735",
+    "sourceRootRef": "srt_0198f4b2-7c3a-7d44-a5c6-6b6f39e34744",
+    "reason": "moved",
+    "identityEvidence": {
+      "kind": "managed_manifest",
+      "manifestHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  }
+}

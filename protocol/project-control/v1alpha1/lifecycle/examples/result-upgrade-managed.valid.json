@@ -1,0 +1,20 @@
+{
+  "protocolVersion": "project-control.dsh/v1alpha1",
+  "schemaVersion": "lifecycle-command-result/v1alpha1",
+  "commandId": "cmd_0198f4b2-7c3a-7d25-a5c6-6b6f39e34725",
+  "correlationId": "corr.lifecycle.upgrade-managed",
+  "kind": "project.upgradeManaged",
+  "status": "accepted",
+  "recordedAt": "2026-08-14T12:04:00.100Z",
+  "projectId": "prj_0198f4b2-7c3a-7d15-a5c6-6b6f39e34715",
+  "projectMode": "managed",
+  "aggregateRevision": 3,
+  "eventId": "evt_0198f4b2-7c3a-7d75-a5c6-6b6f39e34775",
+  "outcome": "managed_upgraded",
+  "fileSync": {
+    "status": "committed",
+    "planId": "pln_0198f4b2-7c3a-7d62-a5c6-6b6f39e34762",
+    "planHash": "sha256:58616bd635fb42aca70dd87c7fa40abcc4c17607a900fd687dda85db93d67577",
+    "manifestHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  }
+}

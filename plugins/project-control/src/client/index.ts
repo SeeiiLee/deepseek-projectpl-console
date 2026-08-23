@@ -1,0 +1,95 @@
+import { createElement } from 'react'
+import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { WorkbenchService } from '@cyrus/dsh-workbench/client'
+import { CandidateDetails } from './CandidateDetails.tsx'
+import { ProjectControlPlaceholder } from './ProjectControlPlaceholder.tsx'
+import { isCandidateResourceKey } from './projectControlApi.ts'
+import { isProgressUpdateResourceKey, ProgressUpdateViewer } from './ProgressUpdateViewer.tsx'
+import type {} from './contract.ts'
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    workbench: WorkbenchService
+  }
+}
+
+export const inject = ['slots', 'workbench']
+
+/** Occupy Project Control and contribute one bounded candidate viewer to Workbench. */
+export function apply(ctx: ClientContext): void {
+  ctx.effect(
+    () => ctx.workbench.viewers.register({
+      id: 'project-control.candidate-details',
+      family: 'details',
+      title: '项目候选',
+      canRestore: descriptor => descriptor.family === 'details'
+        && descriptor.viewerId === 'project-control.candidate-details'
+        && isCandidateResourceKey(descriptor.resourceKey),
+      render: descriptor => isCandidateResourceKey(descriptor.resourceKey)
+        ? createElement(CandidateDetails, { candidateId: descriptor.resourceKey })
+        : createElement('p', null, '候选项目标识无效。'),
+    }),
+    'project-control: candidate details viewer',
+  )
+  ctx.effect(
+    () => ctx.workbench.viewers.register({
+      id: 'project-control.progress-update',
+      family: 'artifact',
+      title: '进展更新',
+      canRestore: descriptor => descriptor.family === 'artifact'
+        && descriptor.viewerId === 'project-control.progress-update'
+        && isProgressUpdateResourceKey(descriptor.resourceKey),
+      render: descriptor => isProgressUpdateResourceKey(descriptor.resourceKey)
+        ? createElement(ProgressUpdateViewer, { descriptor })
+        : createElement('p', null, '进展更新标识无效。'),
+    }),
+    'project-control: progress update viewer',
+  )
+  ctx.slots.inject('project.control', () => ctx.slots.register({
+    name: 'project.control',
+    inject: () => ({ workbench: ctx.workbench }),
+  }, ProjectControlPlaceholder))
+}
+
+export { CandidateDetails } from './CandidateDetails.tsx'
+export { ProjectControlPlaceholder } from './ProjectControlPlaceholder.tsx'
+export { ProgressUpdateViewer, isProgressUpdateResourceKey } from './ProgressUpdateViewer.tsx'
+export { ProjectConsole, loadConsolePreferences, saveConsolePreferences } from './ProjectConsole.tsx'
+export type { ProjectControlOwnerProps, ProjectControlPlaceholderProps } from './contract.ts'
+export { createProjectControlApi } from './projectControlApi.ts'
+export type {
+  CandidateDocument,
+  CandidateIssue,
+  CandidatePrepareInput,
+  EvidenceLevel,
+  IntakeCandidateList,
+  IntakeJob,
+  IntakeScanResult,
+  IntakeSourceRoot,
+  LifecycleCommandResult,
+  PagedItems,
+  ProjectCandidate,
+  ProjectControlApi,
+  ProjectControlStatus,
+  ProjectDecision,
+  ProjectDocumentIndex,
+  ProjectDocumentParseIssue,
+  ProjectDocumentRebindProposal,
+  ProjectDocumentRole,
+  ProjectDocumentState,
+  ProjectEvent,
+  ProjectList,
+  ProjectListItem,
+  ProjectProgressUpdate,
+  ProjectQuarantineItem,
+  ProjectReview,
+  ProjectReviewAction,
+  ProjectRun,
+  ProjectSessionBinding,
+  ProjectStorageState,
+  ProjectWorkItem,
+  RebindResolutionInput,
+  RebindResolutionResult,
+  WorkItemExecutionStatus,
+  WorkItemReviewStatus,
+} from './projectControlApi.ts'

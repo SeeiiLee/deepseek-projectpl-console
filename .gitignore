@@ -1,0 +1,29 @@
+node_modules/
+artifacts/
+artifacts-dev/
+分发包/
+*.log
+boot-error.log
+flavor.json
+.dsh/
+.credentials.yaml
+secrets.encrypted.json
+key.txt
+audit.json
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.writer-lock.sqlite3
+runtime-stable/
+runtime-test/
+*.staging/
+*.previous/
+*.previous
+*.tmp
+*.blockmap
+
+# ֻ���ο���¡���������ֿ⣬���ύ��
+refs/
+
+# rc.7 构建根 dev seam（build-kit 自动创建/维护，指向活动托管运行时）
+harness-src/

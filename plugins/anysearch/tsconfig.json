@@ -1,0 +1,27 @@
+{
+  "extends": "../../harness-src/tsconfig.base.client.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "rootDir": "src",
+    "outDir": "lib/types",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node", "react"],
+    "typeRoots": [
+      "../../harness-src/node_modules/@types",
+      "../../harness-src/packages/client/ui-theme/node_modules/@types"
+    ]
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../harness-src/vendor/cordis" },
+    { "path": "../../harness-src/vendor/schemastery" },
+    { "path": "../../harness-src/packages/credentials/credentials" },
+    { "path": "../../harness-src/packages/util/launch-environment" },
+    { "path": "../../harness-src/packages/settings/settings" },
+    { "path": "../../harness-src/packages/web/web" },
+    { "path": "../../harness-src/packages/client/runtime" },
+    { "path": "../../harness-src/packages/client/ui-settings" },
+    { "path": "../../harness-src/packages/client/ui-slots" }
+  ]
+}
