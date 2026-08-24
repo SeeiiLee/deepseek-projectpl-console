@@ -9,8 +9,9 @@
 - 已授权并完成：commit、push、v0.4.4 GitHub Release（https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4）。
 - 仍未执行（按授权边界）：未创建 plugins-v .2 Release，未安装 v0.4.4 到宿主机，未读写/移动/删除真实 F 盘 pending generation，未修改 `D:\Deepseek Harness`。
 
-## 2026-08-24 v0.4.5 发布候选（等待 Cyrus 授权发布）
+## 2026-08-24 v0.4.5 已发布
 - v0.4.5 已完成：更新中心有效版本识别、pending 安全收口、751/751 全量、stable packed E2E、全部门禁通过。
-- 发布候选资产位于 `release-staging/v0.4.5-final`；未 commit/push/release，未覆盖 v0.4.4 Release，未创建 plugins-v*.2，未操作真实 Stable 数据。
+- 已发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5
+- 未覆盖 v0.4.4 Release，未创建 plugins-v*.2，未操作真实 Stable 数据，未安装到宿主机。
 
 后续若出现规范冲突、真实项目写入授权、上游修改、覆盖/删除、安装/发布或外部凭据需求，必须先在此记录并请求 Cyrus 决策，不能自行扩大权限。

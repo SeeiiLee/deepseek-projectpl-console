@@ -1314,4 +1314,5 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - pending 存在时禁止准备新 generation，提示“已有插件更新待重启激活”，UI 不显示“下载并准备插件更新”按钮。
 - current/pending 统一 `assertExternalPackagePath()`：目录包含、版本安全、junction/symlink 越界拒绝。
 - 全量测试 751/751，fail 0，skipped 0；stable packed E2E 与四项门禁通过。
-- 已构建 `release-staging/v0.4.5-final` 发布候选；未 commit/push/release，未覆盖 v0.4.4 Release，未创建 plugins-v*.2，未操作真实 Stable 数据。
+- 已构建 `release-staging/v0.4.5-final` 并发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5
+- 未覆盖 v0.4.4 Release，未创建 plugins-v*.2，未操作真实 Stable 数据，未安装到宿主机。
