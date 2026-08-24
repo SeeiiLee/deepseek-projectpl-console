@@ -58,3 +58,11 @@
 - 产物：`release-staging/plugins-v2026.08.24.2` 仅含轨迹岛 0.1.2 资产；`bootstrap=false`。
 - `plugin-set.lock.json` 除轨迹岛 0.1.2 外，还按生成器结果修正了 v0.4.5 后 update-center 的当前 tgz integrity：`101659537af66014ab60aab7323c0096a3d02fcd8c2c7746e598f92e46d0764`。
 - 状态：已发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.24.2 （Release ID 375909010，非 draft、非 prerelease）。
+
+## 2026-08-24 A线最终验收收口（文档只读确认）
+- 开工回执：基线核验通过——HEAD `e3f888a`，tag `.2`→`a6d0c2a`，Release `375909010` 四资产非 draft/prerelease，tracked worktree 干净。
+- Cyrus 人工 UI 验收：Stable 只提示轨迹岛 `0.1.1→0.1.2`，重启后正确生效；AnySearch 保持 `0.1.1-beta` 独立更新源。
+- 只读落盘证据：`current.json`=`pending-1787596673068`，`committedAt=2026-08-24T18:38:33.132Z`；batch 中轨迹岛 external `0.1.2`、AnySearch external `0.1.1-beta`、其余 16 个 builtin；轨迹岛 `.install.json` 的 `sourceTag=.2`、`tgzSha256=67905069...`、`minClient=0.4.5`；AnySearch `.install.json` 仍来自 `.1`；`pending.json`/`activating.json` 不存在；`previous.json`=`pending-1787517223819`；Profile `@cyrus` junction 指向当前 generation `scope\@cyrus`。
+- `previous.json` 是上一 generation 的正常回滚目标，保留为可回滚证据，不清理、不视为异常。
+- A 线三条生产 happy path 均完成：客户端升级（v0.4.5）、整批插件更新（.1）、单插件更新（.2）。
+- A 线进入“生产主链路完成并冻结观察”，无当前阻塞；B/C 线和记忆系统可继续开发。本轮不重跑全量/packed E2E，复用已完成的 755/755 与真实发布证据。

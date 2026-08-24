@@ -1328,3 +1328,11 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - 已生成本地 staging `release-staging/plugins-v2026.08.24.2`：仅轨迹岛 0.1.2 tgz/sha256、plugin-index、release-manifest、release-notes；无 AnySearch tgz/旧资产混入。
 - 全量测试 755/755，fail 0，skipped 0；stable packed E2E、check-plugins、generate-plugin-set --check、verify-launch、git diff --check 全过。
 - 已发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.24.2 （Release ID 375909010，非 draft、非 prerelease）。
+
+## 2026-08-24：A线最终验收收口（文档只读确认）
+
+- Cyrus 人工 UI 验收：Stable 只提示轨迹岛 `0.1.1→0.1.2`，重启后正确生效；AnySearch 保持 `0.1.1-beta` 独立更新源。
+- 只读落盘证据与任务要求完全一致：`current.json`=`pending-1787596673068`/`committedAt=2026-08-24T18:38:33.132Z`；batch 中轨迹岛 external `0.1.2`、AnySearch external `0.1.1-beta`、其余 16 个 builtin；轨迹岛 `.install.json` 的 `sourceTag=.2`、`tgzSha256=67905069c05162d1dbf0698c574c399457e8be3da5a2951dc894227959a4f792`、`minClient=0.4.5`；AnySearch `.install.json` 仍来自 `.1`；`pending.json`/`activating.json` 不存在；`previous.json`=`pending-1787517223819`；Profile `@cyrus` junction 指向当前 generation `scope\@cyrus`。
+- `previous.json` 是上一 generation 的正常回滚目标，保留为可回滚证据。
+- A 线客户端升级、整批插件更新、单插件更新三条生产 happy path 均完成；A 线进入冻结观察。
+- 本轮不重跑全量/packed E2E，不宣称执行真实回滚或插件功能语义测试；复用已完成的 755/755 与真实发布证据。
