@@ -51,10 +51,10 @@
 - 验证：全量 751/751、stable packed E2E、check-plugins、generate-plugin-set、verify-launch、git diff --check 全过。
 - 状态：已发布并安装 v0.4.5：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5 （commit/push 已授权并完成；Cyrus 已通过应用内更新安装并正常启动；真实 Stable 更新中心确认 AnySearch 0.1.1-beta 与轨迹岛 0.1.1 为独立更新源，其余插件随客户端更新；未覆盖 v0.4.4 Release）。
 
-## 2026-08-24 plugins-v2026.08.24.2 单插件灰度候选（未发布）
+## 2026-08-24 plugins-v2026.08.24.2 单插件灰度已发布
 - 目标：用真实发布格式证明“只更新轨迹岛时，AnySearch 独立插件不会丢失或退回内置”。
 - 内容：release 脚本支持显式白名单插件选择（`--plugin/--plugins`），bootstrap 与 follow-up 分离；轨迹岛升至 0.1.2、minClient=0.4.5；AnySearch 源码/版本/包未改动。
 - 验证：新增 release 单插件/未知/重复/空/bootstrap/资产混入测试与组合 generation 保留 AnySearch 测试；.2 测试使用 index/entry/app minClient=0.4.5，并新增 0.4.4 客户端 blocked 负例；全量 755/755、stable packed E2E、check-plugins、generate-plugin-set --check、verify-launch、git diff --check 全过。
 - 产物：`release-staging/plugins-v2026.08.24.2` 仅含轨迹岛 0.1.2 资产；`bootstrap=false`。
 - `plugin-set.lock.json` 除轨迹岛 0.1.2 外，还按生成器结果修正了 v0.4.5 后 update-center 的当前 tgz integrity：`101659537af66014ab60aab7323c0096a3d02fcd8c2c7746e598f92e46d0764`。
-- 状态：候选已完成，尚未发布；等待 Codex 验收与 Cyrus 独立发布授权（不 commit/push/tag/Release）。
+- 状态：已发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.24.2 （Release ID 375909010，非 draft、非 prerelease）。

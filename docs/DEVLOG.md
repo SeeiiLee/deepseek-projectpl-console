@@ -1317,7 +1317,7 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - 已构建 `release-staging/v0.4.5-final` 并发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5
 - 未覆盖 v0.4.4 Release，未创建 plugins-v*.2；Cyrus 已通过应用内更新安装并正常启动 v0.4.5，真实 Stable 更新中心确认 AnySearch 0.1.1-beta 与轨迹岛 0.1.1 为独立更新源，其余插件随客户端更新。
 
-## 2026-08-24：plugins-v2026.08.24.2 单插件灰度候选（未发布）
+## 2026-08-24：plugins-v2026.08.24.2 单插件灰度已发布
 
 - Cyrus 拍板：`.2` 只发布 `@cyrus/dsh-trajectory-island` 0.1.2，`minClient=0.4.5`；AnySearch 不改版本/不重新打包，继续 0.1.1-beta。
 - `scripts/release-plugins.mjs` 支持显式白名单插件选择（`--plugin/--plugins`），拒绝未知/重复/空；bootstrap 与后续发布分开，`.2` 的 `release-manifest.bootstrap=false`。
@@ -1327,4 +1327,4 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - 核心组合测试走真实 UpdateService/generation 接口：available 只有轨迹岛；新 generation 同时包含复制后的 AnySearch 0.1.1-beta 和新轨迹岛 0.1.2；两者保持 external；scope 指向新代；激活后重复 check 不再提示；`rollbackPluginGeneration` 恢复上一代。`.2` 测试使用 index/entry/app minClient=0.4.5，并新增 0.4.4 客户端 blocked 负例（不得进入 available、不得生成 pending/generation）。
 - 已生成本地 staging `release-staging/plugins-v2026.08.24.2`：仅轨迹岛 0.1.2 tgz/sha256、plugin-index、release-manifest、release-notes；无 AnySearch tgz/旧资产混入。
 - 全量测试 755/755，fail 0，skipped 0；stable packed E2E、check-plugins、generate-plugin-set --check、verify-launch、git diff --check 全过。
-- 未 commit、push、建 tag、建 GitHub Release；等待 Codex 验收与 Cyrus 授权。
+- 已发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.24.2 （Release ID 375909010，非 draft、非 prerelease）。
