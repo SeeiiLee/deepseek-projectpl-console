@@ -6,8 +6,8 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 		let react_jsx_runtime = require("react/jsx-runtime");
-		//#region \0dsh-css:D:\Deepseek Harness Personal\plugins\update-center\src\client\UpdateCenterSection.module.css.mjs
-		const css = ".RHT9Va_section{color:var(--dsw-color-text-primary,#171719);flex-direction:column;gap:18px;padding:2px 0 30px;display:flex}.RHT9Va_header{justify-content:space-between;align-items:flex-start;gap:20px;display:flex}.RHT9Va_header h2,.RHT9Va_card h3,.RHT9Va_pluginCard h3,.RHT9Va_settings h3{margin:0}.RHT9Va_header p,.RHT9Va_card p,.RHT9Va_pluginCard p{color:var(--dsw-color-text-secondary,#6b6b70);margin:6px 0 0;line-height:1.55}.RHT9Va_primary,.RHT9Va_actions .RHT9Va_primary{background:var(--dsw-color-primary,#4d6bfe);color:#fff;border-color:#0000}.RHT9Va_header button,.RHT9Va_actions button,.RHT9Va_failure button,.RHT9Va_settings button{border:1px solid color-mix(in srgb,var(--dsw-color-text-primary,#171719) 16%,transparent);cursor:pointer;border-radius:9px;padding:8px 13px}.RHT9Va_header button:disabled,.RHT9Va_actions button:disabled,.RHT9Va_settings button:disabled{cursor:not-allowed;opacity:.45}.RHT9Va_status,.RHT9Va_notice,.RHT9Va_failure{background:color-mix(in srgb,var(--dsw-color-primary,#4d6bfe) 8%,transparent);border-radius:10px;margin:0;padding:12px 14px}.RHT9Va_notice{color:#2752c8}.RHT9Va_failure,.RHT9Va_warning{color:#a43a35;background:#fff1ef}.RHT9Va_summary{border:1px solid color-mix(in srgb,currentColor 10%,transparent);border-radius:12px;grid-template-columns:max-content 1fr;gap:5px 16px;padding:13px 15px;display:grid}.RHT9Va_summary span{color:var(--dsw-color-text-secondary,#6b6b70)}.RHT9Va_cards{grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;display:grid}.RHT9Va_card,.RHT9Va_pluginCard,.RHT9Va_settings{border:1px solid color-mix(in srgb,currentColor 11%,transparent);background:color-mix(in srgb,var(--dsw-specific-content-background,#fff) 94%,transparent);border-radius:14px;padding:17px}.RHT9Va_cardHeader{justify-content:space-between;align-items:flex-start;gap:14px;display:flex}.RHT9Va_badge{white-space:nowrap;color:#4b4d55;background:#eceef5;border-radius:999px;padding:4px 9px;font-size:12px}.RHT9Va_badge[data-status=available],.RHT9Va_badge[data-status=ready]{color:#137a3d;background:#e8f7ee}.RHT9Va_badge[data-status=error]{color:#aa322a;background:#ffebe8}.RHT9Va_badge[data-status=checking],.RHT9Va_badge[data-status=preparing]{color:#315bce;background:#edf2ff}.RHT9Va_card dl{gap:7px;margin:15px 0;display:grid}.RHT9Va_card dl div{grid-template-columns:86px minmax(0,1fr);gap:10px;display:grid}.RHT9Va_card dt{color:var(--dsw-color-text-secondary,#6b6b70)}.RHT9Va_card dd{text-overflow:ellipsis;white-space:nowrap;margin:0;overflow:hidden}.RHT9Va_detail,.RHT9Va_releaseNotes{white-space:pre-wrap;overflow-wrap:anywhere}.RHT9Va_warning{border-radius:9px;padding:10px 12px}.RHT9Va_actions{flex-wrap:wrap;gap:8px;margin-top:15px;display:flex}.RHT9Va_actions button{color:inherit;background:0 0}.RHT9Va_actions .RHT9Va_primary{background:var(--dsw-color-primary,#4d6bfe);color:#fff}.RHT9Va_pluginCard ul{gap:7px;margin:14px 0 0;padding:0;list-style:none;display:grid}.RHT9Va_pluginCard li{border-top:1px solid color-mix(in srgb,currentColor 8%,transparent);grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:9px 0;display:grid}.RHT9Va_pluginCard code{text-overflow:ellipsis;overflow:hidden}.RHT9Va_pluginCard small{color:var(--dsw-color-text-secondary,#6b6b70)}.RHT9Va_settings{gap:12px;display:grid}.RHT9Va_settings>label,.RHT9Va_settingRow label{gap:6px;display:grid}.RHT9Va_settings input,.RHT9Va_settings select{box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);width:100%;color:inherit;background:0 0;border-radius:9px;padding:9px 10px}.RHT9Va_settingRow{grid-template-columns:1fr 1fr;gap:14px;display:grid}.RHT9Va_checkbox{align-self:end;align-items:center;padding:9px 0;grid-template-columns:auto 1fr!important;display:flex!important}.RHT9Va_checkbox input{width:auto}.RHT9Va_checkbox span{white-space:nowrap}@media (width<=760px){.RHT9Va_header{flex-direction:column}.RHT9Va_cards,.RHT9Va_settingRow{grid-template-columns:1fr}.RHT9Va_pluginCard li{grid-template-columns:1fr auto}.RHT9Va_pluginCard li small{grid-column:1/-1}}";
+		//#region \0dsh-css:D:\dsh-v0.4.3-clean\plugins\update-center\src\client\UpdateCenterSection.module.css.mjs
+		const css = ".SXwX_W_section{color:var(--dsw-color-text-primary,#171719);flex-direction:column;gap:18px;padding:2px 0 30px;display:flex}.SXwX_W_header{justify-content:space-between;align-items:flex-start;gap:20px;display:flex}.SXwX_W_header h2,.SXwX_W_card h3,.SXwX_W_pluginCard h3,.SXwX_W_settings h3{margin:0}.SXwX_W_header p,.SXwX_W_card p,.SXwX_W_pluginCard p{color:var(--dsw-color-text-secondary,#6b6b70);margin:6px 0 0;line-height:1.55}.SXwX_W_primary,.SXwX_W_actions .SXwX_W_primary{background:var(--dsw-color-primary,#4d6bfe);color:#fff;border-color:#0000}.SXwX_W_header button,.SXwX_W_actions button,.SXwX_W_failure button,.SXwX_W_settings button{border:1px solid color-mix(in srgb,var(--dsw-color-text-primary,#171719) 16%,transparent);cursor:pointer;border-radius:9px;padding:8px 13px}.SXwX_W_header button:disabled,.SXwX_W_actions button:disabled,.SXwX_W_settings button:disabled{cursor:not-allowed;opacity:.45}.SXwX_W_status,.SXwX_W_notice,.SXwX_W_failure{background:color-mix(in srgb,var(--dsw-color-primary,#4d6bfe) 8%,transparent);border-radius:10px;margin:0;padding:12px 14px}.SXwX_W_notice{color:#2752c8}.SXwX_W_failure,.SXwX_W_warning{color:#a43a35;background:#fff1ef}.SXwX_W_summary{border:1px solid color-mix(in srgb,currentColor 10%,transparent);border-radius:12px;grid-template-columns:max-content 1fr;gap:5px 16px;padding:13px 15px;display:grid}.SXwX_W_summary span{color:var(--dsw-color-text-secondary,#6b6b70)}.SXwX_W_cards{grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;display:grid}.SXwX_W_card,.SXwX_W_pluginCard,.SXwX_W_settings{border:1px solid color-mix(in srgb,currentColor 11%,transparent);background:color-mix(in srgb,var(--dsw-specific-content-background,#fff) 94%,transparent);border-radius:14px;padding:17px}.SXwX_W_cardHeader{justify-content:space-between;align-items:flex-start;gap:14px;display:flex}.SXwX_W_badge{white-space:nowrap;color:#4b4d55;background:#eceef5;border-radius:999px;padding:4px 9px;font-size:12px}.SXwX_W_badge[data-status=available],.SXwX_W_badge[data-status=ready]{color:#137a3d;background:#e8f7ee}.SXwX_W_badge[data-status=error]{color:#aa322a;background:#ffebe8}.SXwX_W_badge[data-status=checking],.SXwX_W_badge[data-status=preparing]{color:#315bce;background:#edf2ff}.SXwX_W_card dl{gap:7px;margin:15px 0;display:grid}.SXwX_W_card dl div{grid-template-columns:86px minmax(0,1fr);gap:10px;display:grid}.SXwX_W_card dt{color:var(--dsw-color-text-secondary,#6b6b70)}.SXwX_W_card dd{text-overflow:ellipsis;white-space:nowrap;margin:0;overflow:hidden}.SXwX_W_detail,.SXwX_W_releaseNotes{white-space:pre-wrap;overflow-wrap:anywhere}.SXwX_W_warning{border-radius:9px;padding:10px 12px}.SXwX_W_actions{flex-wrap:wrap;gap:8px;margin-top:15px;display:flex}.SXwX_W_actions button{color:inherit;background:0 0}.SXwX_W_actions .SXwX_W_primary{background:var(--dsw-color-primary,#4d6bfe);color:#fff}.SXwX_W_pluginCard ul{gap:7px;margin:14px 0 0;padding:0;list-style:none;display:grid}.SXwX_W_pluginCard li{border-top:1px solid color-mix(in srgb,currentColor 8%,transparent);grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:9px 0;display:grid}.SXwX_W_pluginCard code{text-overflow:ellipsis;overflow:hidden}.SXwX_W_pluginCard small{color:var(--dsw-color-text-secondary,#6b6b70)}.SXwX_W_settings{gap:12px;display:grid}.SXwX_W_settings>label,.SXwX_W_settingRow label{gap:6px;display:grid}.SXwX_W_settings input,.SXwX_W_settings select{box-sizing:border-box;border:1px solid color-mix(in srgb,currentColor 18%,transparent);width:100%;color:inherit;background:0 0;border-radius:9px;padding:9px 10px}.SXwX_W_settingRow{grid-template-columns:1fr 1fr;gap:14px;display:grid}.SXwX_W_checkbox{align-self:end;align-items:center;padding:9px 0;grid-template-columns:auto 1fr!important;display:flex!important}.SXwX_W_checkbox input{width:auto}.SXwX_W_checkbox span{white-space:nowrap}@media (width<=760px){.SXwX_W_header{flex-direction:column}.SXwX_W_cards,.SXwX_W_settingRow{grid-template-columns:1fr}.SXwX_W_pluginCard li{grid-template-columns:1fr auto}.SXwX_W_pluginCard li small{grid-column:1/-1}}";
 		const tagId = "@cyrus/dsh-update-center/UpdateCenterSection.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -17,25 +17,25 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var UpdateCenterSection_module_css_default = {
-			"actions": "RHT9Va_actions",
-			"badge": "RHT9Va_badge",
-			"card": "RHT9Va_card",
-			"cardHeader": "RHT9Va_cardHeader",
-			"cards": "RHT9Va_cards",
-			"checkbox": "RHT9Va_checkbox",
-			"detail": "RHT9Va_detail",
-			"failure": "RHT9Va_failure",
-			"header": "RHT9Va_header",
-			"notice": "RHT9Va_notice",
-			"pluginCard": "RHT9Va_pluginCard",
-			"primary": "RHT9Va_primary",
-			"releaseNotes": "RHT9Va_releaseNotes",
-			"section": "RHT9Va_section",
-			"settingRow": "RHT9Va_settingRow",
-			"settings": "RHT9Va_settings",
-			"status": "RHT9Va_status",
-			"summary": "RHT9Va_summary",
-			"warning": "RHT9Va_warning"
+			"actions": "SXwX_W_actions",
+			"badge": "SXwX_W_badge",
+			"card": "SXwX_W_card",
+			"cardHeader": "SXwX_W_cardHeader",
+			"cards": "SXwX_W_cards",
+			"checkbox": "SXwX_W_checkbox",
+			"detail": "SXwX_W_detail",
+			"failure": "SXwX_W_failure",
+			"header": "SXwX_W_header",
+			"notice": "SXwX_W_notice",
+			"pluginCard": "SXwX_W_pluginCard",
+			"primary": "SXwX_W_primary",
+			"releaseNotes": "SXwX_W_releaseNotes",
+			"section": "SXwX_W_section",
+			"settingRow": "SXwX_W_settingRow",
+			"settings": "SXwX_W_settings",
+			"status": "SXwX_W_status",
+			"summary": "SXwX_W_summary",
+			"warning": "SXwX_W_warning"
 		};
 		//#endregion
 		//#region src/client/UpdateCenterSection.tsx
@@ -308,7 +308,7 @@ window.__ModuleLoader__.load({
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", { children: state.plugins.map((plugin) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", { children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", { children: plugin.packageName }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: plugin.version }),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: plugin.updateWithDesktop ? "随客户端更新" : "独立更新源" })
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: plugin.pendingVersion !== void 0 ? `已准备 ${plugin.pendingVersion}，重启后激活` : plugin.updateWithDesktop ? "随客户端更新" : "独立更新源" })
 								] }, plugin.packageName)) }),
 								state.pluginChannel?.available !== void 0 && state.pluginChannel.available.length > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", { children: "可更新插件" }),

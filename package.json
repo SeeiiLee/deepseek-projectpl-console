@@ -1,6 +1,6 @@
 {
   "name": "deepseek-harness-personal-desktop",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "private": true,
   "type": "module",
   "description": "Personal desktop launcher for a local DeepSeek Harness checkout",

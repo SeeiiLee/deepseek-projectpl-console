@@ -1307,3 +1307,11 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - 插件 Release 收口：现有 `plugins-v2026.08.24.1`（.1）不修改、不删除；后续发布 `.2`，两个插件递增版本，`minClient=0.4.4`。
 - 已授权并完成 commit、push、v0.4.4 GitHub Release：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4
 - 未安装 v0.4.4 到宿主机，未创建 plugins-v .2 Release；`release-staging/` 仅作上传来源，不 git add/提交其中的大文件。
+
+## 2026-08-24：v0.4.5 发布候选（更新中心有效版本识别与 pending 安全收口）
+
+- 修复更新中心将 external 插件误显示为“随客户端更新”：`effectivePluginVersions()` 读取并验证 current generation，`checkPlugins()` 以实际生效版本比较。
+- pending 存在时禁止准备新 generation，提示“已有插件更新待重启激活”，UI 不显示“下载并准备插件更新”按钮。
+- current/pending 统一 `assertExternalPackagePath()`：目录包含、版本安全、junction/symlink 越界拒绝。
+- 全量测试 751/751，fail 0，skipped 0；stable packed E2E 与四项门禁通过。
+- 已构建 `release-staging/v0.4.5-final` 发布候选；未 commit/push/release，未覆盖 v0.4.4 Release，未创建 plugins-v*.2，未操作真实 Stable 数据。

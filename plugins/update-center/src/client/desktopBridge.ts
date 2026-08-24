@@ -43,6 +43,8 @@ export interface BundledPluginState {
   packageName: string
   version: string
   updateWithDesktop: boolean
+  generationId?: string
+  pendingVersion?: string
 }
 
 export interface PluginChannelEntry {

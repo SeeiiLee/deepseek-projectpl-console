@@ -3,7 +3,7 @@
 // 校验只读，不执行构建/测试/联网/模型。
 import { createHash } from 'node:crypto'
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 
 export const EXTERNAL_PLUGIN_WHITELIST = Object.freeze([
   '@cyrus/dsh-anysearch',
@@ -15,6 +15,70 @@ export const INSTALL_SCHEMA_VERSION = 1
 
 export function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
+}
+
+const SAFE_GENERATION_ID = /^[A-Za-z0-9._-]+$/u
+
+/**
+ * Resolve a generation id strictly below externalRoot/generations. Rejects
+ * relative traversal, absolute paths, path separators, '.'/'..', and any
+ * resolved target outside the managed generations directory.
+ */
+export function assertSafeGenerationId(generationId, externalRoot) {
+  if (typeof generationId !== 'string' || generationId.length === 0 || !SAFE_GENERATION_ID.test(generationId)) {
+    throw new Error(`非法 generationId: ${generationId}`)
+  }
+  if (generationId === '.' || generationId === '..') {
+    throw new Error(`非法 generationId: ${generationId}`)
+  }
+  const base = resolve(join(externalRoot, 'generations'))
+  const expected = join(base, generationId)
+  const target = resolve(expected)
+  if (target !== expected || !target.startsWith(base + sep)) {
+    throw new Error(`generationId 越界: ${generationId}`)
+  }
+  return target
+}
+
+function assertPathInside(base, target) {
+  const resolvedBase = resolve(base)
+  const resolvedTarget = resolve(target)
+  if (resolvedTarget === resolvedBase || !resolvedTarget.startsWith(resolvedBase + sep)) {
+    throw new Error(`路径越界: ${target}`)
+  }
+}
+
+const SAFE_DIRECTORY_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u
+const SAFE_VERSION = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u
+
+/**
+ * Shared current/pending external package path validation. Rejects unsafe
+ * directoryName/version (path separators, '.', '..', absolute paths) and any
+ * generation/packages/package path that is a symlink/junction/reparse point.
+ */
+export function assertExternalPackagePath({ generationDir, directoryName, version }) {
+  if (typeof directoryName !== 'string' || !SAFE_DIRECTORY_NAME.test(directoryName)) {
+    throw new Error(`非法插件目录名: ${directoryName}`)
+  }
+  if (typeof version !== 'string' || !SAFE_VERSION.test(version)) {
+    throw new Error(`非法插件版本目录名: ${version}`)
+  }
+  const packagesDir = join(generationDir, 'packages')
+  const packageDir = join(packagesDir, directoryName, version)
+  assertPathInside(packagesDir, packageDir)
+  for (const path of [generationDir, packagesDir, packageDir]) {
+    let stat
+    try {
+      stat = lstatSync(path)
+    } catch (error) {
+      if (error?.code === 'ENOENT') continue
+      throw error
+    }
+    if (stat.isSymbolicLink()) {
+      throw new Error(`拒绝符号链接/junction 路径: ${path}`)
+    }
+  }
+  return packageDir
 }
 
 /**
@@ -206,7 +270,13 @@ export function validateGeneration(generationDir, options = {}) {
     try { batch = readJson(batchPath) } catch { batch = null }
     for (const [name, info] of Object.entries(batch?.packages ?? {})) {
       if (info.source !== 'external') continue
-      const packageDir = join(generationDir, 'packages', info.directoryName, info.version)
+      let packageDir
+      try {
+        packageDir = assertExternalPackagePath({ generationDir, directoryName: info.directoryName, version: info.version })
+      } catch (error) {
+        issues.push(`${name}: ${error.message}`)
+        continue
+      }
       const installResult = validateInstallManifest(join(packageDir, '.install.json'), packageDir)
       if (!installResult.ok) issues.push(...installResult.issues.map(issue => `${name}: ${issue}`))
       const scopePath = join(generationDir, 'scope', '@cyrus', name.split('/')[1])
@@ -226,7 +296,12 @@ export function loadCurrentGeneration(externalRoot, options = {}) {
   let current
   try { current = readJson(currentPath) } catch { return null }
   if (!current?.generationId) return null
-  const generationDir = join(externalRoot, 'generations', current.generationId)
+  let generationDir
+  try {
+    generationDir = assertSafeGenerationId(current.generationId, externalRoot)
+  } catch {
+    return null
+  }
   if (!existsSync(generationDir)) return null
   const batchPath = join(generationDir, 'batch.json')
   if (!existsSync(batchPath)) return null

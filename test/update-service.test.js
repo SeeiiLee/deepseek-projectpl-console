@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -530,8 +530,14 @@ test('preparePluginGeneration writes pending generation from a local fixture', a
 
 test('rollbackPluginGeneration restores previous generation or builtin baseline', async t => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-plugin-rollback-'))
-  const externalRoot = join(root, 'plugins-external')
-  await mkdir(externalRoot, { recursive: true })
+  const externalRoot = await writeExternalGeneration(root, {
+    generationId: 'current-gen',
+    versions: { '@cyrus/dsh-anysearch': '0.1.1-beta' },
+  })
+  await writeExternalGeneration(root, {
+    generationId: 'prev-gen',
+    versions: { '@cyrus/dsh-anysearch': '0.1.0' },
+  })
   await writeFile(join(externalRoot, 'current.json'), JSON.stringify({ generationId: 'current-gen', committedAt: '2026-08-21T00:00:00.000Z' }))
   await writeFile(join(externalRoot, 'previous.json'), JSON.stringify({ generationId: 'prev-gen', committedAt: '2026-08-20T00:00:00.000Z' }))
   const service = new UpdateService({
@@ -2180,7 +2186,14 @@ test('legacy 0.4.2 state has no known-good installer; first upgrade cannot auto-
 
 test('plugin generation GC preview and confirmed GC keep current and previous only', async t => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-plugin-gc-'))
-  const externalRoot = join(root, 'plugins-external')
+  const externalRoot = await writeExternalGeneration(root, {
+    generationId: 'current-gen',
+    versions: { '@cyrus/dsh-anysearch': '0.1.1-beta' },
+  })
+  await writeExternalGeneration(root, {
+    generationId: 'prev-gen',
+    versions: { '@cyrus/dsh-anysearch': '0.1.0' },
+  })
   const marker = async (dir, name, content) => {
     await mkdir(join(externalRoot, 'generations', dir), { recursive: true })
     await writeFile(join(externalRoot, 'generations', dir, name), content)
@@ -2484,6 +2497,777 @@ test('active plugin generation with incomplete compatibility evidence fails clos
     )
     assert.equal(JSON.parse(await readFile(join(externalRoot, 'current.json'), 'utf8')).generationId, generationId)
   }
+})
+
+async function makeMinimalPluginTree(root, versions = {}) {
+  for (const { packageName, directoryName } of PERSONAL_PLUGINS) {
+    const version = versions[packageName] ?? '0.1.0'
+    const dir = join(root, 'plugins', directoryName)
+    await mkdir(join(dir, 'lib'), { recursive: true })
+    await writeFile(join(dir, 'package.json'), JSON.stringify({ name: packageName, version }))
+    await writeFile(join(dir, 'lib', 'index.js'), 'export const ok = true\n')
+    await writeFile(join(dir, 'lib', 'client.js'), `id: ${JSON.stringify(packageName)}\n`)
+  }
+}
+
+async function writeExternalGeneration(root, { generationId, versions, current = false, pending = false, corruptInstall = false, corruptBatch = false }) {
+  const externalRoot = join(root, 'plugins-external')
+  const generationDir = join(externalRoot, 'generations', generationId)
+  const packages = {}
+  for (const [packageName, version] of Object.entries(versions)) {
+    const directoryName = packageName === '@cyrus/dsh-anysearch' ? 'anysearch' : 'trajectory-island'
+    const pkgDir = join(generationDir, 'packages', directoryName, version)
+    await mkdir(join(pkgDir, 'lib'), { recursive: true })
+    await writeFile(join(pkgDir, 'package.json'), JSON.stringify({ name: packageName, version }))
+    await writeFile(join(pkgDir, 'lib', 'index.js'), 'export const ok = true\n')
+    await writeFile(join(pkgDir, 'lib', 'client.js'), `id: ${JSON.stringify(packageName)}\n`)
+    const files = {
+      'package.json': createHash('sha256').update(await readFile(join(pkgDir, 'package.json'))).digest('hex'),
+      'lib/index.js': createHash('sha256').update(await readFile(join(pkgDir, 'lib', 'index.js'))).digest('hex'),
+      'lib/client.js': createHash('sha256').update(await readFile(join(pkgDir, 'lib', 'client.js'))).digest('hex'),
+    }
+    const install = {
+      schemaVersion: 1,
+      packageName,
+      version,
+      sourceTag: 'plugins-v2026.08.24.1',
+      tgzSha256: 'a'.repeat(64),
+      minClient: '0.4.4',
+      harnessCommit: 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e',
+      pluginContractVersion: '2',
+      seams: packageName === '@cyrus/dsh-anysearch' ? ['web.searchProvider'] : ['dsh-client-ui-trajectory'],
+      files,
+    }
+    if (corruptInstall) install.schemaVersion = 99
+    await writeFile(join(pkgDir, '.install.json'), JSON.stringify(install, null, 2))
+    packages[packageName] = { source: 'external', directoryName, version }
+    const scopeDir = join(generationDir, 'scope', '@cyrus', packageName.split('/')[1])
+    await mkdir(scopeDir, { recursive: true })
+  }
+  const batch = {
+    schemaVersion: 1,
+    generationId,
+    harness: { version: '0.1.1-rc.2', commit: 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e' },
+    packages,
+  }
+  if (corruptBatch) batch.harness = { version: '0.1.1-rc.2', commit: '' }
+  await writeFile(join(generationDir, 'batch.json'), JSON.stringify(batch, null, 2))
+  if (current) {
+    await writeFile(join(externalRoot, 'current.json'), JSON.stringify({ generationId, committedAt: '2026-08-24T00:00:00.000Z' }))
+  }
+  if (pending) {
+    await writeFile(join(externalRoot, 'pending.json'), JSON.stringify({ generationId, candidateId: generationId, createdAt: '2026-08-24T00:00:00.000Z' }))
+  }
+  return externalRoot
+}
+
+async function writePluginIndex(root, entries) {
+  const indexPath = join(root, 'plugin-index.json')
+  await writeFile(indexPath, JSON.stringify({
+    schemaVersion: 1,
+    generatedAt: '2026-08-24T00:00:00.000Z',
+    releaseTag: 'plugins-v2026.08.24.2',
+    minClient: '0.4.4',
+    compatibleHarness: { version: '0.1.1-rc.2', commit: 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e' },
+    plugins: entries,
+  }, null, 2))
+  return indexPath
+}
+
+function makeIndexEntry(packageName, version, directoryName) {
+  return {
+    packageName,
+    version,
+    assetName: `cyrus-dsh-${directoryName}-${version}.tgz`,
+    assetSize: 1,
+    sha256: 'a'.repeat(64),
+    minClient: '0.4.4',
+    compatibleHarness: { versionRange: '0.1.1-rc.2', commits: ['b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'] },
+    seams: directoryName === 'anysearch' ? ['web.searchProvider'] : ['dsh-client-ui-trajectory'],
+    requires: [],
+    externalEligible: true,
+  }
+}
+
+test('plugin effective versions stay builtin when no external generation exists', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-eff-builtin-'))
+  await makeMinimalPluginTree(root)
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  const state = await service.getState()
+  const anysearch = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  const trajectory = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-trajectory-island')
+  assert.equal(anysearch.version, '0.1.0')
+  assert.equal(anysearch.updateWithDesktop, true)
+  assert.equal(anysearch.generationId, undefined)
+  assert.equal(trajectory.updateWithDesktop, true)
+})
+
+test('plugin effective versions use external current generation for active plugins', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-eff-external-'))
+  await makeMinimalPluginTree(root)
+  const versions = {
+    '@cyrus/dsh-anysearch': '0.1.1-beta',
+    '@cyrus/dsh-trajectory-island': '0.1.1',
+  }
+  await writeExternalGeneration(root, { generationId: 'gen-current', versions, current: true })
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  const state = await service.getState()
+  const anysearch = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  const trajectory = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-trajectory-island')
+  assert.equal(anysearch.version, '0.1.1-beta')
+  assert.equal(anysearch.updateWithDesktop, false)
+  assert.equal(anysearch.generationId, 'gen-current')
+  assert.equal(trajectory.version, '0.1.1')
+  assert.equal(trajectory.updateWithDesktop, false)
+  assert.equal(trajectory.generationId, 'gen-current')
+})
+
+test('plugin update check does not repeat when external current equals remote version', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-eff-same-'))
+  await makeMinimalPluginTree(root)
+  const versions = {
+    '@cyrus/dsh-anysearch': '0.1.1-beta',
+    '@cyrus/dsh-trajectory-island': '0.1.1',
+  }
+  await writeExternalGeneration(root, { generationId: 'gen-current', versions, current: true })
+  const indexPath = await writePluginIndex(root, [
+    makeIndexEntry('@cyrus/dsh-anysearch', '0.1.1-beta', 'anysearch'),
+    makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.1', 'trajectory-island'),
+  ])
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+  const state = await service.getState()
+  assert.equal(state.pluginChannel.status, 'current')
+  assert.equal(state.pluginChannel.available.length, 0)
+})
+
+test('plugin update check compares remote against external current version', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-eff-new-'))
+  await makeMinimalPluginTree(root)
+  const versions = {
+    '@cyrus/dsh-anysearch': '0.1.1-beta',
+    '@cyrus/dsh-trajectory-island': '0.1.1',
+  }
+  await writeExternalGeneration(root, { generationId: 'gen-current', versions, current: true })
+  const indexPath = await writePluginIndex(root, [
+    makeIndexEntry('@cyrus/dsh-anysearch', '0.2.0', 'anysearch'),
+    makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island'),
+  ])
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+  const state = await service.getState()
+  assert.equal(state.pluginChannel.status, 'available')
+  assert.equal(state.pluginChannel.available.length, 2)
+  const anysearch = state.pluginChannel.available.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  assert.equal(anysearch.currentVersion, '0.1.1-beta')
+})
+
+test('pending generation is shown as pending and never counted as current', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-eff-pending-'))
+  await makeMinimalPluginTree(root)
+  const versions = {
+    '@cyrus/dsh-anysearch': '0.2.0',
+    '@cyrus/dsh-trajectory-island': '0.1.2',
+  }
+  await writeExternalGeneration(root, { generationId: 'gen-pending', versions, pending: true })
+  const indexPath = await writePluginIndex(root, [
+    makeIndexEntry('@cyrus/dsh-anysearch', '0.2.0', 'anysearch'),
+    makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island'),
+  ])
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+  const state = await service.getState()
+  const anysearch = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  assert.equal(anysearch.version, '0.1.0')
+  assert.equal(anysearch.updateWithDesktop, true)
+  assert.equal(anysearch.pendingVersion, '0.2.0')
+  assert.equal(state.pluginChannel.available.length, 0)
+})
+
+test('plugin effective versions return to builtin after external current is rolled back', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-eff-rollback-'))
+  await makeMinimalPluginTree(root)
+  const versions = {
+    '@cyrus/dsh-anysearch': '0.1.1-beta',
+    '@cyrus/dsh-trajectory-island': '0.1.1',
+  }
+  const externalRoot = await writeExternalGeneration(root, { generationId: 'gen-current', versions, current: true })
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  assert.equal((await service.getState()).plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch').updateWithDesktop, false)
+  await service.rollbackPluginGeneration()
+  const state = await service.getState()
+  const anysearch = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  assert.equal(anysearch.version, '0.1.0')
+  assert.equal(anysearch.updateWithDesktop, true)
+  assert.equal(anysearch.generationId, undefined)
+  assert.equal(anysearch.pendingVersion, undefined)
+})
+
+test('plugin effective versions fail closed when current generation evidence is damaged', async t => {
+  for (const corrupt of ['corruptInstall', 'corruptBatch']) {
+    const root = await mkdtemp(join(tmpdir(), `dsh-personal-update-eff-damaged-${corrupt}-`))
+    await makeMinimalPluginTree(root)
+    const versions = { '@cyrus/dsh-anysearch': '0.1.1-beta' }
+    await writeExternalGeneration(root, {
+      generationId: 'gen-bad',
+      versions,
+      current: true,
+      corruptInstall: corrupt === 'corruptInstall',
+      corruptBatch: corrupt === 'corruptBatch',
+    })
+    const service = new UpdateService({
+      app: { getVersion: () => '0.4.4', isPackaged: false },
+      shell: {},
+      userDataPath: root,
+      projectRoot: root,
+      getCurrentSourceRoot: () => root,
+      preflightHarness: async () => {},
+      onInstallDesktop: async () => {},
+      onRelaunch: async () => {},
+    })
+    t.after(async () => {
+      await service.dispose().catch(() => {})
+      await rm(root, { recursive: true, force: true })
+    })
+    await service.ensureLoaded()
+    await assert.rejects(() => service.getState(), /current generation 无效或损坏|schemaVersion|Harness commit/u, `${corrupt} should fail closed`)
+  }
+})
+
+test('preparePluginGeneration preserves current external plugins not in available and activates both as external', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-gen-compose-'))
+  await makeMinimalPluginTree(root)
+  const versions = {
+    '@cyrus/dsh-anysearch': '0.1.1-beta',
+    '@cyrus/dsh-trajectory-island': '0.1.1',
+  }
+  await writeExternalGeneration(root, { generationId: 'gen-current', versions, current: true })
+  const sourceDir = join(root, 'traj-src')
+  await mkdir(join(sourceDir, 'package', 'lib'), { recursive: true })
+  await writeFile(join(sourceDir, 'package', 'package.json'), JSON.stringify({ name: '@cyrus/dsh-trajectory-island', version: '0.1.2', dshComposable: { schemaVersion: 2 } }))
+  await writeFile(join(sourceDir, 'package', 'lib', 'index.js'), 'export const ok = true\n')
+  const tgz = join(root, 'cyrus-dsh-trajectory-island-0.1.2.tgz')
+  await tar.c({ gzip: true, cwd: sourceDir, file: tgz }, ['package/package.json', 'package/lib/index.js'])
+  const tgzData = await readFile(tgz)
+  const trajEntry = makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island')
+  trajEntry.assetSize = tgzData.length
+  trajEntry.sha256 = createHash('sha256').update(tgzData).digest('hex')
+  const indexPath = await writePluginIndex(root, [trajEntry])
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+  assert.equal(service.plugin.available.length, 1)
+  assert.equal(service.plugin.available[0].packageName, '@cyrus/dsh-trajectory-island')
+  await service.preparePluginGeneration()
+
+  const externalRoot = join(root, 'plugins-external')
+  const pending = JSON.parse(await readFile(join(externalRoot, 'pending.json'), 'utf8'))
+  const batch = JSON.parse(await readFile(join(externalRoot, 'generations', pending.generationId, 'batch.json'), 'utf8'))
+  assert.equal(batch.packages['@cyrus/dsh-anysearch'].source, 'external')
+  assert.equal(batch.packages['@cyrus/dsh-anysearch'].version, '0.1.1-beta')
+  assert.equal(batch.packages['@cyrus/dsh-trajectory-island'].source, 'external')
+  assert.equal(batch.packages['@cyrus/dsh-trajectory-island'].version, '0.1.2')
+
+  const copiedAnysearch = join(externalRoot, 'generations', pending.generationId, 'packages', 'anysearch', '0.1.1-beta')
+  const copiedInstall = JSON.parse(await readFile(join(copiedAnysearch, '.install.json'), 'utf8'))
+  assert.equal(copiedInstall.packageName, '@cyrus/dsh-anysearch')
+  assert.equal(copiedInstall.version, '0.1.1-beta')
+
+  const pluginRoot = join(root, 'plugins')
+  const activated = startPendingActivation({ externalRoot, pluginRoot, dshHome: join(root, 'home') })
+  assert.equal(activated.candidateId, pending.generationId)
+  assert.equal(commitActivatingGeneration({ externalRoot, pluginRoot, dshHome: join(root, 'home'), fiberOk: true }), pending.generationId)
+
+  const state = await service.getState()
+  const anysearch = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  const trajectory = state.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-trajectory-island')
+  assert.equal(anysearch.version, '0.1.1-beta')
+  assert.equal(anysearch.updateWithDesktop, false)
+  assert.equal(trajectory.version, '0.1.2')
+  assert.equal(trajectory.updateWithDesktop, false)
+})
+
+test('pending same version is not re-offered and cannot be re-prepared', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-pending-same-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-pending',
+    versions: { '@cyrus/dsh-anysearch': '0.2.0' },
+    pending: true,
+  })
+  const indexPath = await writePluginIndex(root, [
+    makeIndexEntry('@cyrus/dsh-anysearch', '0.2.0', 'anysearch'),
+  ])
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+  assert.equal(service.plugin.available.length, 0)
+
+  service.plugin.available = [makeIndexEntry('@cyrus/dsh-anysearch', '0.2.0', 'anysearch')]
+  await assert.rejects(() => service.preparePluginGeneration(), /已有插件更新待重启激活|已准备|重复|不能重复/u)
+})
+
+test('plugin effective versions fail when .install packageName mismatches batch', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-install-name-mismatch-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-mismatch',
+    versions: { '@cyrus/dsh-anysearch': '0.1.1-beta' },
+    current: true,
+  })
+  const installPath = join(root, 'plugins-external', 'generations', 'gen-mismatch', 'packages', 'anysearch', '0.1.1-beta', '.install.json')
+  const install = JSON.parse(await readFile(installPath, 'utf8'))
+  install.packageName = '@cyrus/dsh-trajectory-island'
+  await writeFile(installPath, JSON.stringify(install, null, 2))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /packageName|包名|不一致/u)
+})
+
+test('plugin effective versions fail when .install version mismatches batch', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-install-version-mismatch-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-mismatch',
+    versions: { '@cyrus/dsh-anysearch': '0.1.1-beta' },
+    current: true,
+  })
+  const installPath = join(root, 'plugins-external', 'generations', 'gen-mismatch', 'packages', 'anysearch', '0.1.1-beta', '.install.json')
+  const install = JSON.parse(await readFile(installPath, 'utf8'))
+  install.version = '9.9.9'
+  await writeFile(installPath, JSON.stringify(install, null, 2))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /version|版本|不一致/u)
+})
+
+test('pending generation rejects path traversal candidateId', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-pending-traversal-'))
+  await makeMinimalPluginTree(root)
+  const externalRoot = join(root, 'plugins-external')
+  await mkdir(externalRoot, { recursive: true })
+  await writeFile(join(externalRoot, 'pending.json'), JSON.stringify({
+    generationId: '../escape',
+    candidateId: '../escape',
+    createdAt: '2026-08-24T00:00:00.000Z',
+  }))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /安全|边界|穿越|非法|invalid|generationId/u)
+})
+
+test('pending generation fails closed when .install is missing', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-pending-missing-install-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-pending',
+    versions: { '@cyrus/dsh-anysearch': '0.2.0' },
+    pending: true,
+  })
+  await rm(join(root, 'plugins-external', 'generations', 'gen-pending', 'packages', 'anysearch', '0.2.0', '.install.json'), { force: true })
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /install|无效|损坏|缺失/u)
+})
+
+test('existing pending forbids new prepare and preserves pending AnySearch', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-pending-forbid-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-pending',
+    versions: { '@cyrus/dsh-anysearch': '0.2.0' },
+    pending: true,
+  })
+  const indexPath = await writePluginIndex(root, [
+    makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island'),
+  ])
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+  const state = await service.getState()
+  assert.equal(state.pluginChannel.status, 'ready')
+  assert.match(state.pluginChannel.message ?? '', /已有插件更新待重启激活/u)
+  assert.equal(state.pluginChannel.available.length, 0)
+
+  service.plugin.available = [makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island')]
+  await assert.rejects(() => service.preparePluginGeneration(), /已有插件更新待重启激活/u)
+  const pending = JSON.parse(await readFile(join(root, 'plugins-external', 'pending.json'), 'utf8'))
+  assert.equal(pending.generationId, 'gen-pending')
+  const batch = JSON.parse(await readFile(join(root, 'plugins-external', 'generations', 'gen-pending', 'batch.json'), 'utf8'))
+  assert.equal(batch.packages['@cyrus/dsh-anysearch'].version, '0.2.0')
+})
+
+test('current generation rejects path traversal generationId', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-current-traversal-'))
+  await makeMinimalPluginTree(root)
+  const externalRoot = join(root, 'plugins-external')
+  await mkdir(externalRoot, { recursive: true })
+  await writeFile(join(externalRoot, 'current.json'), JSON.stringify({ generationId: '../escape', committedAt: '2026-08-24T00:00:00.000Z' }))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /current generation 无效或损坏|非法|越界/u)
+})
+
+test('current generation rejects batch version path traversal', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-current-batch-traversal-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-current',
+    versions: { '@cyrus/dsh-anysearch': '0.1.1-beta' },
+    current: true,
+  })
+  const batchPath = join(root, 'plugins-external', 'generations', 'gen-current', 'batch.json')
+  const batch = JSON.parse(await readFile(batchPath, 'utf8'))
+  batch.packages['@cyrus/dsh-anysearch'].version = '../escape'
+  await writeFile(batchPath, JSON.stringify(batch, null, 2))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /current generation 无效或损坏|路径越界|越界/u)
+})
+
+test('prepare cleans candidate and leaves no pending when post-copy validation fails', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-prepare-cleanup-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-current',
+    versions: { '@cyrus/dsh-anysearch': '0.1.1-beta' },
+    current: true,
+  })
+  const sourceDir = join(root, 'traj-src')
+  await mkdir(join(sourceDir, 'package', 'lib'), { recursive: true })
+  await writeFile(join(sourceDir, 'package', 'package.json'), JSON.stringify({ name: '@cyrus/dsh-trajectory-island', version: '0.1.2', dshComposable: { schemaVersion: 2 } }))
+  await writeFile(join(sourceDir, 'package', 'lib', 'index.js'), 'export const ok = true\n')
+  const tgz = join(root, 'cyrus-dsh-trajectory-island-0.1.2.tgz')
+  await tar.c({ gzip: true, cwd: sourceDir, file: tgz }, ['package/package.json', 'package/lib/index.js'])
+  const tgzData = await readFile(tgz)
+  const trajEntry = makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island')
+  trajEntry.assetSize = tgzData.length
+  trajEntry.sha256 = createHash('sha256').update(tgzData).digest('hex')
+  trajEntry.compatibleHarness = { versionRange: '0.1.1-rc.2', commits: ['a'.repeat(40)] }
+  const indexPath = join(root, 'plugin-index.json')
+  await writeFile(indexPath, JSON.stringify({
+    schemaVersion: 1,
+    generatedAt: '2026-08-24T00:00:00.000Z',
+    releaseTag: 'plugins-v2026.08.24.2',
+    minClient: '0.4.4',
+    compatibleHarness: { version: '0.1.1-rc.2', commit: 'a'.repeat(40) },
+    plugins: [trajEntry],
+  }, null, 2))
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'a'.repeat(40)
+  await service.checkPlugins()
+  const externalRoot = join(root, 'plugins-external')
+  const generationsBefore = await readdir(join(externalRoot, 'generations'))
+  await assert.rejects(() => service.preparePluginGeneration(), /pending generation 校验失败|Harness commit|batch/u)
+  await assert.rejects(readFile(join(externalRoot, 'pending.json')))
+  const generationsAfter = await readdir(join(externalRoot, 'generations'))
+  assert.deepEqual(generationsAfter.sort(), generationsBefore.sort())
+})
+
+test('pending generation rejects batch version path traversal', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-pending-batch-traversal-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-pending',
+    versions: { '@cyrus/dsh-anysearch': '0.2.0' },
+    pending: true,
+  })
+  const batchPath = join(root, 'plugins-external', 'generations', 'gen-pending', 'batch.json')
+  const batch = JSON.parse(await readFile(batchPath, 'utf8'))
+  batch.packages['@cyrus/dsh-anysearch'].version = '../escape'
+  await writeFile(batchPath, JSON.stringify(batch, null, 2))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /pending generation 校验失败|非法插件版本|路径越界|越界/u)
+})
+
+test('current generation rejects generation junction out of bounds', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-current-junction-'))
+  await makeMinimalPluginTree(root)
+  const externalRoot = join(root, 'plugins-external')
+  const outside = join(root, 'outside')
+  await mkdir(join(externalRoot, 'generations'), { recursive: true })
+  await mkdir(outside, { recursive: true })
+  await symlink(outside, join(externalRoot, 'generations', 'evil'), 'junction')
+  await writeFile(join(externalRoot, 'current.json'), JSON.stringify({ generationId: 'evil', committedAt: '2026-08-24T00:00:00.000Z' }))
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  await assert.rejects(() => service.getState(), /current generation 无效或损坏|符号链接|junction|越界/u)
 })
 
 function binaryResponse(data, url) {

@@ -44,3 +44,9 @@
 - Codex 复核三项已修复：runtime-preflight 隔离注入（真实 PREFLIGHT_OK + CLEANUP_OK）、Dev+pending 反向测试、`release-staging/v0.4.4-final` 独立 0.4.4 资产全集（无 0.4.3 混入）。
 - minClient 收口：现有 plugins-v2026.08.24.1（.1）Release 不修改、不删除；后续发布 .2，两个插件递增版本，minClient=0.4.4。
 - 已发布 v0.4.4：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4 （commit/push 已授权并完成；未安装真实 Stable，未创建 plugins-v .2）。
+
+## 2026-08-24 v0.4.5 发布候选（更新中心有效版本识别与 pending 安全收口）
+- 目标：修复 v0.4.4 更新中心将 external 插件误显示为“随客户端更新”，并完成 current/pending 统一路径与证据校验。
+- 内容：effectivePluginVersions 读取 current generation；checkPlugins 以实际生效版本比较；pending 存在时禁止新 prepare 并显示“已有插件更新待重启激活”；current/pending 共用 assertExternalPackagePath 目录/版本/junction 校验。
+- 验证：全量 751/751、stable packed E2E、check-plugins、generate-plugin-set、verify-launch、git diff --check 全过。
+- 状态：v0.4.5 发布候选已构建到 `release-staging/v0.4.5-final`；未 commit/push/release，未创建 plugins-v*.2，不覆盖 v0.4.4 Release。

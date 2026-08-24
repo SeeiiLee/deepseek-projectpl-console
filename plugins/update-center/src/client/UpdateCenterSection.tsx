@@ -143,7 +143,7 @@ export function UpdateCenterSection({ bridge }: UpdateCenterSectionProps): React
         <article className={css.pluginCard}>
           <div className={css.cardHeader}><div><h3>个人插件</h3><p>内置集合与独立更新通道分开显示；下载验证通过后重启整批激活。</p></div><StatusBadge status={state.pluginChannel?.status ?? 'idle'} /></div>
           {state.pluginChannel?.message !== undefined ? <p className={css.detail}>{state.pluginChannel.message}</p> : null}
-          <ul>{state.plugins.map(plugin => <li key={plugin.packageName}><code>{plugin.packageName}</code><span>{plugin.version}</span><small>{plugin.updateWithDesktop ? '随客户端更新' : '独立更新源'}</small></li>)}</ul>
+          <ul>{state.plugins.map(plugin => <li key={plugin.packageName}><code>{plugin.packageName}</code><span>{plugin.version}</span><small>{plugin.pendingVersion !== undefined ? `已准备 ${plugin.pendingVersion}，重启后激活` : (plugin.updateWithDesktop ? '随客户端更新' : '独立更新源')}</small></li>)}</ul>
           {state.pluginChannel?.available !== undefined && state.pluginChannel.available.length > 0 ? <>
             <h4>可更新插件</h4>
             <ul>{state.pluginChannel.available.map(plugin => <li key={plugin.packageName}><code>{plugin.packageName}</code><span>{plugin.currentVersion ?? '未安装'} → {plugin.version}</span></li>)}</ul>

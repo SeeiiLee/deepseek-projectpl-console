@@ -20,6 +20,13 @@ import { resolveVendoredPnpm } from './pnpm-resolver.js'
 import { readLocalPluginIndex, validatePluginIndex } from './plugin-index.js'
 import { parsePluginsVTag, validateClientReleaseManifest } from './client-release-manifest.js'
 import { PERSONAL_PLUGINS } from './personal-plugins.js'
+import {
+  assertExternalPackagePath,
+  assertSafeGenerationId,
+  loadCurrentGeneration,
+  validateBatch,
+  validateInstallManifest,
+} from './personal-plugin-validation.js'
 import { safeExtractTarball } from './plugin-archive-security.js'
 import {
   compareVersions,
@@ -777,8 +784,13 @@ export class UpdateService {
     this.pluginIndex = loaded.index
     this.pluginRelease = loaded.release ?? undefined
     if (this.harness.currentCommit === undefined) await this.refreshLocalHarnessState()
-    const current = await bundledPluginVersions(this.projectRoot)
-    const available = []
+    const current = await this.effectivePluginVersions()
+    const pendingByPackage = new Map(
+      current
+        .filter(row => row.pendingVersion !== undefined)
+        .map(row => [row.packageName, row.pendingVersion]),
+    )
+    let available = []
     const blocked = []
     for (const entry of loaded.index.plugins) {
       if (!entry.externalEligible) continue
@@ -793,6 +805,16 @@ export class UpdateService {
         }
       }
       if (!newer) continue
+      const pendingVersion = pendingByPackage.get(entry.packageName)
+      if (pendingVersion !== undefined) {
+        let pendingNewer = false
+        try {
+          pendingNewer = compareVersions(entry.version, pendingVersion) > 0
+        } catch {
+          pendingNewer = false
+        }
+        if (!pendingNewer) continue
+      }
       let blockedReason
       if (this.harness.currentCommit === undefined) {
         blockedReason = '当前 Harness commit 未知'
@@ -828,13 +850,15 @@ export class UpdateService {
     const externalRoot = join(this.userDataPath, 'plugins-external')
     const canRollback = await stat(join(externalRoot, 'current.json')).then(() => true).catch(() => false)
       || await stat(join(externalRoot, 'previous.json')).then(() => true).catch(() => false)
+    const hasPending = current.some(row => row.pendingVersion !== undefined)
+    if (hasPending) available = []
     this.plugin = {
-      status: available.length > 0 ? 'available' : (blocked.length > 0 ? 'blocked' : 'current'),
+      status: hasPending ? 'ready' : (available.length > 0 ? 'available' : (blocked.length > 0 ? 'blocked' : 'current')),
       current,
       available,
       blocked,
       canRollback,
-      message: available.length > 0 ? `发现 ${available.length} 个可更新插件。` : (blocked.length > 0 ? '存在需要更高客户端的插件更新。' : '插件均为当前版本。'),
+      message: hasPending ? '已有插件更新待重启激活' : (available.length > 0 ? `发现 ${available.length} 个可更新插件。` : (blocked.length > 0 ? '存在需要更高客户端的插件更新。' : '插件均为当前版本。')),
     }
   }
 
@@ -903,6 +927,35 @@ export class UpdateService {
       throw new Error('当前没有可下载的插件更新。')
     }
 
+    const effectiveRows = await this.effectivePluginVersions()
+    if (effectiveRows.some(row => row.pendingVersion !== undefined)) {
+      throw new Error('已有插件更新待重启激活')
+    }
+    const currentExternalByPackage = new Map(
+      effectiveRows
+        .filter(row => row.updateWithDesktop === false && row.generationId !== undefined)
+        .map(row => [row.packageName, row]),
+    )
+    const pendingByPackage = new Map(
+      effectiveRows
+        .filter(row => row.pendingVersion !== undefined)
+        .map(row => [row.packageName, row.pendingVersion]),
+    )
+    for (const entry of available) {
+      const pendingVersion = pendingByPackage.get(entry.packageName)
+      if (pendingVersion !== undefined) {
+        let pendingNewer = false
+        try {
+          pendingNewer = compareVersions(entry.version, pendingVersion) > 0
+        } catch {
+          pendingNewer = false
+        }
+        if (!pendingNewer) {
+          throw new Error(`${entry.packageName} 已准备 ${pendingVersion}，不能重复准备同版本或更低版本。`)
+        }
+      }
+    }
+
     const externalRoot = join(this.userDataPath, 'plugins-external')
     const generationId = `pending-${Date.now()}`
     const stagingDir = join(externalRoot, 'staging', generationId)
@@ -917,7 +970,15 @@ export class UpdateService {
       for (const { packageName, directoryName } of PERSONAL_PLUGINS) {
         const entry = available.find(item => item.packageName === packageName)
         if (entry === undefined) {
-          packages[packageName] = { source: 'builtin' }
+          const currentExternal = currentExternalByPackage.get(packageName)
+          if (currentExternal !== undefined) {
+            const sourcePkg = join(externalRoot, 'generations', currentExternal.generationId, 'packages', directoryName, currentExternal.version)
+            const destPkg = join(generationDir, 'packages', directoryName, currentExternal.version)
+            await cp(sourcePkg, destPkg, { recursive: true })
+            packages[packageName] = { source: 'external', directoryName, version: currentExternal.version }
+          } else {
+            packages[packageName] = { source: 'builtin' }
+          }
           continue
         }
         let data
@@ -993,7 +1054,7 @@ export class UpdateService {
         packages[packageName] = { source: 'external', directoryName, version: entry.version }
       }
 
-      await writeFile(join(generationDir, 'batch.json'), `${JSON.stringify({
+      const batch = {
         schemaVersion: 1,
         generationId,
         harness: {
@@ -1001,8 +1062,15 @@ export class UpdateService {
           commit: index.compatibleHarness.commit,
         },
         packages,
-      }, null, 2)}\n`)
-      await writeFile(join(externalRoot, 'pending.json'), `${JSON.stringify({
+      }
+      await writeFile(join(generationDir, 'batch.json'), `${JSON.stringify(batch, null, 2)}\n`)
+      // Fully validate the assembled generation before exposing it as pending:
+      // batch schema, .install, packageName/version consistency, file hashes,
+      // and directory containment. pending.json is written last, atomically.
+      await validatePendingGeneration(generationDir, batch, {
+        directoryByPackage: new Map(PERSONAL_PLUGINS.map(plugin => [plugin.packageName, plugin.directoryName])),
+      })
+      await this.writeFileAtomic(join(externalRoot, 'pending.json'), `${JSON.stringify({
         generationId,
         candidateId: generationId,
         createdAt: new Date().toISOString(),
@@ -1046,7 +1114,7 @@ export class UpdateService {
       || typeof current.generationId !== 'string' || current.generationId.length === 0) {
       throw new Error('当前外部插件 current.json 缺 generationId')
     }
-    const generationDir = join(externalRoot, 'generations', current.generationId)
+    const generationDir = assertSafeGenerationId(current.generationId, externalRoot)
     const batchPath = join(generationDir, 'batch.json')
     let batch
     try {
@@ -1096,6 +1164,8 @@ export class UpdateService {
         continue
       }
       if (install.schemaVersion !== 1) issues.push(`${name} .install.json schemaVersion 未知: ${install.schemaVersion}`)
+      if (install.packageName !== name) issues.push(`${name} .install.json packageName 与 batch 不一致`)
+      if (install.version !== info.version) issues.push(`${name} .install.json version ${install.version} != batch ${info.version}`)
       if (typeof install.minClient !== 'string' || install.minClient.length === 0) {
         issues.push(`${name} .install.json 缺 minClient`)
       } else if (minClient === null || compareVersions(install.minClient, minClient) > 0) {
@@ -1338,8 +1408,97 @@ export class UpdateService {
     return keep
   }
 
+  /**
+   * Current effective plugin versions: builtin baseline overridden by the
+   * validated external generation (current.json -> batch.json -> .install.json).
+   * Pending generations are reported as pendingVersion only and never count as
+   * current. Corrupt current/batch/install evidence fails closed.
+   */
+  async effectivePluginVersions() {
+    const rows = await bundledPluginVersions(this.projectRoot)
+    const rowByPackage = new Map(rows.map(row => [row.packageName, row]))
+    const externalRoot = join(this.userDataPath, 'plugins-external')
+    const currentPath = join(externalRoot, 'current.json')
+    let currentExists = false
+    try {
+      await access(currentPath)
+      currentExists = true
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+    }
+    if (currentExists) {
+      const generation = loadCurrentGeneration(externalRoot, {
+        directoryByPackage: new Map(PERSONAL_PLUGINS.map(plugin => [plugin.packageName, plugin.directoryName])),
+      })
+      if (generation === null) {
+        throw new Error(`外部插件 current generation 无效或损坏: ${externalRoot}`)
+      }
+      for (const [packageName, info] of Object.entries(generation.batch.packages ?? {})) {
+        if (info?.source !== 'external') continue
+        let row = rowByPackage.get(packageName)
+        if (row === undefined) {
+          row = { packageName, version: info.version, updateWithDesktop: false }
+          rowByPackage.set(packageName, row)
+          rows.push(row)
+        }
+        row.updateWithDesktop = false
+        row.generationId = generation.generationId
+        const install = await assertInstallMatchesBatch({ packageName, info, generationDir: generation.generationDir })
+        row.version = install.version
+      }
+    }
+
+    const pendingPath = join(externalRoot, 'pending.json')
+    let pendingExists = false
+    try {
+      await access(pendingPath)
+      pendingExists = true
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+    }
+    if (pendingExists) {
+      let pending
+      try {
+        pending = JSON.parse(await readFile(pendingPath, 'utf8'))
+      } catch (error) {
+        throw new Error(`pending.json 解析失败: ${error.message}`)
+      }
+      const candidateId = pending?.generationId ?? pending?.candidateId
+      if (typeof candidateId !== 'string' || candidateId.length === 0) {
+        throw new Error('pending.json 缺 generationId/candidateId')
+      }
+      const generationDir = assertSafeGenerationId(candidateId, externalRoot)
+      let batch
+      try {
+        batch = JSON.parse(await readFile(join(generationDir, 'batch.json'), 'utf8'))
+      } catch (error) {
+        throw new Error(`pending generation batch.json 读取失败: ${error.message}`)
+      }
+      if (batch?.schemaVersion !== 1 || typeof batch.generationId !== 'string' || batch.generationId !== candidateId) {
+        throw new Error('pending generation batch.json 无效')
+      }
+      await validatePendingGeneration(generationDir, batch, {
+        directoryByPackage: new Map(PERSONAL_PLUGINS.map(plugin => [plugin.packageName, plugin.directoryName])),
+      })
+      for (const [packageName, info] of Object.entries(batch.packages ?? {})) {
+        if (info?.source !== 'external') continue
+        await assertInstallMatchesBatch({ packageName, info, generationDir })
+        let row = rowByPackage.get(packageName)
+        if (row === undefined) {
+          row = { packageName, version: '未安装', updateWithDesktop: true, pendingVersion: info.version }
+          rowByPackage.set(packageName, row)
+          rows.push(row)
+        } else {
+          row.pendingVersion = info.version
+        }
+      }
+    }
+
+    return rows.sort((left, right) => left.packageName.localeCompare(right.packageName))
+  }
+
   async snapshot() {
-    const plugins = await bundledPluginVersions(this.projectRoot)
+    const plugins = await this.effectivePluginVersions()
     return structuredClone({
       settings: this.document.settings,
       lastCheckedAt: this.document.lastCheckedAt,
@@ -1580,6 +1739,44 @@ async function bundledPluginVersions(projectRoot) {
     }
   }
   return rows.sort((left, right) => left.packageName.localeCompare(right.packageName))
+}
+
+async function assertInstallMatchesBatch({ packageName, info, generationDir }) {
+  const installPath = join(generationDir, 'packages', info.directoryName, info.version, '.install.json')
+  let install
+  try {
+    install = JSON.parse(await readFile(installPath, 'utf8'))
+  } catch (error) {
+    throw new Error(`外部插件 ${packageName} .install.json 读取失败: ${error.message}`)
+  }
+  if (install?.packageName !== packageName) {
+    throw new Error(`外部插件 ${packageName} .install.json packageName 与 batch 不一致`)
+  }
+  if (install?.version !== info.version) {
+    throw new Error(`外部插件 ${packageName} .install.json version ${install?.version} != batch ${info.version}`)
+  }
+  return install
+}
+
+async function validatePendingGeneration(generationDir, batch, { directoryByPackage = new Map() } = {}) {
+  const batchResult = validateBatch(join(generationDir, 'batch.json'), { directoryByPackage })
+  if (!batchResult.ok) {
+    throw new Error(`pending generation 校验失败: ${batchResult.issues.join('; ')}`)
+  }
+  for (const [packageName, info] of Object.entries(batch?.packages ?? {})) {
+    if (info?.source !== 'external') continue
+    let packageDir
+    try {
+      packageDir = assertExternalPackagePath({ generationDir, directoryName: info.directoryName, version: info.version })
+    } catch (error) {
+      throw new Error(`pending generation 校验失败: ${packageName}: ${error.message}`)
+    }
+    const installResult = validateInstallManifest(join(packageDir, '.install.json'), packageDir)
+    if (!installResult.ok) {
+      throw new Error(`pending generation 校验失败: ${packageName}: ${installResult.issues.join('; ')}`)
+    }
+    await assertInstallMatchesBatch({ packageName, info, generationDir })
+  }
 }
 
 async function githubJson(path, signal) {
