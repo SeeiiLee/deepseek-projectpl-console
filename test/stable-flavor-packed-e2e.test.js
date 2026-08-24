@@ -100,7 +100,7 @@ function collectHashes(directory, output = {}, prefix = '') {
 
 /**
  * Prepare a real pending generation on disk using the actual plugin sources
- * (AnySearch 0.1.1-beta, trajectory-island 0.1.1). The packaged app must turn
+ * (AnySearch 0.1.1-beta, trajectory-island 0.1.2). The packaged app must turn
  * this pending.json into current.json itself; no current.json is hand-written.
  */
 function preparePendingGeneration(externalRoot) {
@@ -223,7 +223,7 @@ async function launchPackagedSmoke(executable, { expectExternal, profile, result
     assert.equal(doctor?.active, true, `externalDoctor not active after ${expectExternal}.\n${JSON.stringify(result, null, 2)}\n--- externalRoot entries ---\n${externalState}\n--- app output ---\n${output}`)
     const expectedVersions = {
       '@cyrus/dsh-anysearch': '0.1.1-beta',
-      '@cyrus/dsh-trajectory-island': '0.1.1',
+      '@cyrus/dsh-trajectory-island': '0.1.2',
     }
     for (const name of Object.keys(expectedVersions)) {
       assert.equal(result.personalState?.api?.plugins?.fiber?.[name], 'active', `${name} fiber not active.\n${JSON.stringify(result, null, 2)}`)

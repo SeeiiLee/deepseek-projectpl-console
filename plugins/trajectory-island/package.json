@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-trajectory-island",
   "description": "会话页右侧细垂直导航轨：按轮次刻度快速定位聊天位置",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": false,
   "type": "module",
   "main": "lib/index.js",
@@ -51,7 +51,7 @@
         "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
       ]
     },
-    "minClient": "0.4.3",
+    "minClient": "0.4.5",
     "seams": [
       {
         "name": "dsh-client-ui-trajectory",
@@ -90,7 +90,7 @@
         "package.json"
       ],
       "sha256": {
-        "package.json": "7032ebe59b4138b7101cc48eb04f4d6248335c454838119e657154c6b724b51d",
+        "package.json": "0f84a9c42d0bccdd9edd39bc369ee64bbb131882a325dc7bb1da9d9c73330e94",
         "lib/index.js": "094ce5b56a90b8ed05503a6d9839e5757ba4ec9eab27b934dcd416d6cac48626",
         "lib/client.js": "b64d4f78279a2aa6d786e30a9b44ae80a83617f256d9b606f008ee3cc4f5a5a3",
         "lib/client.js.map": "c486225f682a9687a86479abe069587ea9d8c7a9521d86fb97279e08a421aec4",

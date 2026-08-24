@@ -10,7 +10,7 @@ import addFormats from 'ajv-formats'
 import { createRequire } from 'node:module'
 
 import { inspectTarball, safeExtractTarball, scanExtractedDirectory } from '../src/plugin-archive-security.js'
-import { nextTag, resolveTag, validateStaging, writeReleaseFiles } from '../scripts/release-plugins.mjs'
+import { nextTag, parsePluginSelection, resolveTag, validateStaging, writeReleaseFiles } from '../scripts/release-plugins.mjs'
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const readJson = path => JSON.parse(readFileSync(resolve(repoRoot, path), 'utf8'))
@@ -152,6 +152,106 @@ test('validateStaging publicOnly 拒绝 localFixture=true', () => {
     assert.throws(() => validateStaging(root, tag, minClient, { publicOnly: true }), /localFixture=true/u)
     // local fixture 模式允许 localFixture=true
     validateStaging(root, tag, minClient)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('parsePluginSelection 接受单个/多个白名单插件并拒绝未知/重复/空', () => {
+  assert.deepEqual(
+    [...parsePluginSelection(['--plugins', '@cyrus/dsh-trajectory-island'])],
+    ['@cyrus/dsh-trajectory-island'],
+  )
+  assert.deepEqual(
+    [...parsePluginSelection(['--plugin', '@cyrus/dsh-anysearch', '--plugin', '@cyrus/dsh-trajectory-island'])],
+    ['@cyrus/dsh-anysearch', '@cyrus/dsh-trajectory-island'],
+  )
+  assert.deepEqual(
+    [...parsePluginSelection(['--plugins', '@cyrus/dsh-anysearch,@cyrus/dsh-trajectory-island'])],
+    ['@cyrus/dsh-anysearch', '@cyrus/dsh-trajectory-island'],
+  )
+  assert.throws(() => parsePluginSelection(['--plugins', '@cyrus/dsh-memory']), /未知插件/u)
+  assert.throws(() => parsePluginSelection(['--plugin', '@cyrus/dsh-anysearch', '--plugin', '@cyrus/dsh-anysearch']), /重复插件/u)
+  assert.throws(() => parsePluginSelection(['--plugins', '']), /不能为空/u)
+  assert.throws(() => parsePluginSelection(['--plugins', '@cyrus/dsh-anysearch,,@cyrus/dsh-trajectory-island']), /空项/u)
+})
+
+test('writeReleaseFiles + validateStaging 接受单插件 follow-up（bootstrap=false, minClient=0.4.5）', () => {
+  const root = mkdtempSync(join(tmpdir(), 'a2-staging-single-'))
+  try {
+    const tag = 'plugins-v2026.08.24.2'
+    const minClient = '0.4.5'
+    const assetName = 'cyrus-dsh-trajectory-island-0.1.2.tgz'
+    const data = 'trajectory-0.1.2'
+    const sha256 = createHash('sha256').update(data).digest('hex')
+    writeFileSync(join(root, assetName), data)
+    writeFileSync(join(root, `${assetName}.sha256`), `${sha256} *${assetName}\n`)
+    const indexPlugins = [{
+      packageName: '@cyrus/dsh-trajectory-island',
+      version: '0.1.2',
+      assetName,
+      assetSize: data.length,
+      sha256,
+      minClient,
+      compatibleHarness: { versionRange: '0.1.1-rc.2', commits: ['b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'] },
+      seams: ['dsh-client-ui-trajectory'],
+      requires: [],
+      dataSchema: { owned: false, readableVersions: [], migrations: [], rollbackCompatible: true },
+      modelAssets: [],
+      externalEligible: true,
+    }]
+    writeReleaseFiles(root, tag, minClient, indexPlugins, true, { bootstrap: false })
+    validateStaging(root, tag, minClient, {
+      publicOnly: false,
+      expectedPlugins: ['@cyrus/dsh-trajectory-island'],
+      bootstrap: false,
+    })
+    const manifest = readJson(join(root, 'release-manifest.json'))
+    assert.equal(manifest.bootstrap, false)
+    assert.equal(manifest.minClient, '0.4.5')
+    assert.equal(manifest.assets.length, 1)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('validateStaging 拒绝 bootstrap 标记错误和 staging 资产混入', () => {
+  const root = mkdtempSync(join(tmpdir(), 'a2-staging-mix-'))
+  try {
+    const tag = 'plugins-v2026.08.24.2'
+    const minClient = '0.4.5'
+    const assetName = 'cyrus-dsh-trajectory-island-0.1.2.tgz'
+    const data = 'trajectory-0.1.2'
+    const sha256 = createHash('sha256').update(data).digest('hex')
+    writeFileSync(join(root, assetName), data)
+    writeFileSync(join(root, `${assetName}.sha256`), `${sha256} *${assetName}\n`)
+    const indexPlugins = [{
+      packageName: '@cyrus/dsh-trajectory-island',
+      version: '0.1.2',
+      assetName,
+      assetSize: data.length,
+      sha256,
+      minClient,
+      compatibleHarness: { versionRange: '0.1.1-rc.2', commits: ['b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'] },
+      seams: ['dsh-client-ui-trajectory'],
+      requires: [],
+      dataSchema: { owned: false, readableVersions: [], migrations: [], rollbackCompatible: true },
+      modelAssets: [],
+      externalEligible: true,
+    }]
+    writeReleaseFiles(root, tag, minClient, indexPlugins, true, { bootstrap: false })
+    // bootstrap 标记与 staging 不符 → fail-closed
+    assert.throws(
+      () => validateStaging(root, tag, minClient, { expectedPlugins: ['@cyrus/dsh-trajectory-island'], bootstrap: true }),
+      /bootstrap/u,
+    )
+    // 混入旧资产 → fail-closed
+    writeFileSync(join(root, 'cyrus-dsh-anysearch-0.1.1-beta.tgz'), 'stale')
+    writeFileSync(join(root, 'cyrus-dsh-anysearch-0.1.1-beta.tgz.sha256'), 'stale\n')
+    assert.throws(
+      () => validateStaging(root, tag, minClient, { expectedPlugins: ['@cyrus/dsh-trajectory-island'], bootstrap: false }),
+      /多余资产|混入|stale|不在/u,
+    )
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

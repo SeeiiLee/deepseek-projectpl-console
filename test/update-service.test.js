@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import test from 'node:test'
 import { commitActivatingGeneration, PERSONAL_PLUGINS, startPendingActivation } from '../src/personal-plugins.js'
 import { resolveActiveHarnessRoot, UpdateService } from '../src/update-service.js'
@@ -2561,27 +2561,27 @@ async function writeExternalGeneration(root, { generationId, versions, current =
   return externalRoot
 }
 
-async function writePluginIndex(root, entries) {
+async function writePluginIndex(root, entries, minClient = '0.4.4') {
   const indexPath = join(root, 'plugin-index.json')
   await writeFile(indexPath, JSON.stringify({
     schemaVersion: 1,
     generatedAt: '2026-08-24T00:00:00.000Z',
     releaseTag: 'plugins-v2026.08.24.2',
-    minClient: '0.4.4',
+    minClient,
     compatibleHarness: { version: '0.1.1-rc.2', commit: 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e' },
     plugins: entries,
   }, null, 2))
   return indexPath
 }
 
-function makeIndexEntry(packageName, version, directoryName) {
+function makeIndexEntry(packageName, version, directoryName, minClient = '0.4.4') {
   return {
     packageName,
     version,
     assetName: `cyrus-dsh-${directoryName}-${version}.tgz`,
     assetSize: 1,
     sha256: 'a'.repeat(64),
-    minClient: '0.4.4',
+    minClient,
     compatibleHarness: { versionRange: '0.1.1-rc.2', commits: ['b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'] },
     seams: directoryName === 'anysearch' ? ['web.searchProvider'] : ['dsh-client-ui-trajectory'],
     requires: [],
@@ -2848,14 +2848,14 @@ test('preparePluginGeneration preserves current external plugins not in availabl
   const tgz = join(root, 'cyrus-dsh-trajectory-island-0.1.2.tgz')
   await tar.c({ gzip: true, cwd: sourceDir, file: tgz }, ['package/package.json', 'package/lib/index.js'])
   const tgzData = await readFile(tgz)
-  const trajEntry = makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island')
+  const trajEntry = makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island', '0.4.5')
   trajEntry.assetSize = tgzData.length
   trajEntry.sha256 = createHash('sha256').update(tgzData).digest('hex')
-  const indexPath = await writePluginIndex(root, [trajEntry])
+  const indexPath = await writePluginIndex(root, [trajEntry], '0.4.5')
   const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
   process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
   const service = new UpdateService({
-    app: { getVersion: () => '0.4.4', isPackaged: false },
+    app: { getVersion: () => '0.4.5', isPackaged: false },
     shell: {},
     userDataPath: root,
     projectRoot: root,
@@ -2875,6 +2875,7 @@ test('preparePluginGeneration preserves current external plugins not in availabl
   await service.checkPlugins()
   assert.equal(service.plugin.available.length, 1)
   assert.equal(service.plugin.available[0].packageName, '@cyrus/dsh-trajectory-island')
+  assert.equal(service.plugin.available[0].minClient, '0.4.5')
   await service.preparePluginGeneration()
 
   const externalRoot = join(root, 'plugins-external')
@@ -2902,6 +2903,80 @@ test('preparePluginGeneration preserves current external plugins not in availabl
   assert.equal(anysearch.updateWithDesktop, false)
   assert.equal(trajectory.version, '0.1.2')
   assert.equal(trajectory.updateWithDesktop, false)
+
+  // 新 generation 的 scope 只指向新代，不跨 generation 引用旧 junction
+  const profileScope = join(root, 'home', 'profiles', 'web', 'node_modules', '@cyrus')
+  assert.equal(resolve(await readlink(profileScope)), join(externalRoot, 'generations', pending.generationId, 'scope', '@cyrus'))
+  assert.equal(
+    resolve(await readlink(join(profileScope, 'dsh-anysearch'))),
+    join(externalRoot, 'generations', pending.generationId, 'packages', 'anysearch', '0.1.1-beta'),
+  )
+  assert.equal(
+    resolve(await readlink(join(profileScope, 'dsh-trajectory-island'))),
+    join(externalRoot, 'generations', pending.generationId, 'packages', 'trajectory-island', '0.1.2'),
+  )
+
+  // 再次 check：.2 索引不再重复提示轨迹岛
+  await service.checkPlugins()
+  assert.equal(service.plugin.available.length, 0)
+
+  // 回滚：恢复上一代 .1/.1-beta
+  await service.rollbackPluginGeneration()
+  const rolled = await service.getState()
+  const rolledAny = rolled.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-anysearch')
+  const rolledTraj = rolled.plugins.find(plugin => plugin.packageName === '@cyrus/dsh-trajectory-island')
+  assert.equal(rolledAny.version, '0.1.1-beta')
+  assert.equal(rolledAny.generationId, 'gen-current')
+  assert.equal(rolledTraj.version, '0.1.1')
+  assert.equal(rolledTraj.generationId, 'gen-current')
+})
+
+test('0.4.4 client blocks .2 trajectory update requiring 0.4.5 and never prepares pending', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-personal-update-minclient-block-'))
+  await makeMinimalPluginTree(root)
+  await writeExternalGeneration(root, {
+    generationId: 'gen-current',
+    versions: {
+      '@cyrus/dsh-anysearch': '0.1.1-beta',
+      '@cyrus/dsh-trajectory-island': '0.1.1',
+    },
+    current: true,
+  })
+  const trajEntry = makeIndexEntry('@cyrus/dsh-trajectory-island', '0.1.2', 'trajectory-island', '0.4.5')
+  const indexPath = await writePluginIndex(root, [trajEntry], '0.4.5')
+  const previous = process.env.DSH_PERSONAL_PLUGIN_INDEX
+  process.env.DSH_PERSONAL_PLUGIN_INDEX = indexPath
+  const service = new UpdateService({
+    app: { getVersion: () => '0.4.4', isPackaged: false },
+    shell: {},
+    userDataPath: root,
+    projectRoot: root,
+    getCurrentSourceRoot: () => root,
+    preflightHarness: async () => {},
+    onInstallDesktop: async () => {},
+    onRelaunch: async () => {},
+  })
+  t.after(async () => {
+    if (previous === undefined) delete process.env.DSH_PERSONAL_PLUGIN_INDEX
+    else process.env.DSH_PERSONAL_PLUGIN_INDEX = previous
+    await service.dispose().catch(() => {})
+    await rm(root, { recursive: true, force: true })
+  })
+  await service.ensureLoaded()
+  service.harness.currentCommit = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
+  await service.checkPlugins()
+
+  assert.equal(service.plugin.available.length, 0)
+  const blockedTrajectory = service.plugin.blocked.find(plugin => plugin.packageName === '@cyrus/dsh-trajectory-island')
+  assert.ok(blockedTrajectory, '.2 轨迹岛应进入 blocked 而不是 available')
+  assert.match(blockedTrajectory.blockedReason ?? '', /需要更高客户端版本 0\.4\.5/u)
+
+  const externalRoot = join(root, 'plugins-external')
+  const pendingExists = await readFile(join(externalRoot, 'pending.json')).then(() => true).catch(() => false)
+  assert.equal(pendingExists, false, '0.4.4 客户端不得生成 pending.json')
+  await assert.rejects(() => service.preparePluginGeneration(), /当前没有可下载的插件更新/u)
+  const generationNames = await readdir(join(externalRoot, 'generations')).catch(() => [])
+  assert.equal(generationNames.some(name => name.startsWith('pending-')), false, '0.4.4 客户端不得生成 pending generation')
 })
 
 test('pending same version is not re-offered and cannot be re-prepared', async t => {

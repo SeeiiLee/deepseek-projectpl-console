@@ -48,6 +48,38 @@ function parseArgs(argv) {
   return args
 }
 
+/**
+ * Parse explicit plugin selection from --plugin/--plugins.
+ * Rejects unknown whitelist names, duplicates, and empty selections.
+ */
+export function parsePluginSelection(argv, { allowed = PILOT_PACKAGES } = {}) {
+  const selected = []
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i]
+    if (arg === '--plugin') {
+      const value = argv[++i]
+      if (value === undefined || value.trim() === '') throw new Error('--plugin 不能为空')
+      selected.push(value.trim())
+    } else if (arg === '--plugins') {
+      const value = argv[++i]
+      if (value === undefined || value.trim() === '') throw new Error('--plugins 不能为空')
+      for (const part of value.split(',')) {
+        const name = part.trim()
+        if (name === '') throw new Error('--plugins 不能包含空项')
+        selected.push(name)
+      }
+    }
+  }
+  if (selected.length === 0) return new Set()
+  const seen = new Set()
+  for (const name of selected) {
+    if (!allowed.has(name)) throw new Error(`未知插件: ${name}`)
+    if (seen.has(name)) throw new Error(`重复插件: ${name}`)
+    seen.add(name)
+  }
+  return seen
+}
+
 function runCheck() {
   const result = spawnSync(process.execPath, ['scripts/generate-plugin-set.mjs', '--check'], {
     cwd: projectRoot,
@@ -193,7 +225,8 @@ async function processPlugin(plugin, outDir, tempRoot, minClient, indexPlugins) 
   })
 }
 
-function writeReleaseFiles(outDir, releaseTag, minClient, indexPlugins, localFixture) {
+function writeReleaseFiles(outDir, releaseTag, minClient, indexPlugins, localFixture, options = {}) {
+  const bootstrap = options.bootstrap ?? false
   const index = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -208,7 +241,7 @@ function writeReleaseFiles(outDir, releaseTag, minClient, indexPlugins, localFix
     releaseTag,
     minClient,
     compatibleHarness: { version: EXPECTED_HARNESS_VERSION, commit: EXPECTED_HARNESS_COMMIT },
-    bootstrap: true,
+    bootstrap,
     localFixture,
     assets: indexPlugins.map(plugin => ({ assetName: plugin.assetName, sha256: plugin.sha256, assetSize: plugin.assetSize })),
   }, null, 2) + '\n')
@@ -226,7 +259,7 @@ function writeReleaseFiles(outDir, releaseTag, minClient, indexPlugins, localFix
   ].join('\n'))
 }
 
-function validateStaging(outDir, releaseTag, minClient, { publicOnly = false } = {}) {
+function validateStaging(outDir, releaseTag, minClient, { publicOnly = false, expectedPlugins = PILOT_PACKAGES, bootstrap } = {}) {
   const index = readJson(join(outDir, 'plugin-index.json'))
   const manifest = readJson(join(outDir, 'release-manifest.json'))
   if (index.releaseTag !== releaseTag) throw new Error(`plugin-index.releaseTag ${index.releaseTag} != ${releaseTag}`)
@@ -234,17 +267,23 @@ function validateStaging(outDir, releaseTag, minClient, { publicOnly = false } =
   if (index.minClient !== minClient) throw new Error(`plugin-index.minClient ${index.minClient} != ${minClient}`)
   if (manifest.minClient !== minClient) throw new Error(`release-manifest.minClient ${manifest.minClient} != ${minClient}`)
   if (publicOnly && manifest.localFixture === true) throw new Error('公开/校验产物不得带 localFixture=true')
+  if (bootstrap !== undefined && manifest.bootstrap !== bootstrap) {
+    throw new Error(`release-manifest.bootstrap ${manifest.bootstrap} != 期望 ${bootstrap}`)
+  }
   if (index.compatibleHarness?.version !== EXPECTED_HARNESS_VERSION || index.compatibleHarness?.commit !== EXPECTED_HARNESS_COMMIT) {
     throw new Error('plugin-index compatibleHarness 与合同不一致')
   }
   if (manifest.compatibleHarness?.version !== EXPECTED_HARNESS_VERSION || manifest.compatibleHarness?.commit !== EXPECTED_HARNESS_COMMIT) {
     throw new Error('release-manifest compatibleHarness 与合同不一致')
   }
-  if (index.plugins.length !== PILOT_PACKAGES.size) throw new Error(`插件数量 ${index.plugins.length} != ${PILOT_PACKAGES.size}`)
+  const expected = new Set(expectedPlugins ?? [])
+  if (expected.size === 0) throw new Error('validateStaging 期望插件集合不能为空')
+  if (index.plugins.length !== expected.size) throw new Error(`插件数量 ${index.plugins.length} != 期望 ${expected.size}`)
   const names = new Set(index.plugins.map(plugin => plugin.packageName))
-  if (names.size !== PILOT_PACKAGES.size || [...names].some(name => !PILOT_PACKAGES.has(name))) {
-    throw new Error(`首批发布插件必须是 ${[...PILOT_PACKAGES].join(', ')}`)
+  if (names.size !== expected.size || [...names].some(name => !expected.has(name))) {
+    throw new Error(`插件集合必须精确为 ${[...expected].join(', ')}`)
   }
+  const expectedAssetFiles = new Set()
   for (const plugin of index.plugins) {
     if (plugin.minClient !== minClient) throw new Error(`${plugin.packageName}.minClient ${plugin.minClient} != ${minClient}`)
     const shaPath = join(outDir, `${plugin.assetName}.sha256`)
@@ -252,7 +291,13 @@ function validateStaging(outDir, releaseTag, minClient, { publicOnly = false } =
     const expected = `${plugin.sha256} *${plugin.assetName}\n`
     if (readFileSync(shaPath, 'utf8') !== expected) throw new Error(`${plugin.packageName} .sha256 内容与索引不一致`)
     if (statSync(join(outDir, plugin.assetName)).size !== plugin.assetSize) throw new Error(`${plugin.packageName} 资产大小与索引不一致`)
+    expectedAssetFiles.add(plugin.assetName)
+    expectedAssetFiles.add(`${plugin.assetName}.sha256`)
   }
+  const staleAssets = readdirSync(outDir)
+    .filter(name => name.endsWith('.tgz') || name.endsWith('.tgz.sha256'))
+    .filter(name => !expectedAssetFiles.has(name))
+  if (staleAssets.length > 0) throw new Error(`staging 混入多余资产: ${staleAssets.join(', ')}`)
   const manifestAssets = new Set(manifest.assets.map(asset => asset.assetName))
   if (manifestAssets.size !== index.plugins.length) throw new Error('release-manifest 资产集合不唯一')
   for (const plugin of index.plugins) {
@@ -407,9 +452,12 @@ async function publishRelease({ release, repository, token }) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
+  const selectedPlugins = parsePluginSelection(process.argv.slice(2))
+  if (selectedPlugins.size === 0) {
+    for (const name of PILOT_PACKAGES) selectedPlugins.add(name)
+  }
   if (args.localFixture && args.publish) throw new Error('--local-fixture 与 --publish 不能同时使用')
   if (!args.localFixture && !args.publish) throw new Error('必须指定 --local-fixture 或 --publish')
-  if (!args.bootstrap) throw new Error('首次无 plugins-v* 基线必须显式 --bootstrap。')
   if (!args.minClient) throw new Error('--minClient 是发布参数，不能写死。')
   if (args.publish && !args.dryRun && args.tokenFile === undefined) throw new Error('真实发布必须提供 --token-file')
 
@@ -417,6 +465,12 @@ async function main() {
   let releaseBranch
   if (args.publish) {
     const existingTags = fetchExistingPluginTags(args.repo)
+    if (args.bootstrap && existingTags.size > 0) {
+      throw new Error(`bootstrap 只能用于无 plugins-v 基线的首次发布，当前远端已有 ${existingTags.size} 个 plugins-v tag。`)
+    }
+    if (!args.bootstrap && existingTags.size === 0) {
+      throw new Error('首次无 plugins-v* 基线必须显式 --bootstrap。')
+    }
     releaseTag = resolveTag(existingTags, args.tag)
     if (!args.dryRun) {
       assertCleanGitTree()
@@ -447,7 +501,7 @@ async function main() {
   const indexPlugins = []
   try {
     for (const { packageName, directoryName } of PERSONAL_PLUGINS) {
-      if (!PILOT_PACKAGES.has(packageName)) continue
+      if (!selectedPlugins.has(packageName)) continue
       const dir = join(projectRoot, 'plugins', directoryName)
       await processPlugin({ dir, packageName }, outDir, tempRoot, args.minClient, indexPlugins)
     }
@@ -455,8 +509,12 @@ async function main() {
     rmSync(tempRoot, { recursive: true, force: true })
   }
 
-  writeReleaseFiles(outDir, releaseTag, args.minClient, indexPlugins, args.localFixture)
-  validateStaging(outDir, releaseTag, args.minClient, { publicOnly: args.publish })
+  writeReleaseFiles(outDir, releaseTag, args.minClient, indexPlugins, args.localFixture, { bootstrap: args.bootstrap })
+  validateStaging(outDir, releaseTag, args.minClient, {
+    publicOnly: args.publish,
+    expectedPlugins: selectedPlugins,
+    bootstrap: args.bootstrap,
+  })
 
   process.stdout.write(`release staging ready: ${outDir}\n`)
   process.stdout.write(`tag: ${releaseTag}\n`)

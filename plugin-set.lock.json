@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "preset": "personal-desktop",
-  "generatedAt": "2026-08-23T20:14:02.970Z",
+  "generatedAt": "2026-08-24T17:17:21.288Z",
   "compatibleHarness": {
     "version": "0.1.1-rc.2",
     "commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
@@ -99,15 +99,15 @@
       "bundle": false
     },
     "@cyrus/dsh-trajectory-island": {
-      "version": "0.1.1",
-      "integrity": "656e6aa21245f70340061ad06b486fa47060f43d29c73c8719c35b5043d70412",
+      "version": "0.1.2",
+      "integrity": "67905069c05162d1dbf0698c574c399457e8be3da5a2951dc894227959a4f792",
       "source": "tgz",
       "role": "adapter",
       "bundle": true
     },
     "@cyrus/dsh-update-center": {
       "version": "0.1.0",
-      "integrity": "5cc8beefbaf86ecfc26a32e769aa63151b94bda8418b200aefc6ab54c46d1f6b",
+      "integrity": "101659537af66014ab60aab7323c0096a3d02fcd8c2c7746e598f92e46d0764e",
       "source": "tgz",
       "role": "adapter",
       "bundle": false

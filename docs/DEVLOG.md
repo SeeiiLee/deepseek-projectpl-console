@@ -1304,9 +1304,9 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - Dev flavor 保持 dev 行为，新增「Dev + pending 仍用内置插件」反向测试。
 - 全量测试 731/731，fail 0，skipped 0；packed 激活/重启/回滚三启动 E2E 通过；四项门禁通过。
 - 发布资料收口：`docs/release-notes/0.4.4.md` 新增；`compat.json`/`PROGRESS.md`/`BLOCKED.md` 同步。
-- 插件 Release 收口：现有 `plugins-v2026.08.24.1`（.1）不修改、不删除；后续发布 `.2`，两个插件递增版本，`minClient=0.4.4`。
+- 插件 Release 收口：现有 `plugins-v2026.08.24.1`（.1）不修改、不删除；后续发布 `.2` 后经 Cyrus 改判为单插件灰度——只更新轨迹岛 0.1.2，`minClient=0.4.5`，AnySearch 保持 0.1.1-beta。
 - 已授权并完成 commit、push、v0.4.4 GitHub Release：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4
-- 未安装 v0.4.4 到宿主机，未创建 plugins-v .2 Release；`release-staging/` 仅作上传来源，不 git add/提交其中的大文件。
+- 当时未创建 plugins-v .2 Release；v0.4.5 后续已由 Cyrus 通过应用内更新安装到真实 Stable。`release-staging/` 仅作上传来源，不 git add/提交其中的大文件。
 
 ## 2026-08-24：v0.4.5 发布候选（更新中心有效版本识别与 pending 安全收口）
 
@@ -1315,4 +1315,16 @@ Harness 仍处于预览阶段，磁盘格式没有稳定兼容承诺。更新前
 - current/pending 统一 `assertExternalPackagePath()`：目录包含、版本安全、junction/symlink 越界拒绝。
 - 全量测试 751/751，fail 0，skipped 0；stable packed E2E 与四项门禁通过。
 - 已构建 `release-staging/v0.4.5-final` 并发布：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5
-- 未覆盖 v0.4.4 Release，未创建 plugins-v*.2，未操作真实 Stable 数据，未安装到宿主机。
+- 未覆盖 v0.4.4 Release，未创建 plugins-v*.2；Cyrus 已通过应用内更新安装并正常启动 v0.4.5，真实 Stable 更新中心确认 AnySearch 0.1.1-beta 与轨迹岛 0.1.1 为独立更新源，其余插件随客户端更新。
+
+## 2026-08-24：plugins-v2026.08.24.2 单插件灰度候选（未发布）
+
+- Cyrus 拍板：`.2` 只发布 `@cyrus/dsh-trajectory-island` 0.1.2，`minClient=0.4.5`；AnySearch 不改版本/不重新打包，继续 0.1.1-beta。
+- `scripts/release-plugins.mjs` 支持显式白名单插件选择（`--plugin/--plugins`），拒绝未知/重复/空；bootstrap 与后续发布分开，`.2` 的 `release-manifest.bootstrap=false`。
+- `validateStaging` 按请求插件集合精确校验，并拒绝 staging 目录混入旧 tgz/sha256 资产。
+- 轨迹岛 `package.json` 升至 0.1.2、`minClient=0.4.5`，重建 lib 后 plugin-set.lock 重新生成；AnySearch 锁条目保持 0.1.1-beta/原 integrity。
+- `plugin-set.lock.json` 除轨迹岛外，还按生成器结果修正了 v0.4.5 后 update-center 的当前 tgz integrity：`101659537af66014ab60aab7323c0096a3d02fcd8c2c7746e598f92e46d0764`。
+- 核心组合测试走真实 UpdateService/generation 接口：available 只有轨迹岛；新 generation 同时包含复制后的 AnySearch 0.1.1-beta 和新轨迹岛 0.1.2；两者保持 external；scope 指向新代；激活后重复 check 不再提示；`rollbackPluginGeneration` 恢复上一代。`.2` 测试使用 index/entry/app minClient=0.4.5，并新增 0.4.4 客户端 blocked 负例（不得进入 available、不得生成 pending/generation）。
+- 已生成本地 staging `release-staging/plugins-v2026.08.24.2`：仅轨迹岛 0.1.2 tgz/sha256、plugin-index、release-manifest、release-notes；无 AnySearch tgz/旧资产混入。
+- 全量测试 755/755，fail 0，skipped 0；stable packed E2E、check-plugins、generate-plugin-set --check、verify-launch、git diff --check 全过。
+- 未 commit、push、建 tag、建 GitHub Release；等待 Codex 验收与 Cyrus 授权。

@@ -42,11 +42,19 @@
 - 顺序：①基线 727/727（skipped=0）②写 packed 回归（不注入 DSH_PERSONAL_PLUGINS_EXTERNAL）在旧代码红 ③修复 resolveExternalRoot userData 优先 + main 注入 helper + stable 缺路径 fail-closed ④全量门禁 + 构建 v0.4.4 Stable 候选 ⑤文档/评估 minClient；最终全量 731/731（新增 4 项）。
 - 最大风险：packed E2E 重建 stable win-unpacked 与真实进程验证耗时；必须全程临时 userData/DSH_HOME，禁止触碰真实 Stable/F 盘 pending。
 - Codex 复核三项已修复：runtime-preflight 隔离注入（真实 PREFLIGHT_OK + CLEANUP_OK）、Dev+pending 反向测试、`release-staging/v0.4.4-final` 独立 0.4.4 资产全集（无 0.4.3 混入）。
-- minClient 收口：现有 plugins-v2026.08.24.1（.1）Release 不修改、不删除；后续发布 .2，两个插件递增版本，minClient=0.4.4。
-- 已发布 v0.4.4：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4 （commit/push 已授权并完成；未安装真实 Stable，未创建 plugins-v .2）。
+- minClient 收口：现有 plugins-v2026.08.24.1（.1）Release 不修改、不删除；后续发布 .2 已改为单插件灰度：只更新轨迹岛 0.1.2，minClient=0.4.5，AnySearch 保持 0.1.1-beta。
+- 已发布 v0.4.4：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.4 （commit/push 已授权并完成；v0.4.5 后续已由 Cyrus 通过应用内更新安装）。
 
 ## 2026-08-24 v0.4.5 发布候选（更新中心有效版本识别与 pending 安全收口）
 - 目标：修复 v0.4.4 更新中心将 external 插件误显示为“随客户端更新”，并完成 current/pending 统一路径与证据校验。
 - 内容：effectivePluginVersions 读取 current generation；checkPlugins 以实际生效版本比较；pending 存在时禁止新 prepare 并显示“已有插件更新待重启激活”；current/pending 共用 assertExternalPackagePath 目录/版本/junction 校验。
 - 验证：全量 751/751、stable packed E2E、check-plugins、generate-plugin-set、verify-launch、git diff --check 全过。
-- 状态：已发布 v0.4.5：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5 （commit/push 已授权并完成；未安装真实 Stable，未创建 plugins-v*.2，未覆盖 v0.4.4 Release）。
+- 状态：已发布并安装 v0.4.5：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.5 （commit/push 已授权并完成；Cyrus 已通过应用内更新安装并正常启动；真实 Stable 更新中心确认 AnySearch 0.1.1-beta 与轨迹岛 0.1.1 为独立更新源，其余插件随客户端更新；未覆盖 v0.4.4 Release）。
+
+## 2026-08-24 plugins-v2026.08.24.2 单插件灰度候选（未发布）
+- 目标：用真实发布格式证明“只更新轨迹岛时，AnySearch 独立插件不会丢失或退回内置”。
+- 内容：release 脚本支持显式白名单插件选择（`--plugin/--plugins`），bootstrap 与 follow-up 分离；轨迹岛升至 0.1.2、minClient=0.4.5；AnySearch 源码/版本/包未改动。
+- 验证：新增 release 单插件/未知/重复/空/bootstrap/资产混入测试与组合 generation 保留 AnySearch 测试；.2 测试使用 index/entry/app minClient=0.4.5，并新增 0.4.4 客户端 blocked 负例；全量 755/755、stable packed E2E、check-plugins、generate-plugin-set --check、verify-launch、git diff --check 全过。
+- 产物：`release-staging/plugins-v2026.08.24.2` 仅含轨迹岛 0.1.2 资产；`bootstrap=false`。
+- `plugin-set.lock.json` 除轨迹岛 0.1.2 外，还按生成器结果修正了 v0.4.5 后 update-center 的当前 tgz integrity：`101659537af66014ab60aab7323c0096a3d02fcd8c2c7746e598f92e46d0764`。
+- 状态：候选已完成，尚未发布；等待 Codex 验收与 Cyrus 独立发布授权（不 commit/push/tag/Release）。
