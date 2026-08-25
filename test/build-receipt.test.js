@@ -42,6 +42,7 @@ function makeFixture() {
     'scripts/build-plugins.js': 'bp',
     'scripts/pack-desktop.js': 'pd',
     'scripts/package-set.mjs': 'ps',
+    'scripts/local-lifecycle.mjs': 'll',
     'scripts/apply-harness-tsdown-fallback.mjs': 'af',
   }
   for (const [file, content] of Object.entries(sourceFiles)) {

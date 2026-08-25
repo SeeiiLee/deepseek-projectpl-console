@@ -29,6 +29,7 @@ export const RECEIPT_SOURCE_FILES = Object.freeze([
   'scripts/build-plugins.js',
   'scripts/pack-desktop.js',
   'scripts/package-set.mjs',
+  'scripts/local-lifecycle.mjs',
   'scripts/apply-harness-tsdown-fallback.mjs',
 ])
 

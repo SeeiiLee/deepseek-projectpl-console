@@ -1,7 +1,7 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T06:50:20.757Z",
+  "recordedAt": "2026-08-25T07:35:12.455Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
@@ -12,12 +12,13 @@
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
-    "headAtRecord": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
-    "workingTreeState": "clean-g1-committed-local-not-pushed",
+    "approvedParentCommit": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
+    "headAtRecord": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
+    "workingTreeState": "g2-p1-locally-validated-candidate-awaiting-exact-local-commit",
     "commitAuthorized": true,
-    "lastAuthorizedCommit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
-    "lastCommitAuthorizationConsumed": true
+    "lastAuthorizedCommit": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
+    "lastCommitAuthorizationConsumed": false,
+    "continuousAuthorizationId": "governance-development-continuous-v1"
   },
   "releaseBaseline": {
     "stableVersion": "0.4.5",
@@ -25,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g2-p0-locally-validated-g2-p1-next",
+    "phase": "g2-p1-locally-validated-awaiting-exact-local-commit-then-g3",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -55,6 +56,15 @@
       "commit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
       "parent": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
       "candidateAggregateSha256": "728414A24D740258AD7482AB6E2D146118552FF7B1BF521E0B4F2004ACD3ADA2",
+      "pushed": false,
+      "published": false
+    },
+    "g2P0Commit": {
+      "commit": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
+      "parent": "dfd13539f9f1613d04918fcd60ddc0b2086c3fa2",
+      "candidateAggregateSha256": "3369241FB39A37CA50C6520D7BB6D198BF5E53BF0A774078AE002A4CE47785D7",
+      "receipt": "../local/receipts/op_g2_p0_20260825_01.json",
+      "commitReceipt": "../local/receipts/op_g2_p0_20260825_01-commit.json",
       "pushed": false,
       "published": false
     }
@@ -113,7 +123,7 @@
       }
     },
     "g2": {
-      "status": "p0-locally-validated-p1-next",
+      "status": "p1-locally-validated-awaiting-exact-local-commit",
       "bootLogRelativePath": "logs\\boot-error.log",
       "managedPackageSetsRoot": "Project Home\\local\\package-sets",
       "managedPackageSetCount": 1,
@@ -125,7 +135,28 @@
       "packageSetReusedWithoutDrift": true,
       "legacyArtifactEvidenceUnchanged": true,
       "temporaryProfileCountAfter": 0,
-      "smokeProcessCountAfter": 0
+      "smokeProcessCountAfter": 0,
+      "registrySchema": "local-object-registry/v1",
+      "registryRevision": 9,
+      "registeredObjects": 1,
+      "registeredRuns": 0,
+      "retentionPolicy": "recommended-v1",
+      "retentionSemantics": "outside-recent-count-AND-older-than-minimum-age",
+      "maximumRegisteredBytes": 21474836480,
+      "minimumFreeBytes": 5368709120,
+      "scheduleIntervalHours": 24,
+      "scheduleOverdueGraceHours": 12,
+      "schedulerHealth": "healthy",
+      "cleanupBootstrapReceipt": "../local/receipts/op-g2-p1-lifecycle-bootstrap-20260825-01-cleanup-receipt.json",
+      "physicalPackageSetCount": 1,
+      "packageSetProvenanceRecords": 2,
+      "formalFullTests": "818/818",
+      "windowsScheduledTaskCreated": false,
+      "deletionAcceptance": "task-owned-temporary-fixtures-only"
+    },
+    "g3": {
+      "status": "next-after-g2-p1-exact-local-commit",
+      "scope": "toolbox Skill projection plus memory-host status/recall on DSH Dev and Codex; no real Stable binding"
     }
   },
   "g4MigrationOrder": [
@@ -155,9 +186,11 @@
   "blockingConditions": [
     "project_control_binding_still_points_to_legacy_d_path",
     "dev_and_stable_project_id_conflict_unresolved",
-    "local_retention_cleanup_machine_loop_not_implemented",
-    "post_validation_workspace_artifacts_837754746_bytes_retained_pending_g2",
     "cross_harness_context_receipt_not_yet_proven"
+  ],
+  "knownLimitations": [
+    "legacy_workspace_artifacts_837754746_bytes_remain_preserved_outside_managed_local_pending_separate_cleanup_authorization",
+    "windows_scheduled_task_not_created; overdue large-run and package-build preflights fail closed until maintenance catches up"
   ],
   "protectedPaths": [
     "D:\\Deepseek Harness",
@@ -166,7 +199,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "G2-P1-LIFECYCLE-CONTRACT",
-    "goal": "Implement machine registration, quota and cleanup plan/apply/verify/receipt for managed package sets and runs, using only task-owned fixtures for deletion; do not start B1b or touch real Stable/Dev binding."
+    "id": "G3-CROSS-HARNESS-PILOT",
+    "goal": "After the G2-P1 exact local commit and post-commit state receipt, implement the bounded DSH Dev + Codex toolbox Skill and read-only memory-host status/recall pilot with explicit project_id and per-end quality/leakage evidence; do not touch real Stable binding or start G4 early."
   }
 }

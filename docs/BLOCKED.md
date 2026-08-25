@@ -1,6 +1,6 @@
 # Blocked
 
-## 当前阻断（2026-08-25，G1 已提交、下一步 G2-P0）
+## 当前阻断（2026-08-25，G2-P1 已本地全量验收、下一步 G3）
 
 - **checkout EOL 阻断已关闭**：仓库 `.gitattributes`、repo-local `core.autocrlf=false`/`core.safecrlf=true`、机器门禁和测试已经形成三层闭环；正式 `npm test` 786/786，launch/diff 通过。旧失败证据继续保留在 `local/receipts/op_canonical_workspace_import_20260825_01-validation-failed.json`，新闭环见 checkout 与 baseline receipts。
 - **B1b 继续暂停，但不再因 B1a/G0.5/G1 代码阻断**：G0.5 与 G1 已依次提交；在 G2 retention 与 G3 跨 Harness 对齐完成前，仍不得开始 migration 0010、审批 DB、HTTP、UI、侧栏或收件箱。
@@ -8,9 +8,9 @@
 - **remote 旧规则冲突已关闭**：机器索引只登记 canonical `origin=https://github.com/SeeiiLee/deepseek-projectpl-console.git`；额外 remote、URL 漂移或显式 `pushurl` 均失败关闭。登记仅提供来源追溯，不授权 commit、push 或发布，也没有修改现有 remote 配置。
 - **G0.5 Git 可重建阻断已关闭**：精确候选已提交为 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`，其上的 G1 已提交为 `f5c58e5`；两者均未 push、未发布。
 - **真实 Project Control 路径/身份尚未晋升**：Stable 权威 `project_id` 仍登记旧主路径 `D:\Deepseek Harness Personal`；Dev 数据库另有冲突身份 `prj_01a00cfd-1fe4-7bb3-9123-027765662055`。G1 只修通新建时“整屋文件目标 / workspace 主 location”的代码 seam，没有 migration 或真实数据库写入；真实 binding 与双 ID 仍须另发受控事务。
-- **local 生命周期机器闭环尚未实现**：当前只创建了隔离分区与 receipt 目录，尚无 register → cleanup-plan → apply → verify → receipt、保留上限、磁盘阈值和调度健康实现。正式 packed E2E 已登记留下 workspace ignored `artifacts/` 5233 文件 / 837,754,746 bytes；临时 E2E profile 已清零。该目录留待 G2 按合同迁入/清理，本轮不擅自删除，也不批量迁移旧 run/cache。
+- **旧 workspace `artifacts` 继续作为历史证据保留，不再冒充 G2 未实现**：它位于 canonical workspace 的 ignored 历史位置，仍为 5233 文件 / 837,754,746 bytes，旧日志 SHA 未变；G2-P1 只管理 Project Home `local` 下带登记与 marker 的对象，不会跨区自动吞并或删除该历史证据。其迁移/删除需要单独清单和 Cyrus 删除授权，不阻断 G3。
 - **G2-P0 packed 可变性阻断已关闭**：启动日志已改写各实例 `userData\logs\boot-error.log`；build receipt v3 校验完整 `win-unpacked`，正式测试创建并复用唯一 `local/package-sets/sha256-58ad…`，三次启动后整树 SHA 不变。旧 `artifacts` 仍为 5233 文件 / 837,754,746 bytes，原日志 4581 bytes/SHA 不变；没有覆盖历史证据。
-- **G2-P1 local 生命周期机器闭环尚未实现**：P0 已阻止 package set 运行时漂移和重复构建，但自动登记所有 package set/run、保留上限、配额、cleanup plan/apply/verify/receipt、磁盘调度健康仍未落地。当前唯一 managed set 必须保留；真实删除验收只能使用带任务所有权标记的一次性 fixture。
+- **G2-P1 local 生命周期机器闭环已本地关闭**：package set/run 创建登记、recent-count AND age retention、PINNED/引用保护、20 GiB 配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 与中断续跑已通过 818/818 正式全量。真实删除只发生于 task-owned 临时 fixture；物理 managed set 仍为唯一 58ad…，同内容不同来源只增加小型 provenance JSON。Windows 计划任务未创建，逾期通过大型 run/build preflight 失败关闭；启用系统计划任务仍需单独授权。
 - **跨 Harness 无缝续接尚未验收**：权威索引和 project_id 已对齐，但 toolbox 投影、memory-host、真实 binding 与逐端 context receipt 属 G3/G4，不能把当前单 workspace 通过外推为所有 Harness 已无缝接入。
 - **G4 批量迁移被 Amazon 试迁闸门主动截断**：连续授权只覆盖 G4 的 Amazon 单项目试迁；完成复制/校验/可回滚切换和人工观察后必须暂停。量化与 meal_tracker/食溯仍为未授权状态，不能因 Amazon 通过而自动继续；三个项目的旧源目录均不得在该授权下删除。
 

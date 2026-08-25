@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5 为 `28d7c8c`，G1 已在其上精确提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`。G2-P0 已本地通过：启动日志迁到各实例 `userData\logs\boot-error.log`，build receipt v3 覆盖完整 `win-unpacked`，正式测试只创建并复用一套 Project Home `local/package-sets/sha256-58ad…` 内容寻址包，三次启动前后整树 SHA 不变；正式全量 802/802，旧 `artifacts` 证据零漂移。下一执行指针是 G2-P1 的登记、配额与 cleanup plan/apply/verify/receipt。Cyrus 的“治理与开发连续执行包 V1”继续有效；push/发布、真实 Stable/Dev 切换和旧项目源删除仍未授权。G4 只允许先做 Amazon 单项目试迁并在验证后暂停；量化、食溯等待新决策。B1b 继续暂停。
+当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5=`28d7c8c`、G1=`f5c58e5`、G2-P0=`8dff0e3`。G2-P1 已完成本地机器验收：package set/run 登记、20 GiB 配额、5 GiB 磁盘底线、24h+12h 调度健康和 cleanup plan/apply/verify/receipt 全部落地；正式全量 818/818。相同包体只保留一套内容寻址 package set，不同来源证明进入小型 provenance ledger；旧 `artifacts` 证据零漂移。当前先按 receipt 精确本地提交 G2-P1，再执行 G3 toolbox Skill + memory-host 双端只读试点。Cyrus 的“治理与开发连续执行包 V1”继续有效；push/发布、真实 Stable/Dev 切换和旧项目源删除仍未授权。G4 只允许先做 Amazon 单项目试迁并在验证后暂停；量化、食溯等待新决策。B1b 继续暂停。
 
 ## 权威链
 
@@ -21,4 +21,4 @@
 
 正式全量测试入口是 `npm test`。不得用裸 `node --test` 代替，因为 Node 25 的默认发现会把 `test/fixtures/electron-*.js` 当普通测试执行；这些 fixture 只能由专门的 Electron 集成测试调用。
 
-在 G2 把 retention/cleanup 和磁盘阈值做成机器闭环前，人工与 packed E2E 只能从 F 盘 canonical 生成一套按内容寻址的共享只读测试包，隔离 run 引用它而不复制它。每任务最多新建一套 package set；没有显式范围和 preflight 就不开跑。此条当前是失败关闭的操作规则，不冒充 G2 已实现。
+G2 已把 retention/cleanup、登记配额和磁盘阈值做成机器闭环。人工与 packed E2E 必须从 F 盘 canonical 生成或复用按内容寻址的共享只读测试包，隔离 run 只引用它，不逐 run 复制；每任务最多新增一套物理 package set。Windows 计划任务尚未创建，但大型 run/build 在维护逾期、对象未知、配额或磁盘不足时会失败关闭；启用系统级定时任务仍须单独授权。

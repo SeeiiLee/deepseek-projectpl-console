@@ -1,5 +1,16 @@
 # Progress
 
+## 2026-08-25：G2-P1 local 生命周期机器闭环本地验收通过
+
+- 新增 `scripts/local-lifecycle.mjs`：Project Home `local` 对象使用 append-only registry snapshot，package set/run 创建或受控对账即登记 `project_id`、owner、task、状态、预计字节、retention class、marker hash 与来源 hash；路径越界、身份不符、未知目录、symlink/junction/reparse point 和 marker/包体漂移均失败关闭。
+- 固化可版本化 `recommended-v1` 本机 policy：成功 run 取“最近 2 次且 7 天内全部保留”的 AND 语义；失败 run 最近 3 次、至少 14 天且 issue 未关闭不删；中断 run 72 小时；package set 最近 2 套且 7 天内全部保留；PINNED/ACTIVE/QUARANTINED 与被 run 引用的 package set 永不进入自动目标。登记总量上限 20 GiB，大任务后仍须保留至少 5 GiB 空间。
+- cleanup 实现 plan → hash/policy/revision check → apply → verify → append-only receipt；apply 每删一个对象即写 append-only journal，中断后只能从同一 plan hash 续跑。真实递归删除只在 `dsh-local-lifecycle-*` 一次性 task-owned fixture 中验收，现有 package set、旧 `artifacts` 和任何真实项目源均未作为删除目标。
+- run 创建前强制验证调度健康、未知对象、磁盘和总配额；package-set build 同样强制 preflight。健康周期为 24 小时，另有 12 小时补跑宽限；关机期间不冒充准点执行，逾期后任何新大型 run/build 失败关闭。Windows 计划任务未创建，符合当前系统配置禁令。
+- 首次真实 packed 发现“来源哈希变化但 win-unpacked 字节完全相同”会命中相同内容地址，旧代码误报 destination invalid。失败 staging 自动清零、旧包未变。修复为外部 append-only package-set provenance ledger：同一 58ad… 包体只保留一份，不同源码证明分别登记；当前物理 package set 仍为 1 套，provenance 为 2 个小 JSON。
+- 红测试：`test/local-lifecycle.test.js` 初始 12/12 fail；修复后定向组合最终 29/29。真实 packed 定向 1/1；正式 `npm test` 818/818，fail/cancelled/skipped/todo 均为 0。governance 21/21、checkout 1263 文件（LF 1235 / CRLF 10 / binary 18）、launch 与 diff 全绿。
+- 后验卫生：`win-unpacked` 仍为 5244 文件 / 837,790,443 bytes，package sets=1、staging=0、local runs=0、临时 packed profile=0、Smoke 残留=0。旧 workspace `artifacts` 仍为 5233 文件 / 837,754,746 bytes，旧日志 4581 bytes、SHA `90FDCDF2C16C89074806A141C9950EB55884C812BB7229242D0A881A2A487535`，零漂移。
+- G2-P1 未创建系统计划任务，未开始 B1b，未触碰 migration/DB/HTTP/UI/侧栏/收件箱、真实 Stable/Dev binding、A Release、上游或受保护 F 数据。下一步按既定顺序进入 G3 toolbox Skill + memory-host 双端只读试点；G4 仍只允许 Amazon 单项目试迁并在验收后暂停。
+
 ## 2026-08-25：G2-P0 packed package set 不可变性本地验收通过
 
 - 根因关闭：`src/main.js::appendBootLog` 不再按应用源码目录推导日志位置，新增纯函数/写入 seam，把日志固定到当前 Electron 实例的绝对 `userData\logs\boot-error.log`；Stable、Dev、smoke 因 userData 不同自然隔离。

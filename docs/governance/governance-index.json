@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T06:50:20.757Z",
+  "generatedAt": "2026-08-25T07:35:12.455Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -45,7 +45,7 @@
     }
   },
   "packedTestPolicy": {
-    "status": "g2-p0-machine-enforced-g2-p1-retention-pending",
+    "status": "g2-p1-machine-enforced-locally-validated-awaiting-exact-local-commit",
     "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
     "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
     "managedRoot": "Project Home\\local\\package-sets",
@@ -53,6 +53,13 @@
     "bootLogPolicy": "active Electron userData\\logs\\boot-error.log",
     "maxNewPackageSetsPerTask": 1,
     "preflightRequired": true,
+    "registrationPolicy": "package sets and runs register before use under Project Home local append-only ledger",
+    "retentionPolicy": "recommended-v1; outside recent count AND older than minimum age",
+    "cleanupPolicy": "hash-bound plan -> apply journal -> verify -> append-only receipt",
+    "quotaBytes": 21474836480,
+    "minimumFreeBytes": 5368709120,
+    "schedulerHealth": "24h interval plus 12h overdue grace; overdue large operations fail closed",
+    "windowsScheduledTask": "not-created-not-authorized",
     "packedE2eDuringG0_1": "forbidden"
   },
   "machineGates": {
@@ -161,12 +168,20 @@
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     },
     "g2PackedImmutability": {
-      "status": "p0-locally-validated-p1-next",
+      "status": "p1-locally-validated-awaiting-exact-local-commit",
       "managedPackageSetTreeHash": "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
       "managedPackageSetCount": 1,
       "buildReceiptSchemaVersion": 3,
-      "formalTest": "802/802",
-      "legacyArtifactEvidenceUnchanged": true
+      "legacyArtifactEvidenceUnchanged": true,
+      "registrySchema": "local-object-registry/v1",
+      "registryRevision": 9,
+      "retentionPolicy": "recommended-v1",
+      "cleanupReceipt": "../local/receipts/op-g2-p1-lifecycle-bootstrap-20260825-01-cleanup-receipt.json",
+      "physicalPackageSetCount": 1,
+      "packageSetProvenanceRecords": 2,
+      "formalTest": "818/818",
+      "realDeletionAcceptance": "task-owned-temporary-fixtures-only",
+      "next": "G3-CROSS-HARNESS-PILOT-after-exact-local-commit"
     }
   },
   "g4MigrationOrder": [
