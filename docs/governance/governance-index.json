@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T08:40:00.000Z",
+  "generatedAt": "2026-08-25T09:27:00.000Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -203,6 +203,23 @@
       "terminalState": "applied_shadow",
       "stableMutation": false,
       "next": "G4-AMAZON-MIGRATION-PILOT"
+    },
+    "g4AmazonFilesystemPilot": {
+      "status": "verified-paused-for-cyrus-observation",
+      "projectHome": "F:\\Projects\\amazon-store",
+      "copyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
+      "acceptanceReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-acceptance.json",
+      "formalFullTests": "816/816; fail=0; skipped=0; todo=0",
+      "governanceGate": "22/22",
+      "checkoutGate": "1263 files",
+      "launchGate": "passed",
+      "copiedFiles": 5255,
+      "copiedBytes": 3246852499,
+      "retainedLegacyFiles": 16037,
+      "retainedLegacyBytes": 1133347993,
+      "identityState": "unresolved-unregistered",
+      "projectControlBinding": false,
+      "next": "G4-AMAZON-HUMAN-OBSERVATION"
     }
   },
   "g4MigrationOrder": [
@@ -212,8 +229,13 @@
   ],
   "g4MigrationGate": {
     "mode": "amazon-pilot-only",
-    "amazonStatus": "preflight-blocked-before-copy-scope-and-identity-decision-required",
+    "amazonStatus": "filesystem-pilot-verified-paused-for-cyrus-observation",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
+    "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
+    "amazonAcceptanceReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-acceptance.json",
+    "amazonDestination": "F:\\Projects\\amazon-store",
+    "amazonProjectControlIdentity": "unresolved-unregistered",
+    "amazonProjectControlBinding": false,
     "pauseAfterAmazonVerification": true,
     "laterProjectsRequireNewCyrusDecision": true
   },

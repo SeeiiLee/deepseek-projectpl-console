@@ -1,10 +1,10 @@
 # Blocked
 
-## 当前阻断（2026-08-25，G3 已提交为 `1f8fcd6`、当前 G4 Amazon preflight）
+## 当前阻断（2026-08-25，G4 Amazon 文件系统试迁已验证并暂停）
 
-- **G4 Amazon 复制前阻断（需要 Cyrus 一次合并决定）**：旧源实测 21,292 文件 / 4.38 GB，包含 Temp、课程原始产物、2.14 GB 工具/vendor、业务报告和加密 secure，并非“只有 Skill + 调研报告”。完整独立 Amazon project_id 只在当前禁止读取的真实 Stable 数据侧，Dev 绑定又只是 tools 容器项目。推荐批准：①只读查询 Stable Project Control 的精确 Amazon 身份元数据，不读凭据/记忆正文；②按 workspace/local 分区的两阶段迁移；③旧源保留作回滚。未决定前目标目录零写入，不生成新 ID。
+- **Amazon 文件复制阻断已关闭，身份/binding 仍待后续事务**：`F:\Projects\amazon-store` 已按 workspace/worktrees/local 分类完成并验收；旧 `Temp/tmp` 未重复复制，旧源未删除。完整权威 `project_id` 尚未确认，因此只写 `project-home.pending`，不冒充控制台已注册。该事项不影响 Cyrus 先观察文件迁移，但在正式 Project Control binding 前仍失败关闭。
 - **checkout EOL 阻断已关闭**：仓库 `.gitattributes`、repo-local `core.autocrlf=false`/`core.safecrlf=true`、机器门禁和测试已经形成三层闭环；正式 `npm test` 786/786，launch/diff 通过。旧失败证据继续保留在 `local/receipts/op_canonical_workspace_import_20260825_01-validation-failed.json`，新闭环见 checkout 与 baseline receipts。
-- **B1b 继续暂停，但不再因 B1a/G0.5/G1 代码阻断**：G0.5 与 G1 已依次提交；在 G2 retention 与 G3 跨 Harness 对齐完成前，仍不得开始 migration 0010、审批 DB、HTTP、UI、侧栏或收件箱。
+- **B1b 继续暂停，但不再因 B1a/G0.5/G1/G2/G3 代码阻断**：G2/G3 已完成本地验收；当前按 Cyrus 要求停在 Amazon 迁移人工观察点。恢复前仍不得开始 migration 0010、审批 DB、HTTP、UI、侧栏或收件箱。
 - **G1 Git 可重建阻断已关闭**：`project-home/v1`、三套 `2.0.0` 模板、整屋 plan 与 `workspace` primary binding 已精确提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`；候选 receipt 与 commit receipt 均位于 Project Home `local/receipts/`。该 commit 未 push、未发布；它不授权后续 commit、push 或发布。
 - **remote 旧规则冲突已关闭**：机器索引只登记 canonical `origin=https://github.com/SeeiiLee/deepseek-projectpl-console.git`；额外 remote、URL 漂移或显式 `pushurl` 均失败关闭。登记仅提供来源追溯，不授权 commit、push 或发布，也没有修改现有 remote 配置。
 - **G0.5 Git 可重建阻断已关闭**：精确候选已提交为 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`，其上的 G1 已提交为 `f5c58e5`；两者均未 push、未发布。
@@ -13,7 +13,7 @@
 - **G2-P0 packed 可变性阻断已关闭**：启动日志已改写各实例 `userData\logs\boot-error.log`；build receipt v3 校验完整 `win-unpacked`，正式测试创建并复用唯一 `local/package-sets/sha256-58ad…`，三次启动后整树 SHA 不变。旧 `artifacts` 仍为 5233 文件 / 837,754,746 bytes，原日志 4581 bytes/SHA 不变；没有覆盖历史证据。
 - **G2-P1 local 生命周期机器闭环已本地关闭**：package set/run 创建登记、recent-count AND age retention、PINNED/引用保护、20 GiB 配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 与中断续跑已通过 818/818 正式全量。真实删除只发生于 task-owned 临时 fixture；物理 managed set 仍为唯一 58ad…，同内容不同来源只增加小型 provenance JSON。Windows 计划任务未创建，逾期通过大型 run/build preflight 失败关闭；启用系统计划任务仍需单独授权。
 - **G3 shadow 闭环已通过，但不能外推为所有 Harness active**：DSH Dev/Codex 的治理 Skill 投影、逐实例 receipt/rollback 与 memory-host fixture 双端 leak=0 已验收；真实宿主重启 discovery、真实 memory 数据和 Project Control binding 均未做。其他 Harness 仍是 unconfigured/not-applicable，必须逐实例接入与验收。
-- **G4 批量迁移被 Amazon 试迁闸门主动截断**：连续授权只覆盖 G4 的 Amazon 单项目试迁；完成复制/校验/可回滚切换和人工观察后必须暂停。量化与 meal_tracker/食溯仍为未授权状态，不能因 Amazon 通过而自动继续；三个项目的旧源目录均不得在该授权下删除。
+- **G4 已在 Amazon 试迁后主动暂停**：连续授权只覆盖 Amazon 文件系统试迁；复制与机器验收已完成，当前等待 Cyrus 人工观察。量化与 meal_tracker/食溯仍为未授权状态，三个项目的旧源目录均不得在该授权下删除。
 
 允许连续执行：当前治理对齐、G2、G3，以及 G4 的 Amazon 单项目试迁；每个独立候选通过 receipt 与门禁后可创建本地 commit，并可清理带任务所有权标记的临时 profile、失败半成品和一次性 fixture。仍禁止修改 A Release、真实 Stable/Dev 切换、F 盘受保护数据、`D:\Deepseek Harness`、发布面、remote 配置、旧项目源目录；push/发布仍需另行授权。packed E2E 还必须满足机器索引的临时单 package-set 规则。
 

@@ -1,6 +1,15 @@
 # Progress
 
-## 2026-08-25：G4 Amazon 试迁在复制前因范围与身份冲突失败关闭
+## 2026-08-25：G4 Amazon 文件系统试迁完成并按约暂停
+
+- Cyrus 明确把本轮缩回简单文件迁移：Amazon 的 Skill、MCP/工具、课程和调研/业务资料进入 `F:\Projects\amazon-store\workspace`，3 个加密文件只进入 `local/secure`；Project Control 注册/binding 不再作为复制前置条件，也没有伪造 `project_id`。
+- 复制阶段逐文件 SHA-256 验证 5,255 个文件 / 3,246,852,499 bytes 全部一致。旧 `Temp/tmp` 的 16,037 个临时/缓存文件 / 1,133,347,993 bytes 没有制造第二份，继续只留在旧源作历史回查；新 `local/runtime/Temp` 验收时为空。
+- 只修复 9 个实际入口的旧根路径、secure 与 runtime 路径；5 个 Python 模块解析/导入和 7 个路径常量通过，SellerSprite Skill 30/30、3 份 MCP/Skill JSON、Keyring CLI `--help` 均通过，没有读取密钥正文或发起付费 MCP 调用。
+- Amazon 已补最小治理入口 `GOVERNANCE_INDEX/AGENTS/PRD/NEXT/BLOCKED/PROGRESS`；旧源 21,292 文件 / 4,380,200,492 bytes 保持原状。复制与验收 receipt 分别为 `local/receipts/op_g4_amazon_migration_20260825_01.json`、`op_g4_amazon_migration_20260825_01-acceptance.json`。
+- 主仓闭环复核通过：正式 `npm test` 816/816（fail/skipped/todo=0），治理 22/22，checkout 1,263 文件，launch 与 `git diff --check` 全绿；packed 长测复用 G2 现有唯一 package set，未新增测试包。
+- 按 Cyrus 边界现已暂停：量化、meal_tracker/食溯、B1b、真实 Stable/Dev 切换、Project Control binding、旧源删除均未开始。
+
+## 2026-08-25：G4 Amazon 试迁此前在复制前因范围与身份冲突失败关闭（历史闸门，现已由 Cyrus 缩范围解除）
 
 - 只读盘点确认旧源 `F:\documents\Kimi\Workspaces\Amazon Store` 实际为 21,292 文件 / 4,380,200,492 bytes / 3,201 目录，不是治理文档所写的“主要是 Skill 和调研报告”。其中 `Temp` 1.13 GB、`courses` 1.09 GB、`tools` 2.14 GB（`video_pipeline` 2.12 GB），并有 3 个加密 `secure` 文件；未读取密钥正文。
 - 源目录没有 Git、manifest 或完整 project_id。Dev 只把 `tools` 作为另一个项目的 primary location；AppData Stable DB 为 0 项目，旧盘点仅保留独立 Amazon Stable ID 的截断前缀。真实 Stable 外部数据仍受保护，未读取；因此不得生成新 ID 冒充或直接写 Project Home marker。
