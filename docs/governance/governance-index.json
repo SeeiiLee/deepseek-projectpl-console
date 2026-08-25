@@ -209,6 +209,8 @@
       "projectHome": "F:\\Projects\\amazon-store",
       "copyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
       "acceptanceReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-acceptance.json",
+      "governanceCommit": "216cfc481dd7084872272b51795864bd39443d14",
+      "governanceCommitReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-governance-commit.json",
       "formalFullTests": "816/816; fail=0; skipped=0; todo=0",
       "governanceGate": "22/22",
       "checkoutGate": "1263 files",

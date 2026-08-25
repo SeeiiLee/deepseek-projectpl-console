@@ -2,7 +2,7 @@
 
 状态：**治理收敛优先，B1b 暂停**
 当前 Stable：**0.4.5 已发布并完成真实插件更新验收**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，G3 已本地提交为 `1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7`（Toolbox=`600b296`，Memory=`c0a0b03`，G2-P1=`535185b`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，G4 Amazon 治理收口=`216cfc4`，G3=`1f8fcd6`（Toolbox=`600b296`，Memory=`c0a0b03`，G2-P1=`535185b`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
 > **2026-08-25 当前唯一执行顺序**：G0.5/G1/G2/G3 已本地提交 → **G4 Amazon 文件系统试迁已完成并暂停** → Cyrus 人工观察 Amazon 新目录 → 另行决定 Project Control 身份/binding、量化迁移或恢复 B1b；食溯仍排最后。下方旧功能排期只作历史记录，不覆盖本指针。

@@ -7,6 +7,7 @@
 - 只修复 9 个实际入口的旧根路径、secure 与 runtime 路径；5 个 Python 模块解析/导入和 7 个路径常量通过，SellerSprite Skill 30/30、3 份 MCP/Skill JSON、Keyring CLI `--help` 均通过，没有读取密钥正文或发起付费 MCP 调用。
 - Amazon 已补最小治理入口 `GOVERNANCE_INDEX/AGENTS/PRD/NEXT/BLOCKED/PROGRESS`；旧源 21,292 文件 / 4,380,200,492 bytes 保持原状。复制与验收 receipt 分别为 `local/receipts/op_g4_amazon_migration_20260825_01.json`、`op_g4_amazon_migration_20260825_01-acceptance.json`。
 - 主仓闭环复核通过：正式 `npm test` 816/816（fail/skipped/todo=0），治理 22/22，checkout 1,263 文件，launch 与 `git diff --check` 全绿；packed 长测复用 G2 现有唯一 package set，未新增测试包。
+- Amazon G4 的 7 份主仓治理状态文件已按白名单提交为 `216cfc481dd7084872272b51795864bd39443d14`（父提交 `76197c8`），commit 后工作树干净；commit receipt 为 `local/receipts/op_g4_amazon_migration_20260825_01-governance-commit.json`。未改 Git 配置、未 push、未发布。
 - 按 Cyrus 边界现已暂停：量化、meal_tracker/食溯、B1b、真实 Stable/Dev 切换、Project Control binding、旧源删除均未开始。
 
 ## 2026-08-25：G4 Amazon 试迁此前在复制前因范围与身份冲突失败关闭（历史闸门，现已由 Cyrus 缩范围解除）
