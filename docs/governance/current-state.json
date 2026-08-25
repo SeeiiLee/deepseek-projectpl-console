@@ -1,22 +1,22 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T08:32:00.000Z",
+  "recordedAt": "2026-08-25T08:40:00.000Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-g3-committed-local-g4-amazon-next",
+    "status": "canonical-workspace-g4-amazon-preflight-blocked",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
-    "headAtRecord": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
-    "workingTreeState": "g3-committed-local-g4-state-reconciliation-candidate",
+    "approvedParentCommit": "cba630d52909efd83eb5cc18ab8b49a083010129",
+    "headAtRecord": "cba630d52909efd83eb5cc18ab8b49a083010129",
+    "workingTreeState": "g4-amazon-preflight-blocked-reconciliation-candidate",
     "commitAuthorized": true,
-    "lastAuthorizedCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
+    "lastAuthorizedCommit": "cba630d52909efd83eb5cc18ab8b49a083010129",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
@@ -26,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g3-committed-local-g4-amazon-next",
+    "phase": "g4-amazon-preflight-blocked-decision-required",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -195,7 +195,11 @@
   },
   "g4MigrationGate": {
     "mode": "amazon-pilot-only",
-    "amazonStore": "authorized-for-pilot-after-g2-and-g3",
+    "amazonStore": "preflight-blocked-before-copy-scope-and-identity-decision-required",
+    "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
+    "amazonObservedFiles": 21292,
+    "amazonObservedBytes": 4380200492,
+    "amazonDestinationWritten": false,
     "pauseAfterAmazonVerification": true,
     "cyrusQuantTrading": "not-authorized-pending-amazon-review",
     "mealTracker": "not-authorized-pending-amazon-review"
@@ -203,7 +207,8 @@
   "blockingConditions": [
     "project_control_binding_still_points_to_legacy_d_path",
     "dev_and_stable_project_id_conflict_unresolved",
-    "real_cross_harness_active_discovery_and_binding_not_yet_authorized"
+    "real_cross_harness_active_discovery_and_binding_not_yet_authorized",
+    "amazon_migration_scope_and_authoritative_project_id_unresolved"
   ],
   "knownLimitations": [
     "legacy_workspace_artifacts_837754746_bytes_remain_preserved_outside_managed_local_pending_separate_cleanup_authorization",
@@ -217,6 +222,6 @@
   ],
   "nextTask": {
     "id": "G4-AMAZON-MIGRATION-PILOT",
-    "goal": "Migrate only Amazon Store into its standard F:\\Projects Project Home with copy, hash verification and rollback evidence; preserve the legacy source and pause after acceptance before any Quant or meal-tracker migration."
+    "goal": "Await Cyrus approval for a one-time read-only exact Amazon identity lookup plus partitioned workspace/local migration; then migrate only Amazon, preserve the legacy source, and pause before Quant or meal-tracker."
   }
 }

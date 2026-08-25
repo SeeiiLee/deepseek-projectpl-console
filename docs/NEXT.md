@@ -5,7 +5,7 @@
 当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，G3 已本地提交为 `1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7`（Toolbox=`600b296`，Memory=`c0a0b03`，G2-P1=`535185b`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-25 当前唯一执行顺序**：G0.5/G1/G2/G3 已本地提交 → **当前执行 G4 Amazon 单项目试迁** → 完成复制/校验/可回滚切换与验收后立即暂停复盘 → Cyrus 再决定是否迁量化、食溯 → 复盘后恢复 B1b。Cyrus 的连续授权仍有效；下方旧功能排期只作历史记录，不覆盖本指针。
+> **2026-08-25 当前唯一执行顺序**：G0.5/G1/G2/G3 已本地提交 → **G4 Amazon 在复制前失败关闭，等待 Cyrus 一次合并决定“精确身份只读 + 分区式迁移”** → 获批后只完成 Amazon 并暂停 → 量化、食溯仍不授权 → 复盘后恢复 B1b。下方旧功能排期只作历史记录，不覆盖本指针。
 
 ## G0：当前收口任务
 
@@ -20,7 +20,7 @@
 9. [x] G0.5 冻结当前候选的逐文件清单与聚合 hash，确认 ignored `artifacts/`、package 和 run 均未进入候选；freeze receipt 位于 Project Home `local/receipts/`。
 10. [x] Cyrus 单独授权并完成 G0.5 精确提交：`28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`；未 push、未发布。
 
-G0.5、G1、G2 与 G3 已成为 Git 可重建本地基线；G3 的 Toolbox 18/18、Memory 6/6、双端可回滚投影与 leak=0 已通过。当前唯一任务是 **G4 Amazon 单项目试迁**，只允许 copy → verify → 可回滚切换；验收后必须暂停。量化、食溯与 B1b 不得提前开始，正式全量入口固定为 `npm test`。
+G0.5、G1、G2 与 G3 已成为 Git 可重建本地基线；G3 的 Toolbox 18/18、Memory 6/6、双端可回滚投影与 leak=0 已通过。G4 Amazon 实测为 4.38 GB 混合工作区且完整权威 ID 不在当前可读数据侧，现停在 **复制前决策闸门**。未经新决定不得创建 `F:\Projects\amazon-store`、复制 4.38 GB、生成新 ID 或只挑部分文件冒充完成；量化、食溯与 B1b 不得提前开始。
 
 ## G1–G4：后续治理实现顺序
 

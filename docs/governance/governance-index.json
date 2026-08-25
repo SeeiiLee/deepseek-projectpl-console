@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T08:32:00.000Z",
+  "generatedAt": "2026-08-25T08:40:00.000Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -212,6 +212,8 @@
   ],
   "g4MigrationGate": {
     "mode": "amazon-pilot-only",
+    "amazonStatus": "preflight-blocked-before-copy-scope-and-identity-decision-required",
+    "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "pauseAfterAmazonVerification": true,
     "laterProjectsRequireNewCyrusDecision": true
   },

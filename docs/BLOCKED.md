@@ -1,7 +1,8 @@
 # Blocked
 
-## 当前阻断（2026-08-25，G2-P1 已提交为 `535185b`、当前 G3）
+## 当前阻断（2026-08-25，G3 已提交为 `1f8fcd6`、当前 G4 Amazon preflight）
 
+- **G4 Amazon 复制前阻断（需要 Cyrus 一次合并决定）**：旧源实测 21,292 文件 / 4.38 GB，包含 Temp、课程原始产物、2.14 GB 工具/vendor、业务报告和加密 secure，并非“只有 Skill + 调研报告”。完整独立 Amazon project_id 只在当前禁止读取的真实 Stable 数据侧，Dev 绑定又只是 tools 容器项目。推荐批准：①只读查询 Stable Project Control 的精确 Amazon 身份元数据，不读凭据/记忆正文；②按 workspace/local 分区的两阶段迁移；③旧源保留作回滚。未决定前目标目录零写入，不生成新 ID。
 - **checkout EOL 阻断已关闭**：仓库 `.gitattributes`、repo-local `core.autocrlf=false`/`core.safecrlf=true`、机器门禁和测试已经形成三层闭环；正式 `npm test` 786/786，launch/diff 通过。旧失败证据继续保留在 `local/receipts/op_canonical_workspace_import_20260825_01-validation-failed.json`，新闭环见 checkout 与 baseline receipts。
 - **B1b 继续暂停，但不再因 B1a/G0.5/G1 代码阻断**：G0.5 与 G1 已依次提交；在 G2 retention 与 G3 跨 Harness 对齐完成前，仍不得开始 migration 0010、审批 DB、HTTP、UI、侧栏或收件箱。
 - **G1 Git 可重建阻断已关闭**：`project-home/v1`、三套 `2.0.0` 模板、整屋 plan 与 `workspace` primary binding 已精确提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`；候选 receipt 与 commit receipt 均位于 Project Home `local/receipts/`。该 commit 未 push、未发布；它不授权后续 commit、push 或发布。

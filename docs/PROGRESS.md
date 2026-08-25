@@ -1,5 +1,11 @@
 # Progress
 
+## 2026-08-25：G4 Amazon 试迁在复制前因范围与身份冲突失败关闭
+
+- 只读盘点确认旧源 `F:\documents\Kimi\Workspaces\Amazon Store` 实际为 21,292 文件 / 4,380,200,492 bytes / 3,201 目录，不是治理文档所写的“主要是 Skill 和调研报告”。其中 `Temp` 1.13 GB、`courses` 1.09 GB、`tools` 2.14 GB（`video_pipeline` 2.12 GB），并有 3 个加密 `secure` 文件；未读取密钥正文。
+- 源目录没有 Git、manifest 或完整 project_id。Dev 只把 `tools` 作为另一个项目的 primary location；AppData Stable DB 为 0 项目，旧盘点仅保留独立 Amazon Stable ID 的截断前缀。真实 Stable 外部数据仍受保护，未读取；因此不得生成新 ID 冒充或直接写 Project Home marker。
+- `F:\Projects\amazon-store` 仍不存在，源目录零写入，量化/食溯零触碰。推荐在 Cyrus 合并批准“只读取精确 Stable Amazon ID + 分区式两阶段迁移”后再复制；preflight receipt 为 `local/receipts/op_g4_amazon_preflight_20260825_01.json`。
+
 ## 2026-08-25：G3 跨 Harness shadow 试点通过，等待本地基线提交
 
 - G3 主仓 11 文件候选已按 receipt 精确提交为 `1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7`（父提交 `834f7bb`）；commit blob 与候选逐文件一致，未 push、未发布。候选与 commit receipt 分别为 Project Home `local/receipts/op_g3_cross_harness_20260825_01.json` 和 `op_g3_cross_harness_20260825_01-commit.json`。
