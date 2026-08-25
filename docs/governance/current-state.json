@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "current-state/v1",
+  "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
+  "recordedAt": "2026-08-25T05:09:13.800Z",
+  "authorityIndex": "docs/governance/governance-index.json",
+  "projectHome": {
+    "path": "F:\\Projects\\deepseek-harness-personal",
+    "marker": ".project-home/project-home.json",
+    "status": "bootstrapping",
+    "canonicalWorkspaceReady": true
+  },
+  "workspace": {
+    "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
+    "branch": "codex/governance-alignment",
+    "approvedParentCommit": "c27e989381c34dc06d4f4af1845f6122c0b00c2b",
+    "headAtRecord": "c27e989381c34dc06d4f4af1845f6122c0b00c2b",
+    "workingTreeState": "dirty-local-validated-candidate",
+    "commitAuthorized": false
+  },
+  "releaseBaseline": {
+    "stableVersion": "0.4.5",
+    "aLineStatus": "production-accepted-and-frozen",
+    "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
+  },
+  "governanceConvergence": {
+    "phase": "g0.5-candidate-frozen-awaiting-commit-authorization",
+    "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
+    "plannedItems": 47,
+    "b1aExactCopyItemsApplied": 33,
+    "governanceNewItemsImported": 5,
+    "historicalInputItemsImported": 1,
+    "unchangedSourceHashItems": 35,
+    "annotatedAfterImportItems": 4,
+    "hunkReconcileItemsApplied": 8,
+    "applyReceipt": "../local/receipts/op_canonical_workspace_import_20260825_01-apply.json",
+    "applyReceiptStatus": "applied-and-validated",
+    "combinedValidation": "passed-786-of-786",
+    "validationReceipt": "../local/receipts/op_canonical_workspace_import_20260825_01-validation-failed.json",
+    "checkoutContractReceipt": "../local/receipts/op_checkout_contract_20260825_01-apply.json",
+    "baselinePromotionReceipt": "../local/receipts/op_baseline_promotion_20260825_01.json",
+    "aLineCleanupReconciliationReceipt": "../local/receipts/op_a_line_cleanup_reconcile_20260825_01.json",
+    "g0_1GovernanceReceipt": "../local/receipts/op_g0_1_governance_reconcile_20260825_01.json",
+    "candidateFreezeReceipt": "../local/receipts/op_g0_5_candidate_freeze_20260825_01.json"
+  },
+  "workstreams": {
+    "aLine": {
+      "status": "frozen-cleanup-evidence-reconciled",
+      "cleanupEvidence": "verified-read-only-without-copying",
+      "cleanupReceipt": "../local/receipts/op_a_line_cleanup_reconcile_20260825_01.json",
+      "nextAction": "none"
+    },
+    "b1a": {
+      "status": "imported-and-combined-validated",
+      "sourceAcceptance": "28/28 focused; 177/177 project-control; formal full suite 786/786; skipped=0; todo=0"
+    },
+    "b1b": {
+      "status": "paused",
+      "forbiddenSurfaces": [
+        "migration",
+        "database",
+        "http",
+        "ui",
+        "sidebar",
+        "approval-inbox"
+      ]
+    }
+  },
+  "blockingConditions": [
+    "g0.5_uncommitted_candidate_not_rebuildable_from_git",
+    "project_control_binding_still_points_to_legacy_d_path",
+    "dev_and_stable_project_id_conflict_unresolved",
+    "project_home_product_contract_not_implemented",
+    "local_retention_cleanup_machine_loop_not_implemented",
+    "post_validation_workspace_artifacts_837753219_bytes_retained_pending_g2",
+    "cross_harness_context_receipt_not_yet_proven"
+  ],
+  "protectedPaths": [
+    "D:\\Deepseek Harness",
+    "F:\\documents\\Cyrus Deepseek Harness Data",
+    "real Stable install and userData",
+    "A line GitHub Releases"
+  ],
+  "nextTask": {
+    "id": "G0.5-COMMIT-AUTHORIZATION",
+    "goal": "Request separate authorization to commit exactly the frozen candidate inventory; do not commit, push or publish without that authorization."
+  }
+}

@@ -1,5 +1,29 @@
 # Progress
 
+## 2026-08-25：G0.1 A 线清理对账与 remote 治理收口
+
+- A 线清理结果已从 `D:\Deepseek Harness Personal\artifacts-dev\e2e-runs\A-LINE-EVIDENCE` 做只读复核：六个权威 A 线 run、Stable 最终 `E2E_OK` 和五份 JSON 证据存在且可解析；清理前验证 hash 与 wave2 receipt 一致；被批准删除的三个失败 Stable run、旧 artifacts/cache 和旧 `D:\dsh-v0.4.3-clean` 均不存在。
+- F 盘只新增小型 reconciliation receipt 并登记来源 SHA-256，没有复制 A 线 Harness、Node、安装包或 run。workspace 已有 ignored `artifacts/` 仍是 5233 文件 / 837,753,219 bytes，本轮不删除也不扩增，继续交给 G2。
+- `check-governance` 的旧“必须没有 remote”规则已改为“只允许机器索引精确登记的 remote”：当前只允许 canonical `origin` 固定 URL；额外 remote、URL 漂移和显式 `pushurl` 均失败关闭。remote 存在只用于来源追溯，不构成 commit/push/publish 授权，现有 Git remote 配置未修改。
+- 已登记 G2 前临时 packed 测试边界：人工测试只从 F 盘 canonical 生成；每任务最多一套按内容寻址的共享只读 package set，run 只引用、不逐 run 复制；无磁盘 preflight 和明确 packed 范围不开跑。本 G0.1 只运行轻量治理门禁，不生成 package 或 E2E run。
+- G0.5 已冻结候选逐文件清单和聚合 hash，确认 ignored `artifacts/`、package 与 run 未进入候选；freeze receipt 单独放在 Project Home `local/receipts/`，不加入源码候选形成自引用。当前停在 Cyrus 的单独 commit 授权闸门；push/publish 仍未授权。B1b 继续暂停。
+
+## 2026-08-25：F 盘权威基线与 B1a 治理收敛（此前阶段）
+
+- 已按 Cyrus 决策创建 `F:\Projects\deepseek-harness-personal\{workspace,worktrees,local}`，Project Home marker 绑定 Stable Project Control 权威身份 `prj_01a0082e-fea8-7d6f-b6c2-08a259fba389`；当前仍标记 `bootstrapping`，不冒充 Console 机器能力已上线。
+- `workspace` 是从 GitHub 独立克隆的 canonical 候选，分支 `codex/governance-alignment`，父基线精确为 A 线最终 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`；不依赖旧 D 盘 worktree 的 Git common-dir。
+- 已建立 47 项带来源 SHA-256 的迁移计划：33 个 B1a 文件保持来源字节/hash；5 个新增治理文件先原样导入，其中 3 个仅追加当前实施状态；1 个 K3 输入包原样导入后追加“非权威/过期口径”横幅；8 份 A/B 共用文档按 hunk 合并。禁止把追加治理注释的文件伪报为 exact-copy。
+- B1a 33 个协议/校验器/测试文件已完整迁入新基线。其来源验收为定向 28/28、Project Control 全量 177/177、skipped/todo 均为 0；迁入后的组合测试尚待本轮重新执行，因此 B1b 仍暂停。
+- 已合并 ADR-009、三分区治理合同、路径绑定盘点、D3/D4/D5 与 Prompt/AGENTS 治理增量；已生成机器可读治理总索引、current-state、workspace 根 AGENTS 与 `.dsh-project/project.yaml`。下一步生成导入/晋升 receipt 并执行 A+B 组合门禁。
+- 导入 apply receipt 已生成于 Project Home `local/receipts/op_canonical_workspace_import_20260825_01-apply.json`：33 个 B1a 文件全部 exact hash 对齐；35 个文件保持来源 hash；4 个文件在原样导入后仅追加状态/非权威横幅；8 个冲突文档按 hunk 合并。此前“39 exact”是统计口径错误，已在 NEXT/current-state 更正。
+- 组合验证失败关闭：manifest PASS；B1a 28/28；Project Control 177/177；全仓 783 tests / 780 pass / 3 fail / 0 skipped。根因是 system `core.autocrlf=true` 且仓库无 `.gitattributes`，导致新 clone 的源码由 Git blob LF 变成工作区 CRLF，破坏 Workbench LF 正则和 A 线 build receipt 字节 hash；Electron EBUSY 属首次并发懒下载，定向重跑 1/1 已通过。未生成 baseline promotion receipt，B1b 继续暂停。
+- 已按 Cyrus 拍板完成 checkout 三层闭环：第一层新增仓库 `.gitattributes` 并将本仓 repo-local Git 固定为 `core.autocrlf=false`、`core.safecrlf=true`；第二层对 1105 个文本文件做有计划、拒绝裸 CR、逐文件复核的纯换行归一化，不覆盖修改内容、不碰未跟踪 B1a；第三层新增 `scripts/check-checkout-contract.js`、3 个机器测试并接入 `verify-launch`。门禁最终扫描 1240 文件：LF 1212、CRLF 10、binary 18，PASS。
+- EOL 修复后的回归：Workbench 20/20、B1a 28/28、Project Control 177/177；正式仓库入口 `npm test` 为 786/786，fail/cancelled/skipped/todo 均为 0，含 stable packed Electron/Harness 外部插件激活、重启 ACTIVE、回滚 builtin 的真实 E2E。一次裸 `node --test` 得到 787/789，是 Node 25 把两个 Electron fixture 当普通测试误发现；真正 Electron 集成测试通过，故已把正式入口与禁用裸命令写入治理索引和 AGENTS。
+- `node scripts/check-checkout-contract.js` PASS，`node scripts/verify-launch.js` PASS，`git diff --check` PASS；`check-governance` 仅余 1 项：canonical clone 存在 `origin`，与旧“禁止 remote”规则冲突。未删除 remote、未放宽脚本，已作为显式治理决策项保留。
+- G0 已形成 checkout apply receipt 与 baseline promotion receipt；Project Home marker 只晋升为 `canonical-workspace-locally-validated`，不冒充 G1 Project Home 产品合同、真实 binding、retention 或跨 Harness 已完成。B1b 继续暂停，下一执行指针为 G1。
+- 正式 packed E2E 的临时 `dsh-packed-e2e-profile-*` 已自行清零；但 workspace ignored `artifacts/` 当前登记为 5233 文件 / 837,753,219 bytes（约 799 MiB）。因 G2 retention/cleanup 机器合同和删除授权均未具备，本轮保留并写入 current-state/BLOCKED/receipt，不把它伪报为“无残留”。
+- 未修改 A Release、真实 Stable、`F:\documents\Cyrus Deepseek Harness Data`、只读上游 `D:\Deepseek Harness`；未删除旧目录，未 commit、未 push、未发布。
+
 - R-ED WYSIWYG 编辑态：方向已获 Cyrus 认可（编辑=所见即所得单面板、无预览/分屏；长文档渲染卡死已根治——Decoration.line→mark；工具栏/围栏补全/自动保存/布局齐全）。剩余：排版逐项对齐 Obsidian 质感——待办与坑清单见 [`NEXT.md`](NEXT.md) 顶部「R-ED WYSIWYG 收尾交接」段（2026-08-19 换 Session 交接）。
 - 项目已于 2026-08-15 正式移交给 DeepSeek Harness 自主维护。移交入口为 [`HANDOVER_TO_DEEPSEEK_HARNESS.md`](HANDOVER_TO_DEEPSEEK_HARNESS.md)，下一阶段执行清单为 [`NEXT.md`](NEXT.md)；后续状态必须回写仓库文档，不能只保留在 Session 中。
 - AnySearch 第三方网络搜索插件（测试版）已落地并验收：`plugins/anysearch` Host 注册 `ctx.web` provider `anysearch`，Client 注册独立设置页 `设置 → AnySearch 搜索`，`cordis.patch.yml` 显式把 `web.searchProvider` 切到 `anysearch`。`check:plugins`、`pack:dev:portable` 与测试版 stage 均通过，Cyrus 已在测试版完成真实 `web_search` 搜索验收；稳定版不做单独封装，留待全部测试完成后的统一发布。

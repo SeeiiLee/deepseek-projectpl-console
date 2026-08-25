@@ -1,0 +1,10 @@
+{
+  "schema_version": "approval-action-command/v1alpha1",
+  "command_id": "cmd_0198f4b2-7c3a-7d3b-a5c6-6b6f39e3473b",
+  "card_id": "crd_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "expected_revision": 1,
+  "action": "reject_with_direction",
+  "occurred_at": "2026-08-23T10:15:00.000Z",
+  "actor": "CONSOLE_ACTOR",
+  "idempotency_key": "reject-without-direction-1"
+}

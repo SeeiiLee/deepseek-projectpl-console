@@ -1,0 +1,53 @@
+{
+  "id": "crd_0198f4b2-7c3a-7d37-a5c6-6b6f39e34737",
+  "schema_version": "approval-card/v1",
+  "card_type": "decision",
+  "source": {
+    "harness": "k3",
+    "locator": "docs/handoff/class-underreport.md"
+  },
+  "project_id": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "scope": "project",
+  "title": "Class underreport",
+  "context": "This submission declares B but touches a migration.",
+  "options": [
+    {
+      "id": "opt_a",
+      "label": "A",
+      "description": "Option A",
+      "consequences": "A consequence"
+    },
+    {
+      "id": "opt_b",
+      "label": "B",
+      "description": "Option B",
+      "consequences": "B consequence"
+    }
+  ],
+  "recommendation": {
+    "option_id": "opt_a",
+    "rationale": "Reason",
+    "confidence": 50
+  },
+  "if_rejected": "Fallback",
+  "class": "B",
+  "impact": {
+    "affected_paths": [
+      "plugins/project-control/migrations/0010_approval_queue.sql"
+    ],
+    "effect_types": [
+      "db.migration"
+    ]
+  },
+  "record_as_decision": false,
+  "evidence": [
+    "plugins/project-control/migrations/0010_approval_queue.sql"
+  ],
+  "routing": {
+    "proposed_executor": "v4flash",
+    "cost_tier": "mid",
+    "rationale": "Test"
+  },
+  "mode": "code",
+  "extensions": {}
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "approval-action-result/v1alpha1",
+  "command_id": "cmd_0198f4b2-7c3a-7d22-a5c6-6b6f39e34722",
+  "card_id": "crd_0198f4b2-7c3a-7d12-a5c6-6b6f39e34712",
+  "applied": false,
+  "error_codes": [
+    "ACTION_NOT_ALLOWED"
+  ],
+  "message": "Card is not actionable in its current status."
+}

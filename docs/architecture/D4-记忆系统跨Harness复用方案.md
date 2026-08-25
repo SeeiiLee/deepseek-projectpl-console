@@ -1,7 +1,11 @@
 # D4 记忆系统跨 Harness 复用方案（Codex / Zcode / Kimi Work / workbuddy）
 
-> 状态：可行性设计稿，待 Cyrus 拍板。不写代码。
+> 状态：权威 v1.0（定位与核心/外壳拆分已经 Cyrus 拍板，见 ADR-001/ADR-002，2026-08-20；本文不写代码）。
 > 背景：Cyrus 同时在用多个 Harness 类应用（DSH、Codex、Zcode、Kimi Work、workbuddy），问记忆系统能否复用、要做什么适配。日期：2026-08-20
+> 状态修正：2026-08-21 Codex 审核 D5 时发现本文件头与 INDEX 状态漂移，K3 核实后修正（拍板事实成立，文件头滞后）。
+> 口径修正：2026-08-21 Codex 二次架构审核（D5）P2 项——T0 seam 描述按手册 v4 修正：禁止 systemPrompt 承载任务级召回；T0 基座 = 显式 memory.query + 有界 quick-pass；P5 起 Kernel/Catalog 可作小型常驻契约；召回内容不进 System Policy / Runtime Snapshot；systemPrompt.section（order 150）仅 Personal 红线策略使用。
+> 口径修正②：2026-08-21 Codex 三次审核（D5）P1 项——非 DSH 端项目身份口径收紧：工作区路径/本地用户标识只作 locator 与发现证据，**不再是身份降级方案**；任何端调 memory-host 必须携带显式 Project Control `project_id`；身份不明 fail closed（只允许 `memory_status`，禁止 recall/store）；新 provenance 记录 `harness_id + harness_instance_id + project_id`，历史记录不回填伪造。
+> 目录口径修正③：2026-08-25 ADR-009 生效后，共享记忆系统目标物理位置为标准 Project Home `F:\Projects\memory-system\{workspace,worktrees,local}`；核心/adapter/schema/评测进 workspace，加密库/models/单写者锁/receipt 进 local。现有 Stable 数据根不在本轮迁移。
 
 ---
 
@@ -9,7 +13,7 @@
 
 1. **能复用，但形式不是「把 DSH 插件搬过去」，而是「核心/外壳分离 + 分层适配」**。实测结论：记忆系统与 DSH 的耦合面很薄（一层 seam 适配代码），核心资产（加密存储、向量嵌入、检索内核、提取管线、评测体系）全部是宿主无关的。这是这套系统最值得保护的架构属性。
 2. **MCP 适配器是杠杆最大的一笔投资**：Codex、Zcode、Kimi Work 全都支持 MCP（本文附核实证据），做一个「记忆 MCP 服务器」适配器，一端投入、三端通吃，还能覆盖未来任何支持 MCP 的新宿主。
-3. **各端能力有真实差异，召回质量会分档**：DSH 原生注入（systemPrompt.section 常驻）是最强形态；MCP 形态下召回变成「工具调用」，时机靠模型自觉，质量必须在各端重新评测，不能拿 DSH 的 R 层结论直接外推。
+3. **各端能力有真实差异，召回质量会分档**：DSH 原生（显式 memory.query + 有界 quick-pass 注入；P5 起 Kernel/Catalog 常驻小契约；召回内容不进 System section——手册 v4 seam 决策）是最强形态；MCP 形态下召回变成「工具调用」，时机靠模型自觉，质量必须在各端重新评测，不能拿 DSH 的 R 层结论直接外推。
 4. **建议顺序**：先收尾 DSH 侧 P5/P6（拆分期不并行大改）→ 核心/外壳拆分 → MCP 适配器 → 逐端接入。workbuddy 的扩展面我未核实，附验证清单。
 
 ---
@@ -20,7 +24,7 @@
 
 | | 内容 | 跨端命运 |
 |---|---|---|
-| **耦合面（薄）** | systemPrompt.section 注入（order 150）、webServer.register 路由、ctx.credentials 凭据、ctx.tools 工具注册、personal-shell UI 槽位 | 每端重写一次适配器，估计每端数百行 |
+| **耦合面（薄）** | systemPrompt.section 注入（order 150，仅 Personal 红线策略用——记忆召回不走此 seam，手册 v4 seam 决策）、webServer.register 路由、ctx.credentials 凭据、ctx.tools 工具注册、personal-shell UI 槽位 | 每端重写一次适配器，估计每端数百行 |
 | **插件间依赖（中）** | project-control（身份 Host API）、connection-center（提取连接）、skill-library（M2 技能提升） | 其他端没有等价物，需降级方案（见 §3 各端表） |
 | **核心（厚，全带走）** | SQLCipher 加密 SQLite 存储、bge-m3-onnx 嵌入（560M 模型资产）、检索内核（hybrid 召回）、提取 runtime（DeepSeek API）、迁移链、评测 harness | 宿主无关，原样复用 |
 | **数据根模式** | F 盘数据根、DPAPI 加密（插件侧 PowerShell）、main.js 仅 6 个 env 注入 | 模式可平移到任何桌面端 |
@@ -39,7 +43,7 @@
    （现状）     （主投资方向）   （弱形态保底）
 ```
 
-- **T0 DSH 原生**（现状）：systemPrompt.section 常驻注入 + 全量插件间集成。能力上限。
+- **T0 DSH 原生**（现状）：显式 memory.query + 有界 quick-pass 注入 + 全量插件间集成；P5 起 Kernel/Catalog 可作小型常驻契约（召回内容不进 System section，手册 v4 seam 决策）。能力上限。
 - **T1 MCP 适配器**：把记忆核心包成一个 MCP 服务器（stdio 本地进程），暴露 `memory_recall`（检索注入）、`memory_store`（写入）、`memory_status` 等工具。任何支持 MCP 的宿主配置一行即可接入。模型资产与数据库走共享数据根。
 - **T2 提示词兜底**：对无 MCP 的宿主，退化为「AGENTS.md + CLI」——宿主启动时读一份由记忆系统导出的上下文摘要文件。弱形态（无实时召回），但保证任何端都不至于零记忆。
 
@@ -48,12 +52,12 @@
 | 端 | 扩展面 | 适配层 | 核实状态 | 关键差异/降级 |
 |---|---|---|---|---|
 | **DSH** | Cordis 插件 seam 全家桶 | T0 | ✅ 已上线（v0.3.0） | 完整能力，无需适配 |
-| **Zcode**（智谱 GLM 的 ADE） | MCP（stdio/HTTP/SSE，用户级 `~/.zcode/cli/config.json`、工作区级 `.zcode/config.json`、兼容 `.agents/mcp.json`）+ 插件体系（plugin.json 可打包 MCP/skills/commands） | T1，且可包成 Zcode 插件一键启用 | ✅ 2026-08-20 网络核实（Zcode 官方文档 + 评测） | 无 systemPrompt 常驻注入，召回靠工具调用；无 project-control 身份 → 用本地用户标识降级 |
-| **Codex** | MCP（`~/.codex/config.toml`）+ AGENTS.md | T1（MCP）+ T2（AGENTS.md 引导模型主动调记忆） | ⚠️ 公开资料认知，建议接入前按当前版本文档复核 | 同上；CLI 形态无 UI，记忆管理靠命令行/外部界面 |
+| **Zcode**（智谱 GLM 的 ADE） | MCP（stdio/HTTP/SSE，用户级 `~/.zcode/cli/config.json`、工作区级 `.zcode/config.json`、兼容 `.agents/mcp.json`）+ 插件体系（plugin.json 可打包 MCP/skills/commands） | T1，且可包成 Zcode 插件一键启用 | ✅ 2026-08-20 网络核实（Zcode 官方文档 + 评测） | 召回靠工具调用（无 DSH 原生注入 seam）；项目身份必须显式携带 Project Control `project_id`——路径/本地用户标识只作 locator，不作身份（口径修正②） |
+| **Codex** | MCP（`~/.codex/config.toml`）+ AGENTS.md | T1（MCP）+ T2（AGENTS.md 引导模型主动调记忆） | ⚠️ 公开资料认知，建议接入前按当前版本文档复核 | 项目身份口径同 Zcode 行（显式 `project_id`，fail closed）；CLI 形态无 UI，记忆管理靠命令行/外部界面 |
 | **Kimi Work** | 托管插件体系（MCP 工具 + Skills）| T1，可包成 Kimi 插件 | ✅ 我自身运行环境即 Kimi Work，机制一手确认 | **它自带 vault memory 系统**——要先决策：共存（各司其域）还是替代（记忆系统接管）。共存是稳妥起点 |
 | **workbuddy** | 未核实 | 视验证结果定 T1 或 T2 | ❌ 未核实 | 验证清单：①是否支持 MCP/插件；②是否支持自定义指令/AGENTS 类文件；③本地数据目录是否可读写。三项都无则不可适配 |
 
-**关于「召回质量分档」的如实说明**：T0 形态下召回内容常驻 systemPrompt，模型必然看见；T1 形态下记忆是工具，模型「想起来要查才查」——行业通病，缓解手段是在各端的系统指令/AGENTS 里写清「何时应查记忆」的引导规则（这正是 T2 经验可以直接复用的地方）。各端接入后必须重跑评测门，R 层结论按端出报告，不混用。
+**关于「召回质量分档」的如实说明**：T0 形态下召回经显式 memory.query 与有界 quick-pass 注入（P5 起另有 Kernel/Catalog 常驻小契约），注入时机与位置由宿主 seam 保证、不依赖模型自觉，模型看见的可靠性仍是各端最强；T1 形态下记忆是工具，模型「想起来要查才查」——行业通病，缓解手段是在各端的系统指令/AGENTS 里写清「何时应查记忆」的引导规则（这正是 T2 经验可以直接复用的地方）。各端接入后必须重跑评测门，R 层结论按端出报告，不混用。
 
 ## 4. 跨端共享：一份记忆库，还是各端一份？
 
@@ -62,7 +66,7 @@
 三个必须解决的工程点（都不涉及选型，只列纪律）：
 
 1. **单写入者**：同一时刻只允许一个端持有写锁（DSH 现有 writer-lock 模式推广），其余端只读或排队——多端并发写 SQLCipher 库是毁库最快的方式。
-2. **来源标记**：每条记忆记录来源端（dsh/codex/zcode/...），检索时可按端过滤，出问题可溯源。
+2. **来源标记**：每条记忆记录来源端（`harness_id` + `harness_instance_id`，实例层合同见 D5 §7.1）与显式 `project_id`，检索时可按端/实例/项目过滤，出问题可溯源；历史只有 `harness_id` 的记录保持可读，不回填伪造。
 3. **模型资产共享**：bge-m3 等模型放共享数据根的 models/ 目录，各端适配器引用同一份，不重复占盘（单模型 560M，多端各存一份是浪费）。
 
 ## 5. 代价、前提与风险
@@ -77,7 +81,7 @@
 **风险**：
 
 - **质量外推风险**（最大）：DSH 的 R 层达标结论不能外推到 MCP 端，各端独立评测，宣发时按端标注能力等级。
-- **身份体系降级**：DSH 靠 project-control 提供项目身份，其他端没有——记忆里「这是哪个项目的上下文」在非 DSH 端会退化，需要在适配器里用工作区路径等弱标识替代。
+- **身份体系风险**：项目身份权威永远是 Project Control——任何端（含非 DSH）调 memory-host 都必须携带显式 `project_id`；工作区路径/本地用户标识只作 locator 与发现证据，**不作身份**；身份不明 fail closed：只允许 `memory_status`，禁止 recall/store（口径修正②，与 D5 §7.2/§11 同一合同）。跨端工作区发现可以用路径做线索，但落库前必须解析回 Project Control 身份，解析不了就不写。
 - **维护面扩大**：每多一端，上游 seam 观察（D2 §3.5）就多一个观察对象；Zcode/Codex 自身的版本演进也可能破坏适配器。
 
 ## 6. 建议顺序
@@ -134,6 +138,8 @@ Cyrus 的论证：模型能力提升 + Harness 应用增多 + 厂商抢人 → �
 ---
 
 ## 9. 核心壁垒修正：漏斗式召回管线设计（2026-08-20 Cyrus 拍板，认知科学四条证据线同日核实）
+
+> **2026-08-23 权威修正**：本节保留 Cyrus/Kimi 的认知启发和方案演化，不再作为实现命令。类型/结构是并行候选臂而非排他入口，Dense 不固定为末级；“最小召回集”只作离线 oracle 概念；全局 EMA 在线排序被否决。当前召回与学习边界见 ADR-006，完整架构见 P5 v2。
 
 ### 9.1 Cyrus 的论点（形式化）
 

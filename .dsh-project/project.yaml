@@ -1,0 +1,43 @@
+apiVersion: project-control.dsh/v1alpha1
+kind: ProjectManifest
+metadata:
+  projectId: prj_01a0082e-fea8-7d6f-b6c2-08a259fba389
+  name: DeepSeek Harness Personal
+  createdAt: 2026-08-25T03:50:55.933Z
+  createdBy:
+    kind: human
+    id: cyrus
+    displayName: Cyrus
+  origin:
+    kind: imported
+spec:
+  documents:
+    docsRoot: .
+    entries:
+      - role: readme
+        path: README.md
+        required: true
+      - role: other
+        path: docs/GOVERNANCE_INDEX.md
+        required: true
+      - role: other
+        path: docs/governance/governance-index.json
+        required: true
+      - role: progress
+        path: docs/PROGRESS.md
+        required: true
+      - role: next
+        path: docs/NEXT.md
+        required: true
+      - role: decision
+        path: docs/adr/ADR-009-F盘统一项目根与三分区治理.md
+        required: true
+    standardOutputs:
+      updatesRoot: .dsh-project/updates
+      decisionsRoot: .dsh-project/decisions
+      artifactsRoot: .dsh-project/artifacts
+extensions:
+  personal.cyrus.project-home:
+    marker: ../.project-home/project-home.json
+    slug: deepseek-harness-personal
+    state: bootstrapping

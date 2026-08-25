@@ -1,6 +1,6 @@
 # LLM 项目治理说明书（通用版）
 
-> 版本：v1.0 ｜ 状态：权威 ｜ 主副本：Deepseek Harness Personal `docs/governance/`（2026-08-20 建立）
+> 版本：v1.1 ｜ 状态：权威 ｜ 主副本：Deepseek Harness Personal `docs/governance/`（2026-08-20 建立，2026-08-25 按 ADR-009 增补 Project Home 三分区）
 > 读者：任何 LLM 协作者（DeepSeek / Codex / Kimi / GPT / OpenClaw 等）。
 > 用途：新项目按 §8 初始化；存量项目按 §9 接管；日常开发按 §0–§7 执行。
 > 本说明书自身的修订走 ADR（§5），各项目副本须带版本号并定期与主副本同步（§12）。
@@ -32,6 +32,19 @@
 5. **交付带证据**：LLM 的每次交付附测试输出/运行结果/文件路径——验收看证据，不看叙述。
 
 ## 2. 目录骨架与文档分类
+
+### 2.0 外层 Project Home（三分区）
+
+本节表格描述 `workspace/docs` 内部结构；项目在机器上的外层结构统一由 [`统一项目目录与三分区治理合同.md`](统一项目目录与三分区治理合同.md) 管理：
+
+```text
+F:\Projects\<project-slug>\
+├─ workspace\   canonical 项目根（本说明书和下表在这里生效）
+├─ worktrees\   开发 checkout，不放进 workspace
+└─ local\       运行时/构建/E2E/cache/receipt，不进 Git/发布/默认记忆扫描
+```
+
+项目性质、生命周期和归档状态进 Project Control 元数据，不通过搬动 Project Home 表达。路径不是身份；三个分区必须绑定同一 `project_id`。
 
 | 目录 | 放什么 | 核心目录? |
 |---|---|---|
@@ -92,11 +105,14 @@
 
 ## 8. 新项目初始化流程（LLM 按序执行）
 
-1. 创建 §2 骨架目录（含核心目录）。
-2. 落 INDEX.md 模板（空表 + 状态图例）。
-3. 把 §0 速查卡写入项目根 AGENTS.md（**强制曝光点，不可省略**）。
-4. 落第一份 ADR：项目初始化决策（目标、范围、不做清单）。
-5. DSH 体系项目：以上四步应由项目模板 Write Plan 自动完成（PROJECT_TEMPLATE_SPEC）；手工初始化时逐项自检。
+1. 由受控 Host 在 `F:\Projects\<project-slug>` 建立 Project Home；目标必须 absent/空，并创建 `workspace/worktrees/local` 三分区与 project-home marker。
+2. 只在 `workspace` 创建 §2 骨架目录（含核心目录）；`worktrees/local` 不得嵌入 canonical Git 工作区。
+3. 落 INDEX.md 模板（空表 + 状态图例）。
+4. 把 §0 速查卡写入 `workspace/AGENTS.md`（**强制曝光点，不可省略**）。
+5. 落第一份 ADR：项目初始化决策（目标、范围、不做清单）。
+6. 生成 `.dsh-project/project.yaml`，确保 Project Home marker、workspace manifest 和 Project Control binding 使用同一 `project_id`。
+7. 为 local 写入 retention policy/ledger 初始状态，为 worktrees 写入空 registry；二者默认排除于 Git、发布与记忆正文扫描。
+8. DSH 体系项目：以上步骤必须由新版本 Project Home + Template Write Plan 原子完成；现有已发布模板 1.0.0 不得原地扩展。手工初始化只能用于隔离 fixture，不得冒充 Console 已支持。
 
 ## 9. 存量项目接管流程（LLM 按序执行）
 

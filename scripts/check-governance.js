@@ -1,10 +1,10 @@
 // scripts/check-governance.js — 治理门禁（Wave 0 可观测 + Wave 1 路径/进程守卫在位检查）
 // 只读聚合检查，任何一项 FAIL 即 exit 1。接入：npx pnpm run check:governance
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { CANONICAL_PATH } from './project-global-agents.js'
+import { readGitRemoteSnapshot, validateGitRemotePolicy } from './governance-remote-policy.js'
 import { PROTECTED_ROOTS, REPOSITORY_ROOT } from './protected-paths.js'
 
 const failures = []
@@ -82,11 +82,30 @@ if (secureToken === null) {
 }
 check('credential patterns only in rule files', patternHits.length === 0, patternHits.join('; '))
 
-// 5. Git 状态
+// 5. Git 状态与登记 remote。remote 只提供可追溯 fetch locator；
+//    commit/push/publish 仍需要当前任务的显式用户授权。
 check('git repository initialized', existsSync(join(REPOSITORY_ROOT, '.git')))
-let remotes = ''
-try { remotes = execFileSync('git', ['-C', REPOSITORY_ROOT, 'remote'], { encoding: 'utf8' }).trim() } catch {}
-check('no git remote configured', remotes === '', remotes)
+let remotePolicy = null
+let remotePolicyError = ''
+try {
+  const governanceIndex = JSON.parse(readFileSync(
+    join(REPOSITORY_ROOT, 'docs', 'governance', 'governance-index.json'),
+    'utf8',
+  ))
+  const actualRemotes = readGitRemoteSnapshot(REPOSITORY_ROOT)
+  remotePolicy = validateGitRemotePolicy(actualRemotes, governanceIndex.repository?.approvedRemotes)
+  remotePolicyError = remotePolicy.failures.map(failure => (
+    `${failure.code}${failure.name === undefined ? '' : `:${String(failure.name)}`}`
+  )).join(',')
+} catch (error) {
+  remotePolicyError = error instanceof Error ? error.message : String(error)
+}
+check('git remotes match governance index', remotePolicy?.ok === true, remotePolicyError)
+check(
+  'git remote push requires explicit user authorization',
+  remotePolicy?.ok === true,
+  remotePolicy?.ok === true ? 'remote presence is not push authority' : remotePolicyError,
+)
 
 // 6. 自动化脚本在位守卫
 const stage = readFileSync(join(REPOSITORY_ROOT, 'scripts', 'stage-releases.js'), 'utf8')

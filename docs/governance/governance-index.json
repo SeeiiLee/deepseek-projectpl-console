@@ -1,0 +1,174 @@
+{
+  "schemaVersion": "governance-index/v1",
+  "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
+  "projectSlug": "deepseek-harness-personal",
+  "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
+  "generatedAt": "2026-08-25T05:04:50.920Z",
+  "precedence": [
+    "cyrus_decision",
+    "effective_adr",
+    "governance_contract",
+    "project_manifest",
+    "current_state",
+    "execution_pointer",
+    "task_contract",
+    "test_and_receipt",
+    "historical_input"
+  ],
+  "entrypoints": {
+    "human": "docs/GOVERNANCE_INDEX.md",
+    "machine": "docs/governance/governance-index.json",
+    "currentState": "docs/governance/current-state.json",
+    "projectManifest": ".dsh-project/project.yaml",
+    "agentInstructions": "AGENTS.md"
+  },
+  "repository": {
+    "remotePolicyVersion": "registered-remotes/v1",
+    "approvedRemotes": [
+      {
+        "name": "origin",
+        "fetchUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console.git",
+        "purpose": "canonical-source-traceability",
+        "pushPolicy": "explicit-user-authorization"
+      }
+    ],
+    "commitPolicy": "explicit-user-authorization",
+    "publishPolicy": "explicit-user-authorization"
+  },
+  "packedTestPolicy": {
+    "status": "interim-until-g2-machine-enforcement",
+    "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
+    "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
+    "maxNewPackageSetsPerTask": 1,
+    "preflightRequired": true,
+    "packedE2eDuringG0_1": "forbidden"
+  },
+  "machineGates": {
+    "formalFullTest": "npm test",
+    "checkoutContract": "node scripts/check-checkout-contract.js",
+    "launchGate": "node scripts/verify-launch.js",
+    "governanceGate": "node scripts/check-governance.js",
+    "diffCheck": "git diff --check",
+    "bareNodeTestPolicy": "forbidden-as-full-suite-because-node-default-discovery-includes-test-fixtures"
+  },
+  "authorities": [
+    {
+      "rank": 1,
+      "role": "effective_adr",
+      "path": "docs/adr/ADR-009-F盘统一项目根与三分区治理.md",
+      "status": "effective",
+      "contentSha256": "32F68015AAD8307225BD22104B2AD1C9F832877252363AD445CB77F421B27D8C"
+    },
+    {
+      "rank": 2,
+      "role": "governance_contract",
+      "path": "docs/governance/统一项目目录与三分区治理合同.md",
+      "status": "authoritative",
+      "contentSha256": "59EE50BEF5CAD8A34CE6514C6926BB6498BAE9F88A9DD3458EE9E76C7144B5C3"
+    },
+    {
+      "rank": 3,
+      "role": "document_governance",
+      "path": "docs/governance/LLM项目治理说明书.md",
+      "status": "authoritative-v1.1",
+      "contentSha256": "9BC854E15B8E616E6617982F03CEC5513E6AFAF070A504210B5E0A60A31038F4"
+    },
+    {
+      "rank": 4,
+      "role": "workspace_docs_architecture",
+      "path": "docs/architecture/D3-全局项目文档与文件治理体系.md",
+      "status": "authoritative-v1.1",
+      "contentSha256": "74A9B9D0A930D231F3BE50A9EFD6C58F2B2FBE2FD4ABD5E8D4184698BE004334"
+    },
+    {
+      "rank": 5,
+      "role": "cross_harness_memory_architecture",
+      "path": "docs/architecture/D4-记忆系统跨Harness复用方案.md",
+      "status": "authoritative-sections-0-8",
+      "contentSha256": "4529B276E638FC4354647A56989CBE054992BA9063CD2F82CED005B607EFBEEF"
+    },
+    {
+      "rank": 6,
+      "role": "cross_harness_tooling_architecture",
+      "path": "docs/architecture/D5-统一工具层-跨Harness技能插件MCP-CLI共用架构.md",
+      "status": "authoritative-input-v4.1",
+      "contentSha256": "299C6934423898C6901F44C2AB9965D5698F9C02ED14B1F5FDF5EF89DB48033F"
+    }
+  ],
+  "liveState": [
+    {
+      "role": "current_state",
+      "path": "docs/governance/current-state.json",
+      "hashPolicy": "live"
+    },
+    {
+      "role": "execution_pointer",
+      "path": "docs/NEXT.md",
+      "hashPolicy": "live"
+    },
+    {
+      "role": "blockers",
+      "path": "docs/BLOCKED.md",
+      "hashPolicy": "live"
+    },
+    {
+      "role": "evidence_log",
+      "path": "docs/PROGRESS.md",
+      "hashPolicy": "append_and_reconcile"
+    }
+  ],
+  "taskContracts": {
+    "bLineDecision": {
+      "path": "docs/adr/ADR-004-project-control合同族扩展-治理语义与审批队列.md",
+      "status": "effective-v4",
+      "contentSha256": "C7DB9F90E4F02A58A1D683E12EA88A77CB469B7114C6BC56E71445B7BBAE86E2"
+    },
+    "bLineDesign": {
+      "path": "docs/design/B线-控制台审批中心与治理视图-设计稿.md",
+      "status": "effective-v4",
+      "contentSha256": "E45CBDC58BC62CEC98235B87910C98C4C958B232FC106E38321D53984A302B90"
+    },
+    "bLineBrief": {
+      "path": "docs/design/B线-控制台审批中心-首批三任务简报.md",
+      "status": "b1a-complete-and-validated-b1b-paused",
+      "contentSha256": "B5559F81E248128A62DC7AB6CE61E6C74A0A06764DB0842D0741AD4D5495790B"
+    }
+  },
+  "externalEvidence": {
+    "aLineCleanup": {
+      "status": "verified-read-only",
+      "sourceReadme": "D:\\Deepseek Harness Personal\\artifacts-dev\\e2e-runs\\A-LINE-EVIDENCE\\README.md",
+      "sourceReadmeSha256": "E2FBE64454F26430D662A39996492A82F5565F23DB215A635FD3380848EF5242",
+      "reconciliationReceipt": "../local/receipts/op_a_line_cleanup_reconcile_20260825_01.json"
+    }
+  },
+  "historicalInputs": [
+    {
+      "path": "docs/handoff/项目统合-迁移-工具架构-整合材料包-2026-08-25.md",
+      "status": "input-only"
+    },
+    {
+      "path": "docs/verification/统一项目治理文件闭环复核-2026-08-25.md",
+      "status": "historical-snapshot"
+    },
+    {
+      "path": "D:\\Deepseek Harness Personal",
+      "status": "legacy-source-read-only"
+    },
+    {
+      "path": "D:\\CodexData\\home\\worktrees\\ae51\\Deepseek Harness Personal",
+      "status": "legacy-source-read-only"
+    }
+  ],
+  "failClosedRules": [
+    "project_id_mismatch",
+    "head_not_descendant_of_approved_parent",
+    "current_state_missing_or_unreadable",
+    "task_paused_or_blocked",
+    "authority_hash_mismatch",
+    "protected_path_in_write_scope",
+    "context_receipt_missing",
+    "test_receipt_missing_before_handoff",
+    "checkout_contract_failed"
+  ]
+}

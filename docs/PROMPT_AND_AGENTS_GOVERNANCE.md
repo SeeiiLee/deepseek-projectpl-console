@@ -1,8 +1,8 @@
 # DeepSeek Harness Personal 提示词、AGENTS 与规则治理设计建议
 
-> 文档状态：设计建议，尚未实施  
-> 编写日期：2026-08-15  
-> 适用范围：`D:\Deepseek Harness Personal` 及由 Personal 统一启动、监督的 DeepSeek Harness 会话  
+> 文档状态：历史设计与现状依据；Personal System Policy、Dev Global AGENTS 投影脚本和部分机器门禁已有实现证据，但跨 Harness 统一规范源、Project Home 三分区、全 profile 覆盖与统一记忆/Skill 投影尚未完成。2026-08-25 之后的目录与跨端权威边界见 ADR-009 和 `docs/governance/统一项目目录与三分区治理合同.md`。
+> 编写日期：2026-08-15
+> 适用范围：`D:\Deepseek Harness Personal` 及由 Personal 统一启动、监督的 DeepSeek Harness 会话
 > 本文目的：明确哪些规则进入 System、Runtime Snapshot、Global/Project/Nested AGENTS、详细文档和机器门禁，并在可靠性、上下文成本与可维护性之间取得平衡。
 
 ---
@@ -997,16 +997,15 @@ Machine Gates
 
 ---
 
-## 19. 本文边界
+## 19. 本文边界（2026-08-25 状态修正）
 
-本文是设计建议，不代表以下事项已经完成：
+本文最初是设计建议；当前仓库已有 `plugins/personal-policy`、`scripts/project-global-agents.js`、`docs/agent-instructions/global-AGENTS.md` 和 `scripts/check-governance.js`，Dev home 投影哈希也可核验。因此下列旧的“全部尚未实施”口径不再成立。仍未完成的是：
 
-- 尚未创建或修改任何 `AGENTS.md`；
-- 尚未注册 Personal System Policy；
-- 尚未修改 Runtime Snapshot；
-- 尚未创建或投影 `$DSH_HOME/AGENTS.md`；
-- 尚未增加任何机器门禁；
-- 尚未调整 profile、persona 或 complete prompt；
-- 尚未执行安装、构建、发布、commit 或 push。
+- Global AGENTS 从 DSH 单仓规范源迁到跨 Harness toolbox，并逐实例产生 projection receipt；
+- Project Home `workspace/worktrees/local` 与新建项目模板的机器实现；
+- Runtime Snapshot 的 Project Home、project_id、baseline 与 retention freshness 字段；
+- standard/code/cordis/minimal/子代理等允许 profile 的最终 effective prompt 覆盖复核；
+- memory-host 与 Skill 在 DSH Dev + Codex 的首个双端闭环；
+- Stable 投影、项目迁移和任何真实数据迁移（仍需单独授权）。
 
-后续实施前，应先由 Cyrus 确认 System Policy 的具体红线文本、覆盖范围和允许的 profile，再逐层落地并按验收矩阵验证。
+后续实施按 ADR-009 的 G0–G4 顺序推进；已有文件和脚本不能替代最终 effective prompt、错误路径反例、跨端 receipt 与真实迁移验收。

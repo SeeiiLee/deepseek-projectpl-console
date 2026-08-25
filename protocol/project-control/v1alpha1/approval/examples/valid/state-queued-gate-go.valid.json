@@ -1,0 +1,57 @@
+{
+  "id": "crd_0198f4b2-7c3a-7d14-a5c6-6b6f39e34714",
+  "schema_version": "approval-card/v1",
+  "card_type": "gate_go",
+  "source": {
+    "harness": "v4flash",
+    "session_ref": "session-04",
+    "locator": "docs/handoff/gate-check.md"
+  },
+  "project_id": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "scope": "project",
+  "node_id": null,
+  "title": "Gate: release checklist",
+  "context": "All release checklist items must pass before launch.",
+  "checklist": [
+    {
+      "id": "chk_build",
+      "label": "Build is green",
+      "evidence": "node scripts/verify-launch.js",
+      "passed": true
+    },
+    {
+      "id": "chk_tests",
+      "label": "Tests pass",
+      "evidence": "node --test",
+      "passed": true
+    }
+  ],
+  "if_rejected": "Do not launch until the failed checklist item is fixed.",
+  "class": "B",
+  "effective_class": "B",
+  "impact": {
+    "affected_paths": [
+      "artifacts-dev/"
+    ],
+    "effect_types": [
+      "file.write"
+    ]
+  },
+  "record_as_decision": false,
+  "evidence": [
+    "artifacts-dev/verify.log"
+  ],
+  "routing": {
+    "proposed_executor": "v4flash",
+    "cost_tier": "low",
+    "rationale": "Final verification before local packaging."
+  },
+  "mode": "code",
+  "extensions": {},
+  "status": "queued",
+  "revision": 1,
+  "created_at": "2026-08-23T09:00:00.000Z",
+  "updated_at": "2026-08-23T09:00:00.000Z",
+  "response": null,
+  "decided_at": null
+}

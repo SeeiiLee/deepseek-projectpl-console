@@ -1,0 +1,196 @@
+{
+  "cases": [
+    {
+      "name": "decision-minimal",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./valid/decision-minimal.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "option-pick-minimal",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./valid/option-pick-minimal.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "fyi-challenge-minimal",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./valid/fyi-challenge-minimal.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "gate-go-minimal",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./valid/gate-go-minimal.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "action-command-approve-option",
+      "schema": "../schemas/approval-action-command.schema.json",
+      "fixture": "./valid/action-command-approve-option.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "action-command-gate-go-approve",
+      "schema": "../schemas/approval-action-command.schema.json",
+      "fixture": "./valid/action-command-gate-go-approve.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "action-result-applied",
+      "schema": "../schemas/approval-action-result.schema.json",
+      "fixture": "./valid/action-result-applied.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "action-result-rejected",
+      "schema": "../schemas/approval-action-result.schema.json",
+      "fixture": "./valid/action-result-rejected.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "state-queued-decision",
+      "schema": "../schemas/approval-card-state.schema.json",
+      "fixture": "./valid/state-queued-decision.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "state-queued-option-pick",
+      "schema": "../schemas/approval-card-state.schema.json",
+      "fixture": "./valid/state-queued-option-pick.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "state-queued-gate-go",
+      "schema": "../schemas/approval-card-state.schema.json",
+      "fixture": "./valid/state-queued-gate-go.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "state-auto-effective-fyi",
+      "schema": "../schemas/approval-card-state.schema.json",
+      "fixture": "./valid/state-auto-effective-fyi.valid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": true,
+      "expectedErrorCode": null
+    },
+    {
+      "name": "forged-host-fields",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/forged-host-fields.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "HOST_FIELD_FORBIDDEN"
+    },
+    {
+      "name": "unknown-effect",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/unknown-effect.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "UNKNOWN_EFFECT_TYPE"
+    },
+    {
+      "name": "absolute-path",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/absolute-path.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "ABSOLUTE_PATH"
+    },
+    {
+      "name": "drive-path",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/drive-path.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "DRIVE_PATH"
+    },
+    {
+      "name": "extension-invalid-key",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/extension-invalid-key.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "EXTENSION_INVALID_KEY"
+    },
+    {
+      "name": "extension-depth",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/extension-depth.invalid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": false,
+      "expectedErrorCode": "EXTENSION_LIMIT_EXCEEDED"
+    },
+    {
+      "name": "class-underreport",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/class-underreport.invalid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": false,
+      "expectedErrorCode": "CLASS_UNDERREPORTED"
+    },
+    {
+      "name": "fyi-missing-source-decision",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/fyi-missing-source-decision.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "FYI_SOURCE_DECISION_REQUIRED"
+    },
+    {
+      "name": "option-pick-approve-without-option",
+      "schema": "../schemas/approval-action-command.schema.json",
+      "fixture": "./invalid/option-pick-approve-without-option.invalid.json",
+      "expectedSchemaValid": true,
+      "expectedAccepted": false,
+      "expectedErrorCode": "OPTION_REQUIRED"
+    },
+    {
+      "name": "unknown-executor",
+      "schema": "../schemas/approval-card-submission.schema.json",
+      "fixture": "./invalid/unknown-executor.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "UNKNOWN_EXECUTOR"
+    },
+    {
+      "name": "state-auto-effective-not-accepted",
+      "schema": "../schemas/approval-card-state.schema.json",
+      "fixture": "./invalid/state-auto-effective-not-accepted.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "AUTO_EFFECTIVE_SOURCE_NOT_ACCEPTED"
+    },
+    {
+      "name": "action-command-reject-without-direction",
+      "schema": "../schemas/approval-action-command.schema.json",
+      "fixture": "./invalid/action-command-reject-without-direction.invalid.json",
+      "expectedSchemaValid": false,
+      "expectedAccepted": false,
+      "expectedErrorCode": "ACTION_FIELD_REQUIRED"
+    }
+  ]
+}

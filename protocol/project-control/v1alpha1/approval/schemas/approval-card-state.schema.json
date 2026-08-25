@@ -1,0 +1,615 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:approval-card-state",
+  "title": "Approval Card Host State v1alpha1",
+  "description": "Host-authoritative approval-card/v1 state. This schema is separate from the external submission and may contain status, revision, effective_class, response, decided_at, and Host-computed source_decision_status.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "card_type",
+    "source",
+    "project_id",
+    "scope",
+    "title",
+    "context",
+    "if_rejected",
+    "class",
+    "effective_class",
+    "impact",
+    "record_as_decision",
+    "evidence",
+    "routing",
+    "mode",
+    "status",
+    "revision",
+    "created_at",
+    "updated_at",
+    "response",
+    "decided_at"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/cardId"
+    },
+    "schema_version": {
+      "const": "approval-card/v1"
+    },
+    "card_type": {
+      "enum": [
+        "decision",
+        "fyi_challenge",
+        "option_pick",
+        "gate_go"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "harness",
+        "locator"
+      ],
+      "properties": {
+        "harness": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "session_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    },
+    "project_id": {
+      "$ref": "#/$defs/projectId"
+    },
+    "scope": {
+      "enum": [
+        "project",
+        "global"
+      ]
+    },
+    "node_id": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/workItemId"
+        }
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "context": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "options": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/option"
+      }
+    },
+    "checklist": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/checklistItem"
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "option_id",
+        "rationale",
+        "confidence"
+      ],
+      "properties": {
+        "option_id": {
+          "$ref": "#/$defs/optionId"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "confidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "dissent": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "if_rejected": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "class": {
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "effective_class": {
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "impact": {
+      "$ref": "urn:dsh-personal:project-control:v1alpha1:impact-classification"
+    },
+    "record_as_decision": {
+      "type": "boolean"
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposed_executor",
+        "cost_tier",
+        "rationale"
+      ],
+      "properties": {
+        "proposed_executor": {
+          "$ref": "urn:dsh-personal:project-control:v1alpha1:executor-registry#/$defs/executorId"
+        },
+        "cost_tier": {
+          "enum": [
+            "low",
+            "mid",
+            "high"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "mode": {
+      "enum": [
+        "think",
+        "discuss",
+        "document",
+        "code"
+      ]
+    },
+    "deadline": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/utcTimestamp"
+        }
+      ]
+    },
+    "source_decision_id": {
+      "$ref": "#/$defs/decisionId"
+    },
+    "source_decision_status": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "unknown"
+      ]
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "pending_clarification",
+        "machine_rejected",
+        "approved",
+        "approved_with_constraints",
+        "rejected_with_direction",
+        "rejected_final",
+        "delegated",
+        "snoozed",
+        "noted",
+        "auto_effective"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "updated_at": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "response": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/response"
+        }
+      ]
+    },
+    "decided_at": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/utcTimestamp"
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "card_type": {
+            "enum": [
+              "decision",
+              "option_pick"
+            ]
+          }
+        },
+        "required": [
+          "card_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "options",
+          "recommendation"
+        ],
+        "properties": {
+          "options": {
+            "type": "array",
+            "minItems": 2
+          },
+          "recommendation": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "card_type": {
+            "const": "fyi_challenge"
+          }
+        },
+        "required": [
+          "card_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "deadline",
+          "source_decision_id"
+        ],
+        "properties": {
+          "deadline": {
+            "$ref": "#/$defs/utcTimestamp"
+          },
+          "source_decision_id": {},
+          "options": {
+            "type": "array",
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "card_type": {
+            "const": "gate_go"
+          }
+        },
+        "required": [
+          "card_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "checklist"
+        ],
+        "properties": {
+          "checklist": {
+            "type": "array",
+            "minItems": 1
+          },
+          "options": {
+            "type": "array",
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "card_type": {
+            "const": "fyi_challenge"
+          },
+          "status": {
+            "const": "auto_effective"
+          }
+        },
+        "required": [
+          "card_type",
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "source_decision_status"
+        ],
+        "properties": {
+          "source_decision_status": {
+            "const": "accepted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "auto_effective"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "card_type": {
+            "const": "fyi_challenge"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "approved",
+              "approved_with_constraints",
+              "rejected_with_direction",
+              "rejected_final",
+              "delegated",
+              "snoozed",
+              "noted"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "response": {
+            "$ref": "#/$defs/response"
+          },
+          "decided_at": {
+            "$ref": "#/$defs/utcTimestamp"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cardId": {
+      "type": "string",
+      "pattern": "^crd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "workItemId": {
+      "type": "string",
+      "pattern": "^wrk_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "decisionId": {
+      "type": "string",
+      "pattern": "^dec_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "optionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "description",
+        "consequences"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/optionId"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "consequences": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "checklistItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "passed"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "passed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "responded_at",
+        "actor"
+      ],
+      "properties": {
+        "action": {
+          "enum": [
+            "approve",
+            "approve_with_constraints",
+            "request_changes",
+            "reject_with_direction",
+            "reject_final",
+            "delegate",
+            "snooze",
+            "note"
+          ]
+        },
+        "selected_option_id": {
+          "$ref": "#/$defs/optionId"
+        },
+        "reason_tag": {
+          "enum": [
+            "方向不对",
+            "成本太高",
+            "先缓缓",
+            "信息不足"
+          ]
+        },
+        "reason_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "constraints_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "direction_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "delegatee": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "snooze_until": {
+          "$ref": "#/$defs/utcTimestamp"
+        },
+        "responded_at": {
+          "$ref": "#/$defs/utcTimestamp"
+        },
+        "actor": {
+          "const": "CONSOLE_ACTOR"
+        }
+      }
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{3})?Z$"
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 20,
+      "propertyNames": {
+        "pattern": "^(?:[a-z][a-z0-9-]*\\.)+[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean",
+          "array",
+          "object",
+          "null"
+        ],
+        "maxLength": 2048,
+        "maxItems": 64,
+        "maxProperties": 64
+      }
+    }
+  }
+}

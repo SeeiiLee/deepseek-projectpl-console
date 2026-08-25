@@ -1,7 +1,36 @@
 # Next Development
 
-状态：移交给 DeepSeek Harness 自主开发  
-当前基线：Gate 2C 完成，下一项为 Gate 2D
+状态：**治理收敛优先，B1b 暂停**
+当前 Stable：**0.4.5 已发布并完成真实插件更新验收**
+当前 canonical 候选：`F:\Projects\deepseek-harness-personal\workspace`，父基线 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`
+旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
+
+> **2026-08-25 当前唯一执行顺序**：完成 G0.5 候选清单冻结并获得单独 commit 授权 → G1 Project Home 机器合同 → G2 local retention/cleanup 闭环 → G3 toolbox Skill + memory-host 双端试点 → 逐项目 G4 迁移 → 复盘后恢复 B1b。下方旧功能排期只作历史记录，不覆盖本指针。
+
+## G0：当前收口任务
+
+1. [x] 在 `F:\Projects\deepseek-harness-personal` 建立三分区骨架和 marker；canonical workspace 独立克隆并固定父基线 `c27e989`。
+2. [x] 对 B1a/治理/K3 输入建立 47 项 SHA-256 迁移计划；33 个 B1a 文件保持原字节，5 个治理新增文件与 1 个 K3 输入按“原样导入后允许追加状态横幅”单列审计。
+3. [x] 完成 8 份共用文档的 hunk 合并；生成治理总索引、current-state、workspace 根 AGENTS 与项目 manifest。
+4. [x] 生成 import apply receipt；33 个 B1a exact-copy 全部 hash 对齐，其他文件按 unchanged/annotated/hunk-reconciled 分栏，不再使用错误的“39 exact”口径。
+5. [x] 三层 checkout 闭环完成：仓库 `.gitattributes` + repo-local Git 配置 + `check-checkout-contract`/测试/launch 接线；Workbench 20/20、B1a 28/28、Project Control 177/177，正式 `npm test` 786/786，launch/diff 全绿。
+6. [x] 形成 baseline promotion receipt；在无 commit 授权下仅晋升为“本地已验证候选”，旧 D 盘树继续保留且不清理。治理脚本仅余 `origin` 与旧禁止-remote 规则冲突，留给后续治理决策，未擅改 remote。
+7. [x] G0.1 只读对账 A 线清理：六个权威 run 与 Stable `E2E_OK` 保留、已批准删除目标不存在、证据 hash 匹配；只写 F 盘 receipt，不复制任何大证据。
+8. [x] 以 Cyrus 已接受的治理方向把 remote 改为精确登记：只允许索引中的 `origin` 与固定 fetch URL，额外 remote、URL 漂移和显式 `pushurl` 失败关闭；remote 存在不授权 commit/push/publish。
+9. [x] G0.5 冻结当前候选的逐文件清单与聚合 hash，确认 ignored `artifacts/`、package 和 run 均未进入候选；freeze receipt 位于 Project Home `local/receipts/`。
+10. [ ] 等待 Cyrus 单独授权 commit；未获授权前不提交，push 与发布仍是后续各自独立闸门。
+
+G0.5 候选清单已经冻结。当前执行指针是 **G0.5 commit 授权闸门**；获授权并完成提交后才转入 G1。B1b 继续暂停，裸 `node --test` 不得作为全量入口，正式入口固定为 `npm test`。
+
+## G1–G4：后续治理实现顺序
+
+- **G1 Project Home**：实现 ADR-009 的 marker schema、Host 纯函数、三分区 Write Plan、新模板版本和 W1–W4 恢复；primary workspace 只指向 `workspace`。
+- **G2 Local 生命周期**：所有 run/artifact 创建即登记；实现 cleanup plan/apply/verify/receipt、磁盘门槛和调度健康；只在一次性 fixture 上做真实删除验收。
+- **G2 前临时 packed 规则**：人工/packed E2E 只从 F 盘 canonical 生成；一个任务最多一套按内容寻址的共享只读 package set，各隔离 run 只引用、不逐 run 复制。没有磁盘 preflight 和明确 packed 范围就不开跑。
+- **G3 跨 Harness**：toolbox 先 DSH Dev + Codex；memory-host 先 status/recall，只读、单写者、显式 `project_id`、逐端质量/泄漏评测；Global AGENTS 规范源通过 hash receipt 投影。
+- **G4 存量迁移**：按低风险到高风险逐项目事务迁移；每个项目单独获得路径、binding、junction 和清理授权。
+
+## 历史计划（以下内容不再是当前执行指针）
 
 > **2026-08-20 稳定版 v0.4.0 已发布**：基于 Harness `0.1.0-rc.8`，包含 Workbench 四页签/体验收口、浏览器 WebContentsView 重写、会话导航轨与 18 插件 rc.8 重建。GitHub Release：https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/v0.4.0 （安装包/便携版 + SHA-256 + blockmap 已上传）。
 

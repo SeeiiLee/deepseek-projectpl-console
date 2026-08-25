@@ -1,0 +1,31 @@
+# Canonical checkout contract: repository text is LF on every platform.
+* text=auto eol=lf
+
+# Windows command entry points are the deliberate CRLF exception.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+plugins/memory/src/core/wordlist.ts text eol=crlf
+
+# Binary and packaged assets must never pass through text conversion.
+*.7z -text
+*.asar -text
+*.bin -text
+*.blockmap -text
+*.db -text
+*.dll -text
+*.exe -text
+*.gif -text
+*.gz -text
+*.ico -text
+*.jpeg -text
+*.jpg -text
+*.node -text
+*.onnx -text
+*.pdf -text
+*.png -text
+*.sqlite -text
+*.sqlite3 -text
+*.tgz -text
+*.woff -text
+*.woff2 -text
+*.zip -text

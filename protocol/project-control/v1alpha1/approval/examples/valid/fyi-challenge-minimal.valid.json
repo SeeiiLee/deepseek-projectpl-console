@@ -1,0 +1,38 @@
+{
+  "id": "crd_0198f4b2-7c3a-7d13-a5c6-6b6f39e34713",
+  "schema_version": "approval-card/v1",
+  "card_type": "fyi_challenge",
+  "source": {
+    "harness": "v4pro",
+    "session_ref": "session-03",
+    "locator": "docs/handoff/fyi-note.md"
+  },
+  "project_id": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "scope": "project",
+  "node_id": null,
+  "title": "FYI: migration window chosen",
+  "context": "A decision has already been made; this card invites challenge before it becomes effective.",
+  "if_rejected": "The already-made decision stays as-is and is re-reviewed.",
+  "class": "B",
+  "impact": {
+    "affected_paths": [
+      "docs/adr/"
+    ],
+    "effect_types": [
+      "read.only"
+    ]
+  },
+  "record_as_decision": false,
+  "evidence": [
+    "docs/adr/ADR-009-migration-window.md"
+  ],
+  "routing": {
+    "proposed_executor": "k3",
+    "cost_tier": "low",
+    "rationale": "Review-only task."
+  },
+  "mode": "discuss",
+  "deadline": "2026-08-25T12:00:00.000Z",
+  "source_decision_id": "dec_0198f4b2-7c3a-7d11-a5c6-6b6f39e34710",
+  "extensions": {}
+}

@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { PERSONAL_PLUGINS } from '../src/personal-plugins.js'
 import { loadCurrentGeneration, resolveExternalRoot, validateGeneration } from '../src/personal-plugin-validation.js'
+import { checkCheckoutContract, renderCheckoutContract } from './check-checkout-contract.js'
 
 // Launch gate: refuses to boot the desktop with an inconsistent tree.
 // The launcher builds plugins first; this script verifies every artifact the
@@ -13,6 +14,9 @@ const projectRoot = resolve(import.meta.dirname, '..')
 
 const checks = []
 const failures = []
+
+const checkoutContract = checkCheckoutContract(projectRoot)
+if (!checkoutContract.ok) failures.push(renderCheckoutContract(checkoutContract))
 
 function verifySyntax(label, path) {
   checks.push(new Promise(resolveCheck => {

@@ -13,6 +13,7 @@
     "build:plugins": "node scripts/build-plugins.js",
     "check:plugins": "pnpm run build:plugins && node scripts/check-plugins.js",
     "check:governance": "node scripts/check-governance.js",
+    "check:checkout": "node scripts/check-checkout-contract.js",
     "stage:releases": "node scripts/stage-releases.js",
     "release:plugins": "node scripts/release-plugins.mjs",
     "release:client-manifest": "node scripts/generate-client-release-manifest.mjs",

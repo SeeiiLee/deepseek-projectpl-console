@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:executor-registry",
+  "title": "Approval Logical Executor Registry v1alpha1",
+  "description": "Logical executor ids for approval-card/v1 routing. Actual harness instance resolution is out of scope for B1a.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "schemaVersion",
+    "executors"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "const": "project-control.dsh/v1alpha1"
+    },
+    "schemaVersion": {
+      "const": "executor-registry/v1alpha1"
+    },
+    "executors": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/executor"
+      }
+    }
+  },
+  "$defs": {
+    "executorId": {
+      "type": "string",
+      "enum": [
+        "k3",
+        "codex",
+        "v4pro",
+        "v4flash"
+      ]
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "displayName",
+        "costTier"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/executorId"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "costTier": {
+          "enum": [
+            "low",
+            "mid",
+            "high"
+          ]
+        }
+      }
+    }
+  }
+}

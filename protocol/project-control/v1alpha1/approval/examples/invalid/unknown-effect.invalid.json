@@ -1,0 +1,53 @@
+{
+  "id": "crd_0198f4b2-7c3a-7d32-a5c6-6b6f39e34732",
+  "schema_version": "approval-card/v1",
+  "card_type": "decision",
+  "source": {
+    "harness": "k3",
+    "locator": "docs/handoff/unknown-effect.md"
+  },
+  "project_id": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "scope": "project",
+  "title": "Unknown effect",
+  "context": "This submission declares an effect outside the closed enum.",
+  "options": [
+    {
+      "id": "opt_a",
+      "label": "A",
+      "description": "Option A",
+      "consequences": "A consequence"
+    },
+    {
+      "id": "opt_b",
+      "label": "B",
+      "description": "Option B",
+      "consequences": "B consequence"
+    }
+  ],
+  "recommendation": {
+    "option_id": "opt_a",
+    "rationale": "Reason",
+    "confidence": 50
+  },
+  "if_rejected": "Fallback",
+  "class": "B",
+  "impact": {
+    "affected_paths": [
+      "docs/PROGRESS.md"
+    ],
+    "effect_types": [
+      "db.drop"
+    ]
+  },
+  "record_as_decision": false,
+  "evidence": [
+    "docs/PROGRESS.md"
+  ],
+  "routing": {
+    "proposed_executor": "v4flash",
+    "cost_tier": "low",
+    "rationale": "Test"
+  },
+  "mode": "document",
+  "extensions": {}
+}

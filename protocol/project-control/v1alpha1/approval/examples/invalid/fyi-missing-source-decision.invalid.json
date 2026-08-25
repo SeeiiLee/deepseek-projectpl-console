@@ -1,0 +1,35 @@
+{
+  "id": "crd_0198f4b2-7c3a-7d38-a5c6-6b6f39e34738",
+  "schema_version": "approval-card/v1",
+  "card_type": "fyi_challenge",
+  "source": {
+    "harness": "v4pro",
+    "locator": "docs/handoff/fyi-missing.md"
+  },
+  "project_id": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "scope": "project",
+  "title": "FYI without source decision",
+  "context": "This FYI does not reference the already-made Decision it challenges.",
+  "if_rejected": "Fallback",
+  "class": "B",
+  "impact": {
+    "affected_paths": [
+      "docs/adr/"
+    ],
+    "effect_types": [
+      "read.only"
+    ]
+  },
+  "record_as_decision": false,
+  "evidence": [
+    "docs/adr/ADR-009-migration-window.md"
+  ],
+  "routing": {
+    "proposed_executor": "k3",
+    "cost_tier": "low",
+    "rationale": "Test"
+  },
+  "mode": "discuss",
+  "deadline": "2026-08-25T12:00:00.000Z",
+  "extensions": {}
+}

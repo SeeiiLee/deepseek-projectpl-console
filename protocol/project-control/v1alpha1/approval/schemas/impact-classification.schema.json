@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:impact-classification",
+  "title": "Approval Card Impact Classification v1alpha1",
+  "description": "Structured impact declaration for approval-card/v1. effect_types is a closed enum; affected_paths must be project-relative paths or globs, never absolute, drive-qualified, or escaping.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "affected_paths",
+    "effect_types"
+  ],
+  "properties": {
+    "affected_paths": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/relativePath"
+      }
+    },
+    "effect_types": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/effectType"
+      }
+    }
+  },
+  "$defs": {
+    "effectType": {
+      "type": "string",
+      "enum": [
+        "db.migration",
+        "protocol.change",
+        "template.change",
+        "permission.change",
+        "install.remove",
+        "delete.overwrite",
+        "external.write",
+        "external.publish",
+        "file.write",
+        "read.only"
+      ]
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*[:\\\\])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)[^/]+(?:/[^/]+)*/?$"
+    }
+  }
+}

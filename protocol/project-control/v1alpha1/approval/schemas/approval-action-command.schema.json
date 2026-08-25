@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:approval-action-command",
+  "title": "Approval Action Command v1alpha1",
+  "description": "A versioned command to apply one of the eight approval actions to a Host approval card.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command_id",
+    "card_id",
+    "expected_revision",
+    "action",
+    "occurred_at",
+    "actor",
+    "idempotency_key"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "approval-action-command/v1alpha1"
+    },
+    "command_id": {
+      "$ref": "#/$defs/commandId"
+    },
+    "card_id": {
+      "$ref": "#/$defs/cardId"
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "enum": [
+        "approve",
+        "approve_with_constraints",
+        "request_changes",
+        "reject_with_direction",
+        "reject_final",
+        "delegate",
+        "snooze",
+        "note"
+      ]
+    },
+    "selected_option_id": {
+      "$ref": "#/$defs/optionId"
+    },
+    "reason_tag": {
+      "enum": [
+        "方向不对",
+        "成本太高",
+        "先缓缓",
+        "信息不足"
+      ]
+    },
+    "reason_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "constraints_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "direction_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "delegatee": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "snooze_until": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "occurred_at": {
+      "$ref": "#/$defs/utcTimestamp"
+    },
+    "actor": {
+      "const": "CONSOLE_ACTOR"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "approve_with_constraints"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "then": {
+        "required": [
+          "constraints_text"
+        ],
+        "properties": {
+          "constraints_text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "reject_with_direction"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "then": {
+        "required": [
+          "reason_tag",
+          "direction_text"
+        ],
+        "properties": {
+          "reason_tag": {
+            "type": "string"
+          },
+          "direction_text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "delegate"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "then": {
+        "required": [
+          "delegatee"
+        ],
+        "properties": {
+          "delegatee": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "snooze"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "then": {
+        "required": [
+          "snooze_until"
+        ],
+        "properties": {
+          "snooze_until": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "commandId": {
+      "type": "string",
+      "pattern": "^cmd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "cardId": {
+      "type": "string",
+      "pattern": "^crd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "optionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{3})?Z$"
+    }
+  }
+}
