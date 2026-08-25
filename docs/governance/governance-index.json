@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T05:04:50.920Z",
+  "generatedAt": "2026-08-25T05:55:54.643Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -57,7 +57,7 @@
       "role": "effective_adr",
       "path": "docs/adr/ADR-009-F盘统一项目根与三分区治理.md",
       "status": "effective",
-      "contentSha256": "32F68015AAD8307225BD22104B2AD1C9F832877252363AD445CB77F421B27D8C"
+      "contentSha256": "95076A4E1C317E2DF0F7AE5377627E21E6DC1E776FFBE7031DF7333A229BA5D1"
     },
     {
       "rank": 2,
@@ -132,8 +132,26 @@
       "path": "docs/design/B线-控制台审批中心-首批三任务简报.md",
       "status": "b1a-complete-and-validated-b1b-paused",
       "contentSha256": "B5559F81E248128A62DC7AB6CE61E6C74A0A06764DB0842D0741AD4D5495790B"
+    },
+    "g1ProjectHome": {
+      "status": "locally-validated-receipted-awaiting-commit-authorization",
+      "schema": "protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json",
+      "templates": [
+        "minimal-standard@2.0.0",
+        "software-standard@2.0.0",
+        "research-standard@2.0.0"
+      ],
+      "primaryWorkspace": "Project Home\\workspace",
+      "formalTest": "796/796",
+      "receipt": "../local/receipts/op_g1_project_home_20260825_01.json",
+      "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     }
   },
+  "g4MigrationOrder": [
+    "amazon-store",
+    "cyrus-quant-trading",
+    "meal-tracker"
+  ],
   "externalEvidence": {
     "aLineCleanup": {
       "status": "verified-read-only",

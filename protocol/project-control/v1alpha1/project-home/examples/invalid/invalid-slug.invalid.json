@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "project-home/v1",
+  "projectId": "prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711",
+  "slug": "Example Project",
+  "zones": {
+    "workspace": "workspace",
+    "worktrees": "worktrees",
+    "local": "local"
+  },
+  "createdAt": "2026-08-25T05:30:00.000Z"
+}

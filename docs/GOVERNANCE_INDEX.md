@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发候选位于 `F:\Projects\deepseek-harness-personal\workspace`，父基线是 A 线最终 `c27e989`；B1a 已按 hash 导入并通过正式全量 786/786。A 线清理证据已用 hash 和存在性检查只读登记，没有把六个大 run 再复制到 F 盘。canonical `origin` 已改为精确登记、漂移失败关闭，但登记不授权 commit/push。G0.5 候选逐文件清单已冻结，当前停在单独 commit 授权闸门；B1b、真实 Project Control binding、跨 Harness 与 local retention 仍未晋升。
+当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5 已以 `28d7c8c` 提交到 A 线最终 `c27e989` 之上。G1 已在该基线上本地实现并以 `local/receipts/op_g1_project_home_20260825_01.json` 收口：`project-home/v1`、三套 `2.0.0` 三分区模板、整屋原子 Write Plan 与 `workspace` primary binding，同时保持 `1.0.0` 历史回放；当前等待 G1 独立 commit 授权。packed 日志写回证据按 Cyrus 决策保留并转 G2-P0；没有新建 package/run。G4 顺序固定为 Amazon → 量化 → 食溯。B1b、真实 Project Control binding、G2 local retention 与 G3 跨 Harness 仍未晋升。
 
 ## 权威链
 

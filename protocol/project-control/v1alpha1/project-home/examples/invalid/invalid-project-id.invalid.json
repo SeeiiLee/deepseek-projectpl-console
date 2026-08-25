@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "project-home/v1",
+  "projectId": "example-project",
+  "slug": "example-project",
+  "zones": {
+    "workspace": "workspace",
+    "worktrees": "worktrees",
+    "local": "local"
+  },
+  "createdAt": "2026-08-25T05:30:00.000Z"
+}

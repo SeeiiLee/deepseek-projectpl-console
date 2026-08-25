@@ -41,6 +41,7 @@ async function openCreateFixture(t) {
     selectionSecret: secret,
     applicationInstanceId: 'host-create-test',
     applicationVersion: '0.1.0-test',
+    projectHomeRoot: parent,
   })
   return { tempRoot, parent, storage, runtime }
 }
@@ -100,10 +101,10 @@ async function prepareCreate(origin, parent, overrides = {}) {
   })
   const result = await post(origin, '/intake/prepare-create', {
     selection: { path: parent, authorization },
-    directoryName: overrides.directoryName ?? 'NewProject',
+    directoryName: overrides.directoryName ?? 'new-project',
     name: overrides.name ?? 'New Project',
     templateId: overrides.templateId ?? 'software-standard',
-    templateVersion: overrides.templateVersion ?? '1.0.0',
+    templateVersion: overrides.templateVersion ?? '2.0.0',
   })
   assert.equal(result.status, 200, JSON.stringify(result.payload))
   assert.equal(result.payload.ok, true, JSON.stringify(result.payload))
@@ -120,6 +121,7 @@ test('the template registry lists the three built-in templates with stable hashe
   for (const template of templates) {
     assert.match(template.templateHash, /^sha256:[a-f0-9]{64}$/)
     assert.equal(template.protocolVersion, 'project-control.dsh/v1alpha1')
+    assert.equal(template.templateVersion, '2.0.0')
   }
 })
 
@@ -129,7 +131,8 @@ test('prepareCreate renders a preview and the signed command atomically creates 
   const preview = await prepareCreate(origin, parent)
   assert.equal(preview.template.templateId, 'software-standard')
   assert.equal(validateLifecycleCommand(preview.command).ok, true)
-  const target = join(parent, 'NewProject')
+  const target = join(parent, 'new-project')
+  const workspace = join(target, 'workspace')
   assert.equal(preview.targetDisplayPath, target)
   assert.equal(preview.writePlan.syncPolicy, 'atomic_create')
 
@@ -140,10 +143,13 @@ test('prepareCreate renders a preview and the signed command atomically creates 
   assert.equal(result.outcome, 'managed_created')
   assert.equal(result.fileSync.status, 'committed')
 
-  const manifest = await readFile(join(target, '.dsh-project', 'project.yaml'), 'utf8')
+  const marker = JSON.parse(await readFile(join(target, '.project-home', 'project-home.json'), 'utf8'))
+  assert.equal(marker.projectId, preview.projectId)
+  assert.equal(marker.slug, 'new-project')
+  const manifest = await readFile(join(workspace, '.dsh-project', 'project.yaml'), 'utf8')
   assert.ok(manifest.includes(`projectId: ${preview.projectId}`))
-  assert.ok((await readFile(join(target, 'docs', 'PRD.md'), 'utf8')).includes('# New Project'))
-  assert.ok((await readFile(join(target, 'docs', 'ARCHITECTURE.md'), 'utf8')).includes('当前架构'))
+  assert.ok((await readFile(join(workspace, 'docs', 'prd', 'PRD.md'), 'utf8')).includes('# New Project'))
+  assert.ok((await readFile(join(workspace, 'docs', 'architecture', 'CURRENT.md'), 'utf8')).includes('当前软件架构'))
   const parentEntries = await readdir(parent)
   assert.ok(!parentEntries.some(name => name.startsWith('.dsh-staging.')))
 
@@ -151,7 +157,8 @@ test('prepareCreate renders a preview and the signed command atomically creates 
   assert.equal(project.mode, 'managed')
   assert.equal(project.revision, 1)
   assert.equal(project.templateId, 'software-standard')
-  assert.equal(project.templateVersion, '1.0.0')
+  assert.equal(project.templateVersion, '2.0.0')
+  assert.equal(project.workspaceLocations[0].displayPath, workspace)
   assert.equal(storage.getFileSyncPlan(preview.writePlan.planId).state, 'accepted')
   const events = storage.listEvents()
   assert.equal(events.length, 1)
@@ -166,31 +173,70 @@ test('prepareCreate renders a preview and the signed command atomically creates 
 
 test('prepareCreate refuses an occupied target before any write', async t => {
   const { parent, runtime } = await openCreateFixture(t)
-  await mkdir(join(parent, 'Taken'))
-  await writeFile(join(parent, 'Taken', 'keep.txt'), 'keep')
+  await mkdir(join(parent, 'taken'))
+  await writeFile(join(parent, 'taken', 'keep.txt'), 'keep')
   const authorization = issueProjectControlSelectionTicket({ kind: 'create-parent', path: parent, secret })
   await assert.rejects(
     runtime.intake.prepareCreate({
       selection: { path: parent, authorization },
-      directoryName: 'Taken', name: 'Taken', templateId: 'minimal-standard', templateVersion: '1.0.0',
+      directoryName: 'taken', name: 'Taken', templateId: 'minimal-standard', templateVersion: '2.0.0',
     }),
     error => error?.code === 'TARGET_NOT_EMPTY',
   )
-  assert.equal(await readFile(join(parent, 'Taken', 'keep.txt'), 'utf8'), 'keep')
+  assert.equal(await readFile(join(parent, 'taken', 'keep.txt'), 'utf8'), 'keep')
+})
+
+test('new Project Home creation rejects a legacy template, a non-canonical root and an invalid slug', async t => {
+  const { tempRoot, parent, runtime } = await openCreateFixture(t)
+  const authorize = path => issueProjectControlSelectionTicket({ kind: 'create-parent', path, secret })
+
+  await assert.rejects(runtime.intake.prepareCreate({
+    selection: { path: parent, authorization: authorize(parent) },
+    directoryName: 'legacy-project', name: 'Legacy', templateId: 'minimal-standard', templateVersion: '1.0.0',
+  }), error => error?.code === 'TEMPLATE_UNAVAILABLE')
+
+  const wrongRoot = join(tempRoot, 'WrongRoot')
+  await mkdir(wrongRoot)
+  await assert.rejects(runtime.intake.prepareCreate({
+    selection: { path: wrongRoot, authorization: authorize(wrongRoot) },
+    directoryName: 'wrong-root-project', name: 'Wrong Root', templateId: 'minimal-standard', templateVersion: '2.0.0',
+  }), error => error?.code === 'PROJECT_HOME_ROOT_REQUIRED')
+
+  await assert.rejects(runtime.intake.prepareCreate({
+    selection: { path: parent, authorization: authorize(parent) },
+    directoryName: 'Not Canonical', name: 'Bad Slug', templateId: 'minimal-standard', templateVersion: '2.0.0',
+  }), error => error?.code === 'PROJECT_SLUG_INVALID')
+
+  assert.deepEqual(await readdir(parent), [])
+})
+
+test('plan references allow only the Project Home workspace child as a distinct primary location', async t => {
+  const { parent, storage, runtime } = await openCreateFixture(t)
+  const authorization = issueProjectControlSelectionTicket({ kind: 'create-parent', path: parent, secret })
+  const preview = await runtime.intake.prepareCreate({
+    selection: { path: parent, authorization },
+    directoryName: 'reference-project', name: 'Reference Project', templateId: 'minimal-standard', templateVersion: '2.0.0',
+  })
+  assert.throws(() => storage.issueFileSyncPlanRefs(preview.writePlan.planId, {
+    ...referenceContext,
+    targetDisplayPath: preview.targetDisplayPath,
+    locationDisplayPath: join(preview.targetDisplayPath, 'local'),
+    parentDisplayPath: parent,
+  }), error => error?.details?.reason === 'location_outside_target')
 })
 
 test('a target appearing between prepare and execute rejects without touching the racer', async t => {
   const { parent, storage, runtime } = await openCreateFixture(t)
   const origin = await serveProjectControl(t, storage, runtime)
   const preview = await prepareCreate(origin, parent)
-  await mkdir(join(parent, 'NewProject'))
-  await writeFile(join(parent, 'NewProject', 'raced.txt'), 'race')
+  await mkdir(join(parent, 'new-project'))
+  await writeFile(join(parent, 'new-project', 'raced.txt'), 'race')
   const submitted = await post(origin, '/lifecycle', preview.command)
   assert.equal(submitted.payload.ok, true, JSON.stringify(submitted.payload))
   assert.equal(submitted.payload.data.status, 'rejected', JSON.stringify(submitted.payload))
   assert.equal(submitted.payload.data.error.code, 'TARGET_NOT_EMPTY', JSON.stringify(submitted.payload))
   assert.equal(submitted.payload.data.fileSync.status, 'planned')
-  assert.equal(await readFile(join(parent, 'NewProject', 'raced.txt'), 'utf8'), 'race')
+  assert.equal(await readFile(join(parent, 'new-project', 'raced.txt'), 'utf8'), 'race')
   assert.equal(storage.getFileSyncPlan(preview.writePlan.planId).state, 'rolled_back')
   assert.equal(storage.listProjects().length, 0)
 })
@@ -231,7 +277,7 @@ test('a tampered create command is rejected before any file or project write', a
   assert.equal(submitted.payload.data.error.code, 'REFERENCE_UNRESOLVED')
   assert.equal(storage.listProjects().length, 0)
   assert.equal(storage.getFileSyncPlan(preview.writePlan.planId).state, 'planned')
-  await assert.rejects(readFile(join(parent, 'NewProject', '.dsh-project', 'project.yaml')), /ENOENT/)
+  await assert.rejects(readFile(join(parent, 'new-project', 'workspace', '.dsh-project', 'project.yaml')), /ENOENT/)
 })
 
 test('create selection tickets are single-use', async t => {
@@ -239,12 +285,12 @@ test('create selection tickets are single-use', async t => {
   const authorization = issueProjectControlSelectionTicket({ kind: 'create-parent', path: parent, secret })
   const input = {
     selection: { path: parent, authorization },
-    directoryName: 'Once', name: 'Once', templateId: 'minimal-standard', templateVersion: '1.0.0',
+    directoryName: 'once', name: 'Once', templateId: 'minimal-standard', templateVersion: '2.0.0',
   }
   const first = await runtime.intake.prepareCreate(input)
   assert.equal(first.projectId.startsWith('prj_'), true)
   await assert.rejects(
-    runtime.intake.prepareCreate({ ...input, directoryName: 'Twice' }),
+    runtime.intake.prepareCreate({ ...input, directoryName: 'twice' }),
     error => error?.code === 'DIRECTORY_SELECTION_REQUIRED',
   )
 })
@@ -257,6 +303,7 @@ test('plan references expire and stop resolving', async t => {
   const shortLived = storage.issueFileSyncPlanRefs(planId, {
     ...referenceContext,
     targetDisplayPath: preview.targetDisplayPath,
+    locationDisplayPath: join(preview.targetDisplayPath, 'workspace'),
     parentDisplayPath: parent,
     ttlSeconds: 1,
   })
@@ -280,7 +327,7 @@ test('a created project restores its identity from its files in a fresh control 
     applicationVersion: '0.1.0-test',
     instanceId: 'second-plane-writer',
   })
-  const scan = await scanProjectDirectory(join(parent, 'NewProject'))
+  const scan = await scanProjectDirectory(join(parent, 'new-project', 'workspace'))
   assert.equal(scan.candidates.length, 1)
   assert.equal(scan.candidates[0].detectedMode, 'managed')
   assert.equal(scan.candidates[0].manifestProjectId, preview.projectId)

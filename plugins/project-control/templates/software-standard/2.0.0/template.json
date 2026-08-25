@@ -1,0 +1,235 @@
+{
+  "apiVersion": "project-template.dsh/v1alpha1",
+  "kind": "ProjectTemplate",
+  "metadata": {
+    "templateId": "software-standard",
+    "templateVersion": "2.0.0",
+    "displayName": "软件项目（三分区）",
+    "description": "在三分区 Project Home 上增加软件架构入口与验证骨架。",
+    "protocolVersion": "project-control.dsh/v1alpha1"
+  },
+  "files": [
+    {
+      "kind": "directory",
+      "relativePath": ".project-home"
+    },
+    {
+      "kind": "file",
+      "relativePath": ".project-home/project-home.json",
+      "content": "{\n  \"schemaVersion\": \"project-home/v1\",\n  \"projectId\": \"{{PROJECT_ID}}\",\n  \"slug\": \"{{PROJECT_SLUG}}\",\n  \"zones\": {\n    \"workspace\": \"workspace\",\n    \"worktrees\": \"worktrees\",\n    \"local\": \"local\"\n  },\n  \"createdAt\": \"{{CREATED_AT}}\"\n}\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/.dsh-project"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/.dsh-project/project.yaml",
+      "content": "apiVersion: project-control.dsh/v1alpha1\nkind: ProjectManifest\nmetadata:\n  projectId: {{PROJECT_ID}}\n  name: {{PROJECT_NAME}}\n  createdAt: {{CREATED_AT}}\n  createdBy:\n    kind: human\n    id: cyrus\n  origin:\n    kind: template\n    templateId: {{TEMPLATE_ID}}\n    templateVersion: {{TEMPLATE_VERSION}}\nspec:\n  documents:\n    docsRoot: docs\n    entries:\n      - role: readme\n        path: README.md\n      - role: prd\n        path: docs/prd/PRD.md\n        required: true\n      - role: progress\n        path: docs/PROGRESS.md\n      - role: next\n        path: docs/NEXT.md\n      - role: other\n        path: docs/BLOCKED.md\n      - role: other\n        path: docs/INDEX.md\n      - role: current_architecture\n        path: docs/architecture/CURRENT.md\n    standardOutputs:\n      updatesRoot: .dsh-project/updates\n      decisionsRoot: .dsh-project/decisions\n      artifactsRoot: .dsh-project/artifacts\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/.dsh-project/updates"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/.dsh-project/updates/README.md",
+      "content": "# 标准进展更新\n\n> 由 Project Control 写入一事件一记录；不要把 local 大对象复制到这里。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/.dsh-project/decisions"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/.dsh-project/decisions/README.md",
+      "content": "# 决策记录\n\n> 待填写：保存有来源、状态和替代关系的项目决策。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/.dsh-project/artifacts"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/.dsh-project/artifacts/README.md",
+      "content": "# 产物引用\n\n> 只保存小型元数据或受控引用；大型生成物进入 Project Home/local。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/AGENTS.md",
+      "content": "# {{PROJECT_NAME}} Agent 入口\n\n先读 docs/INDEX.md，再按任务读取 PROGRESS、NEXT、BLOCKED 与对应专题文件。\n\n- workspace 是唯一 canonical 项目根；worktrees/local 不属于源码树。\n- 任何删除、覆盖、迁移、发布、提交、推送和外部动作必须先取得明确授权。\n- 受保护路径、真实用户数据、凭据和未知来源对象一律失败关闭。\n- 测试、构建、发布命令尚待项目负责人在 docs/governance 中确认。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/README.md",
+      "content": "# {{PROJECT_NAME}}\n\n> 待填写：项目目的、使用方式与主要入口。本目录是 canonical workspace。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/INDEX.md",
+      "content": "# 项目治理总索引\n\n状态分为：权威、草案、留档。当前文件只提供入口，不代表目标或方案已经确认。\n\n- 当前事实：PROGRESS.md\n- 下一步：NEXT.md\n- 阻断：BLOCKED.md\n- 产品需求：prd/PRD.md\n- 决策：adr/\n- 治理：governance/\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/PROGRESS.md",
+      "content": "# 当前进度\n\n> 待填写：仅记录已验证事实、证据路径和时间；不要把计划写成完成。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/NEXT.md",
+      "content": "# 下一步\n\n> 待填写：记录获批任务、允许范围、验收和停止条件。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/BLOCKED.md",
+      "content": "# 阻断\n\n> 当前状态待核实。仅记录真实阻断、所需决策与恢复条件。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/adr"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/adr/README.md",
+      "content": "# ADR\n\n> 待填写：长期有效的架构或治理决策；历史决定不原地改写。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/governance"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/governance/LOCAL_ASSET_POLICY.md",
+      "content": "# 本地生成物与保留策略\n\n> 待 Cyrus 确认：对象类型、owner、预计体积、保留类、清理门禁和收据位置。未登记对象不得自动删除，也不得进入发布包。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/prd"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/prd/PRD.md",
+      "content": "# {{PROJECT_NAME}} 产品需求\n\n> 草案占位：待填写问题、目标用户、范围、非目标和可验证成功标准。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/architecture"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/architecture/README.md",
+      "content": "# 架构\n\n> 待填写：当前实现证据、组件边界、依赖与风险。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/design"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/design/README.md",
+      "content": "# 设计\n\n> 草案区：设计设想不等于已经实现。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/reviews"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/reviews/README.md",
+      "content": "# 评审\n\n> 待填写：记录评审对象、版本、结论和未决事项。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/handoff"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/handoff/README.md",
+      "content": "# 交接\n\n> 待填写：任务边界、当前状态、复现命令和下一责任人。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/verification"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/verification/README.md",
+      "content": "# 验证\n\n> 待填写：机器验收命令、退出码、证据和已知失败。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/release"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/release/README.md",
+      "content": "# 发布\n\n> 待填写：发布边界、审批、版本、回滚和产物来源。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/logs"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/logs/README.md",
+      "content": "# 日志摘要\n\n> 只保存可版本化的小型摘要；原始大型日志进入 local。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/attachments"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/attachments/README.md",
+      "content": "# 附件索引\n\n> 只保存可公开版本化的小附件或受控引用。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "workspace/docs/archive"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/archive/README.md",
+      "content": "# 留档\n\n> 仅保存被新权威文件取代的历史材料，并注明替代关系。\n"
+    },
+    {
+      "kind": "file",
+      "relativePath": "workspace/docs/architecture/CURRENT.md",
+      "content": "# 当前软件架构\n\n> 待填写：只记录已有实现证据、组件边界、运行路径、测试入口和已知风险。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "worktrees"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "worktrees/receipts"
+    },
+    {
+      "kind": "file",
+      "relativePath": "worktrees/receipts/README.md",
+      "content": "# Worktree receipts\n\n> 工作树创建时登记 project_id、任务、基线、状态、dirty hash、rollback 和清理资格。\n"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "local"
+    },
+    {
+      "kind": "directory",
+      "relativePath": "local/receipts"
+    },
+    {
+      "kind": "file",
+      "relativePath": "local/receipts/README.md",
+      "content": "# Local receipts\n\n> local 对象创建时登记 owner、来源、体积、保留类和清理状态；本目录不进 Git 或发布包。\n"
+    }
+  ]
+}

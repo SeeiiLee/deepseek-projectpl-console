@@ -8,7 +8,10 @@ import { canonicalJson } from '../host/canonical-json.js'
 
 const RELATIVE_PATH = /^(?!\/)(?!.*[:\\])(?!.*(?:^|\/)\.{1,2}(?:\/|$))(?!.*[\u0000-\u001F\u007F])(?!.*\/\/)(?!.*\/$)[^/]+(?:\/[^/]+)*$/
 const CONTENT_HASH = /^sha256:[0-9a-f]{64}$/
-const MANIFEST_PATH = '.dsh-project/project.yaml'
+const LEGACY_MANIFEST_PATH = '.dsh-project/project.yaml'
+const PROJECT_HOME_MANIFEST_PATH = 'workspace/.dsh-project/project.yaml'
+const PROJECT_HOME_MARKER_PATH = '.project-home/project-home.json'
+const PROJECT_HOME_TOP_LEVEL = new Set(['.project-home', 'workspace', 'worktrees', 'local'])
 const STAGING_PREFIX = '.dsh-staging.'
 
 export class FileSyncPlanError extends Error {
@@ -113,9 +116,37 @@ export function validateWritePlanDomain(plan) {
       fail('WRITE_PLAN_STALE', 'The write plan declares a directory no file needs.', { relativePath: directory.relativePath })
     }
   }
-  const manifestEntries = files.filter(operation => operation.relativePath === MANIFEST_PATH)
+  const markerEntries = files.filter(operation => operation.relativePath === PROJECT_HOME_MARKER_PATH)
+  const isProjectHome = markerEntries.length > 0
+  if (markerEntries.length > 1) {
+    fail('MANIFEST_INVALID', 'The write plan repeats the Project Home marker.')
+  }
+  if (isProjectHome) {
+    if (plan.syncPolicy !== 'atomic_create') {
+      fail('MANIFEST_INVALID', 'Project Home plans must create the whole Home atomically.')
+    }
+    if (files.some(operation => operation.relativePath === LEGACY_MANIFEST_PATH)) {
+      fail('MANIFEST_INVALID', 'A Project Home plan cannot also create a legacy root manifest.')
+    }
+    for (const operation of [...directories, ...files]) {
+      if (!PROJECT_HOME_TOP_LEVEL.has(operation.relativePath.split('/')[0])) {
+        fail('PATH_OUTSIDE_WORKSPACE', 'A Project Home plan writes outside the fixed zones.', {
+          relativePath: operation.relativePath,
+        })
+      }
+    }
+    for (const zone of PROJECT_HOME_TOP_LEVEL) {
+      if (!directories.some(operation => operation.relativePath === zone)) {
+        fail('MANIFEST_INVALID', 'A Project Home plan is missing a fixed zone.', { zone })
+      }
+    }
+  } else if (files.some(operation => operation.relativePath === PROJECT_HOME_MANIFEST_PATH)) {
+    fail('MANIFEST_INVALID', 'A workspace manifest under Project Home requires its Host marker.')
+  }
+  const manifestPath = isProjectHome ? PROJECT_HOME_MANIFEST_PATH : LEGACY_MANIFEST_PATH
+  const manifestEntries = files.filter(operation => operation.relativePath === manifestPath)
   if (manifestEntries.length !== 1) {
-    fail('MANIFEST_INVALID', 'The write plan must create exactly one .dsh-project/project.yaml file.')
+    fail('MANIFEST_INVALID', `The write plan must create exactly one ${manifestPath} file.`)
   }
   if (manifestEntries[0].contentHash !== plan.manifestHash) {
     fail('MANIFEST_INVALID', 'The manifest hash does not match the project.yaml operation.')

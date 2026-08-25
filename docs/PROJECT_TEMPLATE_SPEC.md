@@ -1,6 +1,6 @@
 # Project Template 与 Gate 2D 文件同步合同
 
-状态：**Gate 2D P1 合同冻结**。模板身份/版本、write plan 语义、crash/retry/replay 与文件↔数据库一致性协议在此冻结；文件适配器（P2）、快速新建（P3）、legacy 升级（P4）与文档刷新（P5）随后按本文件实现。
+状态：**Gate 2D P1 合同冻结 + G1 Project Home 兼容扩展已落地**。旧 `1.0.0` 模板字节保持不可变并可回放；新建项目只展示 `2.0.0` 三分区模板。write plan、crash/retry/replay 与文件↔数据库一致性继续沿用本合同。
 开发维护：DeepSeek Harness（2026-08-15 起）
 协议族：project-control.dsh / project-template.dsh
 线版本：v1alpha1
@@ -33,11 +33,11 @@ protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.jso
 - kind=file 必须有 content（UTF-8 文本）；kind=directory 只声明目录本身。
 - 上限：files ≤ 64 项，单文件内容 ≤ 64 KiB，全部内容合计 ≤ 256 KiB（Host 规则）。
 - 全部 relativePath 必须唯一（无论 kind）；目录与同名文件冲突、或文件缺少祖先目录声明，属于非法模板（Host 规则）。
-- 模板必须恰好包含一个 .dsh-project/project.yaml 文件条目（Host 规则）；其余文档（PRD、ARCHITECTURE、DEVLOG、NEXT、ADR 等）由模板决定，且必须包含清晰的待填写提示，不得生成看似已确认的目标、成功标准或进展事实。
+- legacy `1.0.0` 模板必须恰好包含根部 `.dsh-project/project.yaml`；Project Home `2.0.0` 模板必须同时包含 `.project-home/project-home.json` 与 `workspace/.dsh-project/project.yaml`，且不得混入根部 legacy manifest。其余文档必须包含清晰的待填写提示，不得生成看似已确认的目标、成功标准或进展事实。
 
 ### 1.4 占位符与渲染
 
-模板文件内容只允许出现五个占位符，且创建时全部替换：
+legacy 模板文件内容只允许出现原五个占位符；Project Home 模板额外允许 `{{PROJECT_SLUG}}`，创建时全部替换：
 
 | 占位符 | 替换值 |
 | --- | --- |
@@ -45,15 +45,24 @@ protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.jso
 | {{PROJECT_NAME}} | 用户确认的项目显示名（原样，长度经 Schema 限幅） |
 | {{CREATED_AT}} | UTC RFC 3339 毫秒时间（Z 结尾） |
 | {{TEMPLATE_ID}} / {{TEMPLATE_VERSION}} | 模板身份与版本 |
+| {{PROJECT_SLUG}} | 仅 Project Home `2.0.0` 使用；与 Home 目录名和 marker `slug` 完全一致的 ASCII kebab-case |
 
-- .dsh-project/project.yaml 模板必须使用全部五个占位符；其余文件可用可不用。
-- 目录路径不得包含占位符；文件内容不得包含上述五个之外的任何 {{ 或 }} 片段（Host 规则，防止渲染歧义）。
+- 两种布局的 project.yaml 都必须使用原五个占位符；Project Home marker 还必须使用 PROJECT_ID、PROJECT_SLUG、CREATED_AT。其余文件可用可不用。
+- 目录路径不得包含占位符；legacy 内容不得出现原五个之外的 token，Project Home 内容不得出现含 PROJECT_SLUG 在内六个之外的任何 {{ 或 }} 片段。
 - 替换后的 project.yaml 必须通过 project-manifest.schema.json 与 Host 的 manifest 校验，且 origin.kind=template 携带 {{TEMPLATE_ID}}/{{TEMPLATE_VERSION}} 的替换结果。
 - 渲染是纯文本替换，不执行模板宏、条件或包含指令。
 
 ### 1.5 templateHash
 
 templateHash 定义为：对 { templateId, templateVersion, files: [按 relativePath 码点升序排序的 { relativePath, kind, content? } 列表] }（目录项无 content 字段）做 RFC 8785 风格 JSON 规范化序列化后的 SHA-256，线格式 sha256: 加 64 位小写十六进制。Host 使用的规范化函数与命令请求哈希一致（plugins/project-control/src/host/canonical-json.js）。files 在模板文件中允许任意顺序，但哈希输入固定排序；排序后集合不同（如重复路径、文件/目录冲突）即模板非法。
+
+### 1.6 G1 Project Home 创建语义（2026-08-25）
+
+- 文件计划的 `targetDisplayPath` 是整个 `F:\Projects\<slug>` Project Home；同卷 staging 后整树原子 rename，失败或 DB 事务拒绝时按既有 journal/rollback 合同收回整屋。
+- `file_sync_plan_refs.location` 与最终 `workspace_locations(kind=primary)` 只指向 `Project Home\workspace`；Host 只允许 plan target 本身（历史流程）或其精确 `workspace` 子路径，拒绝 `local`、`worktrees` 和任意其他子目录。
+- `project-home/v1` marker 只引用 Project Control 分配的 `project_id`，不颁发第二身份；marker、workspace manifest、命令 target 三者不一致时失败关闭。
+- 新建父目录必须精确为配置的统一 Project Home 根（生产默认 `F:\Projects`），slug 必须是 ASCII kebab-case。旧 `1.0.0` 可由已签发计划重放，但不能再用于新建。
+- G1 没有新增 migration/table、HTTP 路由或 UI；它只扩展模板/Host/文件计划与现有 location ref seam。真实 Stable/Dev binding 和双 `project_id` 修复另案执行。
 
 ## 2. Write Plan 合同
 

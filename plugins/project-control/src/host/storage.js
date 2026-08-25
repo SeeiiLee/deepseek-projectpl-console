@@ -4001,6 +4001,19 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         options.targetNormalizedPath ?? targetDisplayPath,
         'options.targetNormalizedPath',
       )
+      const locationDisplayPath = validateWorkspacePath(
+        options.locationDisplayPath ?? targetDisplayPath,
+        'options.locationDisplayPath',
+      )
+      const defaultLocationNormalizedPath = sameFilesystemPath(locationDisplayPath, targetDisplayPath)
+        ? targetNormalizedPath
+        : sameFilesystemPath(locationDisplayPath, win32.join(targetDisplayPath, 'workspace'))
+          ? win32.join(targetNormalizedPath, 'workspace')
+          : locationDisplayPath
+      const locationNormalizedPath = validateWorkspacePath(
+        options.locationNormalizedPath ?? defaultLocationNormalizedPath,
+        'options.locationNormalizedPath',
+      )
       const parentDisplayPath = validateWorkspacePath(options.parentDisplayPath, 'options.parentDisplayPath')
       const parentNormalizedPath = validateWorkspacePath(
         options.parentNormalizedPath ?? parentDisplayPath,
@@ -4010,6 +4023,13 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         || sameFilesystemPath(parentNormalizedPath, targetNormalizedPath)) {
         throw new StorageValidationError('The create target must be a strict child of the parent directory.', {
           reason: 'target_outside_parent',
+        })
+      }
+      const projectHomeWorkspacePath = win32.join(targetNormalizedPath, 'workspace')
+      if (!sameFilesystemPath(locationNormalizedPath, targetNormalizedPath)
+        && !sameFilesystemPath(locationNormalizedPath, projectHomeWorkspacePath)) {
+        throw new StorageValidationError('The primary location must be the plan target or its fixed workspace child.', {
+          reason: 'location_outside_target',
         })
       }
       const issuedAt = requireTimestamp(now(), 'now()')
@@ -4053,8 +4073,8 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
             planId,
             context.applicationInstanceId,
             context.scope,
-            targetDisplayPath,
-            targetNormalizedPath,
+            locationDisplayPath,
+            locationNormalizedPath,
             issuedAt,
             expiresAt,
           )
@@ -4120,7 +4140,9 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         || sameFilesystemPath(sourceRootRow.normalizedPath, locationRow.normalizedPath)) {
         throw referenceResolutionError('location_outside_source_root')
       }
-      if (!sameFilesystemPath(plan.targetNormalizedPath, locationRow.normalizedPath)) {
+      const projectHomeWorkspacePath = win32.join(plan.targetNormalizedPath, 'workspace')
+      if (!sameFilesystemPath(plan.targetNormalizedPath, locationRow.normalizedPath)
+        && !sameFilesystemPath(projectHomeWorkspacePath, locationRow.normalizedPath)) {
         throw referenceResolutionError('plan_target_mismatch')
       }
       return Object.freeze({

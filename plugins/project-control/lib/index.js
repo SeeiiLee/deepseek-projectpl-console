@@ -3231,9 +3231,14 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 			if (ttlSeconds > 3600) throw new StorageValidationError("Reference ttlSeconds cannot exceed 3600.");
 			const targetDisplayPath = validateWorkspacePath(options.targetDisplayPath, "options.targetDisplayPath");
 			const targetNormalizedPath = validateWorkspacePath(options.targetNormalizedPath ?? targetDisplayPath, "options.targetNormalizedPath");
+			const locationDisplayPath = validateWorkspacePath(options.locationDisplayPath ?? targetDisplayPath, "options.locationDisplayPath");
+			const defaultLocationNormalizedPath = sameFilesystemPath(locationDisplayPath, targetDisplayPath) ? targetNormalizedPath : sameFilesystemPath(locationDisplayPath, win32.join(targetDisplayPath, "workspace")) ? win32.join(targetNormalizedPath, "workspace") : locationDisplayPath;
+			const locationNormalizedPath = validateWorkspacePath(options.locationNormalizedPath ?? defaultLocationNormalizedPath, "options.locationNormalizedPath");
 			const parentDisplayPath = validateWorkspacePath(options.parentDisplayPath, "options.parentDisplayPath");
 			const parentNormalizedPath = validateWorkspacePath(options.parentNormalizedPath ?? parentDisplayPath, "options.parentNormalizedPath");
 			if (!pathIsWithin$1(parentNormalizedPath, targetNormalizedPath) || sameFilesystemPath(parentNormalizedPath, targetNormalizedPath)) throw new StorageValidationError("The create target must be a strict child of the parent directory.", { reason: "target_outside_parent" });
+			const projectHomeWorkspacePath = win32.join(targetNormalizedPath, "workspace");
+			if (!sameFilesystemPath(locationNormalizedPath, targetNormalizedPath) && !sameFilesystemPath(locationNormalizedPath, projectHomeWorkspacePath)) throw new StorageValidationError("The primary location must be the plan target or its fixed workspace child.", { reason: "location_outside_target" });
 			const issuedAt = requireTimestamp(now(), "now()");
 			const expiresAt = new Date(Date.parse(issuedAt) + ttlSeconds * 1e3).toISOString();
 			return executeWrite(database, () => {
@@ -3255,7 +3260,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
               plan_ref, ref_kind, plan_id, application_instance_id, scope,
               display_path, normalized_path, issued_at, expires_at
             ) VALUES (?, 'location', ?, ?, ?, ?, ?, ?, ?)
-          `).run(locationRef, planId, context.applicationInstanceId, context.scope, targetDisplayPath, targetNormalizedPath, issuedAt, expiresAt);
+          `).run(locationRef, planId, context.applicationInstanceId, context.scope, locationDisplayPath, locationNormalizedPath, issuedAt, expiresAt);
 				database.prepare(`
           INSERT INTO file_sync_plan_refs(
             plan_ref, ref_kind, plan_id, application_instance_id, scope,
@@ -3293,7 +3298,8 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 			const locationRow = validateRow(selectPlanRef(database, refs.locationRef), "location");
 			const sourceRootRow = validateRow(selectPlanRef(database, refs.sourceRootRef), "source_root");
 			if (!pathIsWithin$1(sourceRootRow.normalizedPath, locationRow.normalizedPath) || sameFilesystemPath(sourceRootRow.normalizedPath, locationRow.normalizedPath)) throw referenceResolutionError("location_outside_source_root");
-			if (!sameFilesystemPath(plan.targetNormalizedPath, locationRow.normalizedPath)) throw referenceResolutionError("plan_target_mismatch");
+			const projectHomeWorkspacePath = win32.join(plan.targetNormalizedPath, "workspace");
+			if (!sameFilesystemPath(plan.targetNormalizedPath, locationRow.normalizedPath) && !sameFilesystemPath(projectHomeWorkspacePath, locationRow.normalizedPath)) throw referenceResolutionError("plan_target_mismatch");
 			return Object.freeze({
 				planId,
 				location: {
@@ -7806,7 +7812,15 @@ function requireSecret(value) {
 //#region src/filesync/plan-executor.js
 const RELATIVE_PATH = /^(?!\/)(?!.*[:\\])(?!.*(?:^|\/)\.{1,2}(?:\/|$))(?!.*[\u0000-\u001F\u007F])(?!.*\/\/)(?!.*\/$)[^/]+(?:\/[^/]+)*$/;
 const CONTENT_HASH = /^sha256:[0-9a-f]{64}$/;
-const MANIFEST_PATH = ".dsh-project/project.yaml";
+const LEGACY_MANIFEST_PATH = ".dsh-project/project.yaml";
+const PROJECT_HOME_MANIFEST_PATH$1 = "workspace/.dsh-project/project.yaml";
+const PROJECT_HOME_MARKER_PATH$1 = ".project-home/project-home.json";
+const PROJECT_HOME_TOP_LEVEL = new Set([
+	".project-home",
+	"workspace",
+	"worktrees",
+	"local"
+]);
 const STAGING_PREFIX = ".dsh-staging.";
 var FileSyncPlanError = class extends Error {
 	constructor(code, message, details) {
@@ -7879,8 +7893,18 @@ function validateWritePlanDomain(plan) {
 		for (let length = 1; length < segments.length; length += 1) requiredDirectories.add(segments.slice(0, length).join("/"));
 	}
 	for (const directory of directories) if (!requiredDirectories.has(directory.relativePath)) fail$1("WRITE_PLAN_STALE", "The write plan declares a directory no file needs.", { relativePath: directory.relativePath });
-	const manifestEntries = files.filter((operation) => operation.relativePath === MANIFEST_PATH);
-	if (manifestEntries.length !== 1) fail$1("MANIFEST_INVALID", "The write plan must create exactly one .dsh-project/project.yaml file.");
+	const markerEntries = files.filter((operation) => operation.relativePath === PROJECT_HOME_MARKER_PATH$1);
+	const isProjectHome = markerEntries.length > 0;
+	if (markerEntries.length > 1) fail$1("MANIFEST_INVALID", "The write plan repeats the Project Home marker.");
+	if (isProjectHome) {
+		if (plan.syncPolicy !== "atomic_create") fail$1("MANIFEST_INVALID", "Project Home plans must create the whole Home atomically.");
+		if (files.some((operation) => operation.relativePath === LEGACY_MANIFEST_PATH)) fail$1("MANIFEST_INVALID", "A Project Home plan cannot also create a legacy root manifest.");
+		for (const operation of [...directories, ...files]) if (!PROJECT_HOME_TOP_LEVEL.has(operation.relativePath.split("/")[0])) fail$1("PATH_OUTSIDE_WORKSPACE", "A Project Home plan writes outside the fixed zones.", { relativePath: operation.relativePath });
+		for (const zone of PROJECT_HOME_TOP_LEVEL) if (!directories.some((operation) => operation.relativePath === zone)) fail$1("MANIFEST_INVALID", "A Project Home plan is missing a fixed zone.", { zone });
+	} else if (files.some((operation) => operation.relativePath === PROJECT_HOME_MANIFEST_PATH$1)) fail$1("MANIFEST_INVALID", "A workspace manifest under Project Home requires its Host marker.");
+	const manifestPath = isProjectHome ? PROJECT_HOME_MANIFEST_PATH$1 : LEGACY_MANIFEST_PATH;
+	const manifestEntries = files.filter((operation) => operation.relativePath === manifestPath);
+	if (manifestEntries.length !== 1) fail$1("MANIFEST_INVALID", `The write plan must create exactly one ${manifestPath} file.`);
 	if (manifestEntries[0].contentHash !== plan.manifestHash) fail$1("MANIFEST_INVALID", "The manifest hash does not match the project.yaml operation.");
 	const canonical = [...directories.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0), ...files.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0)];
 	return Object.freeze(canonical);
@@ -8235,6 +8259,68 @@ async function executeFileSyncPlan(options) {
 	}
 }
 //#endregion
+//#region src/project-home.ts
+const PROJECT_HOME_MARKER_PATH = ".project-home/project-home.json";
+const PROJECT_HOME_WORKSPACE_PATH = "workspace";
+const PROJECT_HOME_MANIFEST_PATH = "workspace/.dsh-project/project.yaml";
+Object.freeze({
+	workspace: "workspace",
+	worktrees: "worktrees",
+	local: "local"
+});
+const PROJECT_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,118}[a-z0-9])?$/u;
+function existingFile$1(candidates) {
+	for (const candidate of candidates) if (existsSync(candidate)) return candidate;
+	return candidates[candidates.length - 1];
+}
+const SCHEMA_PATH = existingFile$1([fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json", import.meta.url)), fileURLToPath(new URL("../../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json", import.meta.url))]);
+var ProjectHomeContractError = class extends Error {
+	code;
+	details;
+	constructor(code, message, details) {
+		super(message);
+		this.name = "ProjectHomeContractError";
+		this.code = code;
+		if (details !== void 0) this.details = details;
+	}
+};
+let markerValidator;
+function validator() {
+	if (markerValidator !== void 0) return markerValidator;
+	const ajv = new Ajv2020({
+		allErrors: true,
+		strict: true
+	});
+	addFormats(ajv);
+	markerValidator = ajv.compile(JSON.parse(readFileSync(SCHEMA_PATH, "utf8")));
+	return markerValidator;
+}
+function validateProjectHomeMarker(value) {
+	const validate = validator();
+	const valid = validate(value);
+	return {
+		valid,
+		errors: valid ? [] : (validate.errors ?? []).slice(0, 20).map((error) => ({
+			path: error.instancePath,
+			keyword: error.keyword
+		}))
+	};
+}
+function validateProjectHomeIdentity(marker, manifest) {
+	const markerResult = validateProjectHomeMarker(marker);
+	if (!markerResult.valid) throw new ProjectHomeContractError("PROJECT_HOME_MARKER_INVALID", "Project Home marker is invalid.", { errors: markerResult.errors });
+	const markerProjectId = marker.projectId;
+	const manifestProjectId = manifest?.metadata?.projectId;
+	if (markerProjectId !== manifestProjectId) throw new ProjectHomeContractError("PROJECT_ID_MISMATCH", "Project Home marker and workspace manifest disagree on projectId.", {
+		markerProjectId,
+		manifestProjectId
+	});
+	return true;
+}
+function isProjectHomeSlug(value) {
+	return typeof value === "string" && PROJECT_SLUG.test(value);
+}
+//#endregion
 //#region src/templates/registry.js
 /** The registry is bundled into lib/index.js, so import.meta.url differs between
 * source runs (src/templates/registry.js) and built runs (lib/index.js). Resolve
@@ -8259,14 +8345,15 @@ function existingFile(candidates) {
 const TEMPLATE_DIRECTORY_CANDIDATES = [fileURLToPath(new URL("../templates/", import.meta.url)), fileURLToPath(new URL("../../templates/", import.meta.url))];
 const TEMPLATES_DIRECTORY = TEMPLATE_DIRECTORY_CANDIDATES.find(hasTemplateFiles) ?? TEMPLATE_DIRECTORY_CANDIDATES[TEMPLATE_DIRECTORY_CANDIDATES.length - 1];
 const TEMPLATE_SCHEMA_PATH = existingFile([fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json", import.meta.url)), fileURLToPath(new URL("../../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json", import.meta.url))]);
-const PROJECT_MANIFEST_PATH = ".dsh-project/project.yaml";
-const PLACEHOLDERS = Object.freeze([
+const LEGACY_PROJECT_MANIFEST_PATH = ".dsh-project/project.yaml";
+const COMMON_PLACEHOLDERS = Object.freeze([
 	"{{PROJECT_ID}}",
 	"{{PROJECT_NAME}}",
 	"{{CREATED_AT}}",
 	"{{TEMPLATE_ID}}",
 	"{{TEMPLATE_VERSION}}"
 ]);
+const PROJECT_HOME_PLACEHOLDERS = Object.freeze([...COMMON_PLACEHOLDERS, "{{PROJECT_SLUG}}"]);
 var TemplateRegistryError = class extends Error {
 	constructor(code, message, details) {
 		super(message);
@@ -8295,6 +8382,7 @@ function listTemplateVersions() {
 		for (const versionEntry of readdirSync(join(TEMPLATES_DIRECTORY, entry.name), { withFileTypes: true })) {
 			if (!versionEntry.isDirectory() || !TEMPLATE_VERSION.test(versionEntry.name)) continue;
 			const template = loadTemplate(entry.name, versionEntry.name);
+			if (template.layout !== "project-home") continue;
 			versions.push(Object.freeze({
 				templateId: template.templateId,
 				templateVersion: template.templateVersion,
@@ -8347,18 +8435,31 @@ function freezeTemplate(parsed) {
 			content: entry.content
 		});
 	});
-	validateTemplateHostRules(parsed.metadata, files);
+	const layout = detectTemplateLayout(files);
+	const manifestPath = layout === "project-home" ? PROJECT_HOME_MANIFEST_PATH : LEGACY_PROJECT_MANIFEST_PATH;
+	validateTemplateHostRules(parsed.metadata, files, layout, manifestPath);
 	return Object.freeze({
 		templateId: parsed.metadata.templateId,
 		templateVersion: parsed.metadata.templateVersion,
 		displayName: parsed.metadata.displayName,
 		description: parsed.metadata.description ?? null,
 		protocolVersion: parsed.metadata.protocolVersion,
+		layout,
+		manifestPath,
 		files: Object.freeze(files),
 		templateHash: computeTemplateHash(parsed.metadata, files)
 	});
 }
-function validateTemplateHostRules(metadata, files) {
+function detectTemplateLayout(files) {
+	const filePaths = new Set(files.filter((entry) => entry.kind === "file").map((entry) => entry.relativePath));
+	const hasLegacyManifest = filePaths.has(LEGACY_PROJECT_MANIFEST_PATH);
+	const hasProjectHomeManifest = filePaths.has(PROJECT_HOME_MANIFEST_PATH);
+	const hasProjectHomeMarker = filePaths.has(PROJECT_HOME_MARKER_PATH);
+	if (hasProjectHomeMarker && hasProjectHomeManifest && !hasLegacyManifest) return "project-home";
+	if (!hasProjectHomeMarker && !hasProjectHomeManifest && hasLegacyManifest) return "legacy-workspace";
+	fail("TEMPLATE_INVALID", "模板必须完整选择 legacy workspace 或 Project Home 布局，不能混用。");
+}
+function validateTemplateHostRules(metadata, files, layout, manifestPath) {
 	if (metadata.templateId !== void 0 && files.length === 0) fail("TEMPLATE_INVALID", "模板不包含任何文件。", { templateId: metadata.templateId });
 	const paths = /* @__PURE__ */ new Set();
 	const directorySet = /* @__PURE__ */ new Set();
@@ -8376,12 +8477,22 @@ function validateTemplateHostRules(metadata, files) {
 	}
 	for (const directory of directorySet) if (!requiredDirectories.has(directory)) fail("TEMPLATE_INVALID", "模板声明了任何文件都不需要的目录。", { relativePath: directory });
 	for (const directory of requiredDirectories) if (!directorySet.has(directory)) fail("TEMPLATE_INVALID", "模板缺少文件所需的目录声明。", { relativePath: directory });
-	const manifestEntries = fileEntries.filter((entry) => entry.relativePath === PROJECT_MANIFEST_PATH);
-	if (manifestEntries.length !== 1) fail("TEMPLATE_INVALID", "模板必须恰好包含一个 .dsh-project/project.yaml 文件条目。");
+	const manifestEntries = fileEntries.filter((entry) => entry.relativePath === manifestPath);
+	if (manifestEntries.length !== 1) fail("TEMPLATE_INVALID", `模板必须恰好包含一个 ${manifestPath} 文件条目。`);
 	const manifestContent = manifestEntries[0].content;
-	for (const token of PLACEHOLDERS) if (!manifestContent.includes(token)) fail("TEMPLATE_INVALID", "project.yaml 模板必须使用全部五个占位符。", { missing: token });
+	for (const token of COMMON_PLACEHOLDERS) if (!manifestContent.includes(token)) fail("TEMPLATE_INVALID", "project.yaml 模板必须使用全部五个占位符。", { missing: token });
+	if (layout === "project-home") {
+		const markerEntries = fileEntries.filter((entry) => entry.relativePath === PROJECT_HOME_MARKER_PATH);
+		if (markerEntries.length !== 1) fail("TEMPLATE_INVALID", `Project Home 模板必须恰好包含一个 ${PROJECT_HOME_MARKER_PATH} 文件条目。`);
+		for (const token of [
+			"{{PROJECT_ID}}",
+			"{{PROJECT_SLUG}}",
+			"{{CREATED_AT}}"
+		]) if (!markerEntries[0].content.includes(token)) fail("TEMPLATE_INVALID", "Project Home marker 必须使用身份、slug 与创建时间占位符。", { missing: token });
+	}
+	const placeholders = layout === "project-home" ? PROJECT_HOME_PLACEHOLDERS : COMMON_PLACEHOLDERS;
 	for (const entry of fileEntries) {
-		const stripped = PLACEHOLDERS.reduce((text, token) => text.split(token).join(""), entry.content);
+		const stripped = placeholders.reduce((text, token) => text.split(token).join(""), entry.content);
 		if (/\{\{|\}\}/.test(stripped)) fail("TEMPLATE_INVALID", "模板包含未定义的占位符片段。", { relativePath: entry.relativePath });
 	}
 	for (const entry of files) if (/\{\{|\}\}/.test(entry.relativePath)) fail("TEMPLATE_INVALID", "模板路径不允许包含占位符。", { relativePath: entry.relativePath });
@@ -8411,14 +8522,18 @@ function renderTemplate(template, params) {
 		"{{TEMPLATE_ID}}": template.templateId,
 		"{{TEMPLATE_VERSION}}": template.templateVersion
 	};
+	if (template.layout === "project-home") values["{{PROJECT_SLUG}}"] = requireParam(params, "slug");
+	const placeholders = template.layout === "project-home" ? PROJECT_HOME_PLACEHOLDERS : COMMON_PLACEHOLDERS;
 	const rendered = /* @__PURE__ */ new Map();
 	for (const entry of template.files) {
 		if (entry.kind === "directory") continue;
-		const content = PLACEHOLDERS.reduce((text, token) => text.split(token).join(values[token]), entry.content);
+		const content = placeholders.reduce((text, token) => text.split(token).join(values[token]), entry.content);
 		if (/\{\{|\}\}/.test(content)) fail("TEMPLATE_RENDER_FAILED", "渲染后仍残留占位符片段。", { relativePath: entry.relativePath });
 		rendered.set(entry.relativePath, Buffer.from(content, "utf8"));
 	}
-	const manifestText = rendered.get(PROJECT_MANIFEST_PATH).toString("utf8");
+	const manifestBytes = rendered.get(template.manifestPath);
+	if (manifestBytes === void 0) fail("TEMPLATE_RENDER_FAILED", "渲染结果缺少 project.yaml。", { manifestPath: template.manifestPath });
+	const manifestText = manifestBytes.toString("utf8");
 	let manifestObject;
 	try {
 		manifestObject = parseYamlSubset(manifestText);
@@ -8427,9 +8542,28 @@ function renderTemplate(template, params) {
 	}
 	const validation = validateProjectManifest(manifestObject);
 	if (!validation.valid) fail("TEMPLATE_RENDER_FAILED", "渲染后的 project.yaml 没有通过 manifest Schema。", { errors: validation.errors });
+	let markerObject = null;
+	if (template.layout === "project-home") {
+		const markerBytes = rendered.get(PROJECT_HOME_MARKER_PATH);
+		if (markerBytes === void 0) fail("TEMPLATE_RENDER_FAILED", "渲染结果缺少 Project Home marker。");
+		try {
+			markerObject = JSON.parse(markerBytes.toString("utf8"));
+		} catch (error) {
+			fail("TEMPLATE_RENDER_FAILED", "渲染后的 Project Home marker 无法解析。", { cause: String(error) });
+		}
+		const markerValidation = validateProjectHomeMarker(markerObject);
+		if (!markerValidation.valid) fail("TEMPLATE_RENDER_FAILED", "渲染后的 Project Home marker 没有通过 Schema。", { errors: markerValidation.errors });
+		try {
+			validateProjectHomeIdentity(markerObject, manifestObject);
+		} catch (error) {
+			fail("TEMPLATE_RENDER_FAILED", "Project Home marker 与 workspace manifest 身份不一致。", { causeCode: error?.code ?? "UNKNOWN" });
+		}
+		if (markerObject.slug !== params.slug) fail("TEMPLATE_RENDER_FAILED", "Project Home marker slug 与目标目录不一致。");
+	}
 	return Object.freeze({
 		contents: rendered,
-		manifestObject
+		manifestObject,
+		markerObject
 	});
 }
 function requireParam(params, field) {
@@ -8728,6 +8862,7 @@ function createProjectControlIntakeRuntime(options) {
 		applicationInstanceId: options.applicationInstanceId,
 		scope: REFERENCE_SCOPE
 	};
+	const projectHomeRoot = options.projectHomeRoot ?? "F:\\Projects";
 	return {
 		intake: {
 			async scan(input) {
@@ -8972,7 +9107,11 @@ function createProjectControlIntakeRuntime(options) {
 				try {
 					const template = loadTemplate(input.templateId, input.templateVersion);
 					const parentDisplayPath = input.selection.path;
+					if (template.layout !== "project-home") throw new TemplateRegistryError("TEMPLATE_RETIRED", "旧单根模板只允许历史回放，不能用于新建项目。");
+					if (!sameWindowsPath(parentDisplayPath, projectHomeRoot)) throw projectControlHttpError("PROJECT_HOME_ROOT_REQUIRED", `新项目必须创建在统一项目根 ${projectHomeRoot}。`, 409);
+					if (!isProjectHomeSlug(input.directoryName)) throw projectControlHttpError("PROJECT_SLUG_INVALID", "项目目录名必须是稳定的 ASCII kebab-case slug。", 409);
 					const targetDisplayPath = win32.join(parentDisplayPath, input.directoryName);
+					const workspaceDisplayPath = win32.join(targetDisplayPath, PROJECT_HOME_WORKSPACE_PATH);
 					await requireEmptyTarget(targetDisplayPath);
 					const projectId = idFactory("prj");
 					const commandId = idFactory("cmd");
@@ -8981,6 +9120,7 @@ function createProjectControlIntakeRuntime(options) {
 					const rendered = renderTemplate(template, {
 						projectId,
 						name: input.name,
+						slug: input.directoryName,
 						createdAt
 					});
 					const operations = template.files.map((entry) => entry.kind === "directory" ? {
@@ -8994,7 +9134,7 @@ function createProjectControlIntakeRuntime(options) {
 						contentHash: sha256(rendered.contents.get(entry.relativePath))
 					});
 					const syncPolicy = "atomic_create";
-					const manifestHash = sha256(rendered.contents.get(".dsh-project/project.yaml"));
+					const manifestHash = sha256(rendered.contents.get(PROJECT_HOME_MANIFEST_PATH));
 					const planHash = computePlanHash({
 						manifestHash,
 						syncPolicy,
@@ -9020,14 +9160,20 @@ function createProjectControlIntakeRuntime(options) {
 							projectId,
 							name: input.name,
 							directoryName: input.directoryName,
+							slug: input.directoryName,
 							createdAt,
 							templateId: template.templateId,
-							templateVersion: template.templateVersion
+							templateVersion: template.templateVersion,
+							templateLayout: template.layout,
+							manifestPath: template.manifestPath,
+							projectHomeRoot,
+							workspaceDisplayPath
 						}
 					});
 					const refs = options.storage.issueFileSyncPlanRefs(planId, {
 						...referenceContext,
 						targetDisplayPath,
+						locationDisplayPath: workspaceDisplayPath,
 						parentDisplayPath,
 						ttlSeconds: 300
 					});
@@ -9223,6 +9369,8 @@ function createProjectControlIntakeRuntime(options) {
 					return null;
 				}
 				if (template.templateHash !== templatePayload?.templateHash) return null;
+				const isProjectHome = template.layout === "project-home";
+				if (isProjectHome && (renderParams.templateLayout !== "project-home" || renderParams.manifestPath !== "workspace/.dsh-project/project.yaml" || renderParams.slug !== renderParams.directoryName || !isProjectHomeSlug(renderParams.slug) || !sameWindowsPath(renderParams.projectHomeRoot, projectHomeRoot) || !sameWindowsPath(plan.targetDisplayPath, win32.join(projectHomeRoot, renderParams.slug)) || !sameWindowsPath(renderParams.workspaceDisplayPath, win32.join(plan.targetDisplayPath, "workspace")) || !sameWindowsPath(refs.sourceRoot.displayPath, projectHomeRoot) || !sameWindowsPath(refs.location.displayPath, renderParams.workspaceDisplayPath))) return null;
 				const writePlanPayload = asObject(payload?.writePlan);
 				if (writePlanPayload?.planId !== planId || writePlanPayload?.manifestHash !== plan.manifestHash || writePlanPayload?.syncPolicy !== "atomic_create") return null;
 				let operationsValid = false;
@@ -9242,12 +9390,13 @@ function createProjectControlIntakeRuntime(options) {
 					rendered = renderTemplate(template, {
 						projectId: plan.projectId,
 						name: renderParams.name ?? "",
+						...isProjectHome ? { slug: renderParams.slug ?? "" } : {},
 						createdAt: renderParams.createdAt ?? ""
 					});
 				} catch {
 					return null;
 				}
-				const manifestHash = sha256(rendered.contents.get(".dsh-project/project.yaml"));
+				const manifestHash = sha256(rendered.contents.get(template.manifestPath));
 				if (manifestHash !== plan.manifestHash) return null;
 				for (const operation of writePlanPayload.operations) {
 					if (operation.kind !== "create_file") continue;

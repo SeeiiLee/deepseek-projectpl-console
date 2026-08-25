@@ -61,7 +61,7 @@
 
 ## 实施状态更新（2026-08-25，不改变本 ADR 决策）
 
-- 已创建 `F:\Projects\deepseek-harness-personal\{workspace,worktrees,local}` 与 `.project-home/project-home.json`；marker 仍为 `bootstrapping/canonicalWorkspaceReady=false`。
-- canonical workspace 已从 GitHub 独立克隆，父基线固定为 A 线最终 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`；B1a 与治理包正按 47 项 hash plan 收敛。
-- 这只是 DeepSeek Harness Personal 的受控 bootstrap，不代表 G1 Project Home schema/Host/template、G2 retention、G3 跨 Harness 或 G4 批量迁移能力已经上线。
+- 已创建 `F:\Projects\deepseek-harness-personal\{workspace,worktrees,local}` 与 `.project-home/project-home.json`；marker 为 `canonical-workspace-locally-validated/canonicalWorkspaceReady=true`，只声明本项目 canonical workspace 已验证。
+- canonical workspace 已从 GitHub 独立克隆，G0.5 以 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef` 固定在 A 线最终 `c27e989381c34dc06d4f4af1845f6122c0b00c2b` 之上，B1a 与治理包成为 Git 可重建基线。
+- G1 已本地实现 `project-home/v1` schema/Host validator、三套 `2.0.0` 三分区模板、整屋原子 Write Plan 与 `workspace` primary location，并通过失败关闭和 W1–W4 组合验证；当前等待独立 commit 授权。它不代表 G2 retention、G3 跨 Harness、真实 binding 或 G4 存量迁移已经上线。
 - Project Control 的旧路径 binding 与 Dev/Stable 双 `project_id` 尚未写入修复；旧目录继续只读保留，不清理。

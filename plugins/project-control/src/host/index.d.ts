@@ -657,6 +657,8 @@ export interface ProjectControlStorage {
     options: IntakeReferenceContext & {
       targetDisplayPath: string
       targetNormalizedPath?: string
+      locationDisplayPath?: string
+      locationNormalizedPath?: string
       parentDisplayPath: string
       parentNormalizedPath?: string
       ttlSeconds?: number

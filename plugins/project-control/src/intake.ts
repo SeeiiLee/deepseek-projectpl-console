@@ -35,6 +35,11 @@ import {
 } from './templates/registry.js'
 import { FileSyncPlanError } from './filesync/plan-executor.js'
 import { refreshProjectDocumentIndex } from './document-index.ts'
+import {
+  isProjectHomeSlug,
+  PROJECT_HOME_MANIFEST_PATH,
+  PROJECT_HOME_WORKSPACE_PATH,
+} from './project-home.ts'
 
 const REFERENCE_SCOPE = 'project-control.lifecycle' as const
 
@@ -58,6 +63,7 @@ export function createProjectControlIntakeRuntime(options: {
   selectionSecret: string
   applicationInstanceId: string
   applicationVersion: string
+  projectHomeRoot?: string
   now?: () => string
   idFactory?: (prefix: string) => string
 }): ProjectControlIntakeRuntime {
@@ -68,6 +74,7 @@ export function createProjectControlIntakeRuntime(options: {
     applicationInstanceId: options.applicationInstanceId,
     scope: REFERENCE_SCOPE,
   }
+  const projectHomeRoot = options.projectHomeRoot ?? 'F:\\Projects'
 
   const intake: ProjectControlIntakeService = {
     async scan(input) {
@@ -335,7 +342,25 @@ export function createProjectControlIntakeRuntime(options: {
       try {
         const template = loadTemplate(input.templateId, input.templateVersion)
         const parentDisplayPath = input.selection.path
+        if (template.layout !== 'project-home') {
+          throw new TemplateRegistryError('TEMPLATE_RETIRED', '旧单根模板只允许历史回放，不能用于新建项目。')
+        }
+        if (!sameWindowsPath(parentDisplayPath, projectHomeRoot)) {
+          throw projectControlHttpError(
+            'PROJECT_HOME_ROOT_REQUIRED',
+            `新项目必须创建在统一项目根 ${projectHomeRoot}。`,
+            409,
+          )
+        }
+        if (!isProjectHomeSlug(input.directoryName)) {
+          throw projectControlHttpError(
+            'PROJECT_SLUG_INVALID',
+            '项目目录名必须是稳定的 ASCII kebab-case slug。',
+            409,
+          )
+        }
         const targetDisplayPath = win32.join(parentDisplayPath, input.directoryName)
+        const workspaceDisplayPath = win32.join(targetDisplayPath, PROJECT_HOME_WORKSPACE_PATH)
         await requireEmptyTarget(targetDisplayPath)
         const projectId = idFactory('prj')
         const commandId = idFactory('cmd')
@@ -344,6 +369,7 @@ export function createProjectControlIntakeRuntime(options: {
         const rendered = renderTemplate(template, {
           projectId,
           name: input.name,
+          slug: input.directoryName,
           createdAt,
         })
         const operations: Array<
@@ -358,7 +384,7 @@ export function createProjectControlIntakeRuntime(options: {
               contentHash: sha256(rendered.contents.get(entry.relativePath)!),
             })
         const syncPolicy = 'atomic_create'
-        const manifestHash = sha256(rendered.contents.get('.dsh-project/project.yaml')!)
+        const manifestHash = sha256(rendered.contents.get(PROJECT_HOME_MANIFEST_PATH)!)
         const planHash = computePlanHash({ manifestHash, syncPolicy, operations })
         const stagingDisplayPath = stagingRootForPlan({ syncPolicy, planId }, targetDisplayPath)
         options.storage.createFileSyncPlan({
@@ -377,14 +403,20 @@ export function createProjectControlIntakeRuntime(options: {
             projectId,
             name: input.name,
             directoryName: input.directoryName,
+            slug: input.directoryName,
             createdAt,
             templateId: template.templateId,
             templateVersion: template.templateVersion,
+            templateLayout: template.layout,
+            manifestPath: template.manifestPath,
+            projectHomeRoot,
+            workspaceDisplayPath,
           },
         })
         const refs = options.storage.issueFileSyncPlanRefs(planId, {
           ...referenceContext,
           targetDisplayPath,
+          locationDisplayPath: workspaceDisplayPath,
           parentDisplayPath,
           ttlSeconds: 300,
         })
@@ -594,6 +626,16 @@ export function createProjectControlIntakeRuntime(options: {
         return null
       }
       if (template.templateHash !== templatePayload?.templateHash) return null
+      const isProjectHome = template.layout === 'project-home'
+      if (isProjectHome && (renderParams.templateLayout !== 'project-home'
+        || renderParams.manifestPath !== PROJECT_HOME_MANIFEST_PATH
+        || renderParams.slug !== renderParams.directoryName
+        || !isProjectHomeSlug(renderParams.slug)
+        || !sameWindowsPath(renderParams.projectHomeRoot, projectHomeRoot)
+        || !sameWindowsPath(plan.targetDisplayPath, win32.join(projectHomeRoot, renderParams.slug))
+        || !sameWindowsPath(renderParams.workspaceDisplayPath, win32.join(plan.targetDisplayPath, PROJECT_HOME_WORKSPACE_PATH))
+        || !sameWindowsPath(refs.sourceRoot.displayPath, projectHomeRoot)
+        || !sameWindowsPath(refs.location.displayPath, renderParams.workspaceDisplayPath))) return null
       const writePlanPayload = asObject(payload?.writePlan)
       if (writePlanPayload?.planId !== planId
         || writePlanPayload?.manifestHash !== plan.manifestHash
@@ -615,12 +657,13 @@ export function createProjectControlIntakeRuntime(options: {
         rendered = renderTemplate(template, {
           projectId: plan.projectId,
           name: renderParams.name ?? '',
+          ...(isProjectHome ? { slug: renderParams.slug ?? '' } : {}),
           createdAt: renderParams.createdAt ?? '',
         })
       } catch {
         return null
       }
-      const manifestBytes = rendered.contents.get('.dsh-project/project.yaml')
+      const manifestBytes = rendered.contents.get(template.manifestPath)
       const manifestHash = sha256(manifestBytes!)
       if (manifestHash !== plan.manifestHash) return null
       for (const operation of writePlanPayload.operations as Array<Record<string, unknown>>) {

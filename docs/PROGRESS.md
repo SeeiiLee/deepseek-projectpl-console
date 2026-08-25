@@ -1,5 +1,18 @@
 # Progress
 
+## 2026-08-25：G1 Project Home 本地实现完成，发现 packed 资产可变性 bug 后停在决策闸门
+
+- Cyrus 后续拍板：G4 迁移顺序改为 Amazon Store → 量化 → meal_tracker/食溯；packed 日志追加保留为证据，不扩大 G1，修复转为 G2-P0；G1 生成 `local/receipts/op_g1_project_home_20260825_01.json` 后停在独立 commit 授权闸门，本轮不 commit。
+
+- G0.5 已按冻结清单提交为 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`（父提交 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`），未 push、未发布；G1 全部工作落在该 canonical 基线上。
+- 新增 `project-home/v1` 严格 schema、8 个 valid/invalid fixtures、Host 纯函数 validator；固定 `.project-home/project-home.json`、`workspace`、`worktrees`、`local`，marker 与 workspace manifest 的 `project_id` 不一致时失败关闭。
+- 三个旧 `1.0.0` 模板字节未改且仍可加载/回放；新增 minimal/software/research `2.0.0`，新建列表只展示三分区版本。模板创建 workspace/AGENTS、INDEX/PROGRESS/NEXT/BLOCKED、D3 文档骨架、worktrees/local receipts，并把未知 token、布局混用和伪造 zone 拒绝在 Host。
+- create Write Plan 的文件目标改为整个 Project Home，primary location ref 精确指向 `Project Home\workspace`；storage 只允许历史 target 本身或其固定 `workspace` 子路径，拒绝 `local`、`worktrees` 和任意子目录。未新增 migration/table，未修改 HTTP/UI/侧栏/收件箱，未写真实 Stable/Dev binding。
+- 兼容性回归已闭环：旧 legacy upgrade 在 Windows 8.3 短路径与长 normalized path 组合下曾被新 location 约束误拒；修复为继承 target normalized path 后，upgrade 5/5 与 Project Control 183/183 全绿。
+- 机器验证：三项定向组合 30/30；`node --test "plugins/project-control/test/*.test.js"` 183/183；`node scripts/build-plugins.js` 成功并重建/校验 Project Control bundles；正式 `npm test` 796/796，fail/cancelled/skipped/todo 均为 0。插件目录单独 typecheck 因该目录没有自己的 node_modules/tsc 无法启动，但实际 tsdown 构建已成功，不将失败命令伪报为通过。
+- 正式全量门禁没有生成新安装包或持久 run：`dsh-packed-e2e-profile-*`=0、Smoke 进程=0、`artifacts` 文件数仍为 5233。但 packed 应用的 `appendBootLog` 把启动记录写回 `artifacts/win-unpacked/resources/app/boot-error.log`，使该既有文件追加 1,527 bytes，目录总量从 837,753,219 变为 837,754,746 bytes。未删除、截断或覆盖该证据。
+- 该行为说明“共享只读 package set”尚未真正只读：正确方向是把 boot log 写到隔离 userData/local，而不是应用资源目录；这会触及 A 线共享 `src/main.js`，超出 G1 狭义白名单。Cyrus 已拍板保留日志证据并把修复转入 G2-P0；G1 receipt 完成后只等待单独 commit 授权，B1b 继续暂停。
+
 ## 2026-08-25：G0.1 A 线清理对账与 remote 治理收口
 
 - A 线清理结果已从 `D:\Deepseek Harness Personal\artifacts-dev\e2e-runs\A-LINE-EVIDENCE` 做只读复核：六个权威 A 线 run、Stable 最终 `E2E_OK` 和五份 JSON 证据存在且可解析；清理前验证 hash 与 wave2 receipt 一致；被批准删除的三个失败 Stable run、旧 artifacts/cache 和旧 `D:\dsh-v0.4.3-clean` 均不存在。

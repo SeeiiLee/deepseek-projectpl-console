@@ -47,7 +47,8 @@
 | PROMPT_AND_AGENTS_GOVERNANCE.md | 权威 | 提示词/AGENTS/规则治理设计 |
 | WORKING_RULES_AND_PITFALLS.md | 活跃 | 工作规则与坑清单（48K，持续追加） |
 | WORK_RULES_AND_PITFALLS.md | 待核实 | 与上一份的关系待核实（疑似旧版） |
-| PROJECT_PROTOCOL.md / PROJECT_INTAKE_SPEC.md / PROJECT_TEMPLATE_SPEC.md / PROJECT_CONTROL_SPEC.md / PROJECT_CONTROL_DATA_MODEL.md | 权威 | project-control 合同族（冻结条款以各文为准） |
+| PROJECT_PROTOCOL.md / PROJECT_INTAKE_SPEC.md / PROJECT_TEMPLATE_SPEC.md / PROJECT_CONTROL_SPEC.md / PROJECT_CONTROL_DATA_MODEL.md | 权威 | project-control 合同族（冻结条款以各文为准）；PROJECT_TEMPLATE_SPEC 已登记 G1 Project Home 兼容扩展 |
+| `../protocol/project-control/v1alpha1/project-home/` | 机器合同 | `project-home/v1` marker Schema、8 个合法/非法 fixtures 与机器索引；Host 不接受任意 zone 路径 |
 | codex-session-import-v1-合同.md | 留档 | Codex 历史导入合同 |
 | governance/LLM项目治理说明书.md | 权威（v1.1，ADR-009 联动） | LLM 治理操作手册；Project Home 三分区；§0 速查卡进 workspace/AGENTS.md；含三层执行保障 |
 | governance/统一项目目录与三分区治理合同.md | 权威 v1.0（ADR-009） | Project Home、workspace/worktrees/local、Project ID、跨 Harness AGENTS/Skill/记忆、retention、存量迁移和 Console 机器验收 |

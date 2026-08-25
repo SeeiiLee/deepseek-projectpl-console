@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "project-home-examples-index/v1",
+  "cases": [
+    {"name":"minimal marker","fixture":"valid/minimal.valid.json","expectedValid":true},
+    {"name":"bootstrap marker","fixture":"valid/bootstrap.valid.json","expectedValid":true},
+    {"name":"absolute workspace zone","fixture":"invalid/absolute-zone.invalid.json","expectedValid":false,"expectedErrorKeyword":"const"},
+    {"name":"swapped zones","fixture":"invalid/swapped-zone.invalid.json","expectedValid":false,"expectedErrorKeyword":"const"},
+    {"name":"invalid project id","fixture":"invalid/invalid-project-id.invalid.json","expectedValid":false,"expectedErrorKeyword":"pattern"},
+    {"name":"invalid slug","fixture":"invalid/invalid-slug.invalid.json","expectedValid":false,"expectedErrorKeyword":"pattern"},
+    {"name":"unknown core field","fixture":"invalid/extra-field.invalid.json","expectedValid":false,"expectedErrorKeyword":"additionalProperties"},
+    {"name":"escaping receipt path","fixture":"invalid/escaping-receipt.invalid.json","expectedValid":false,"expectedErrorKeyword":"pattern"}
+  ]
+}

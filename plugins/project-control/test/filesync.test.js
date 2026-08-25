@@ -16,6 +16,7 @@ import {
   validateWritePlanDomain,
 } from '../src/filesync/plan-executor.js'
 import { createPrefixedUuidV7, InvalidStoragePathError, openProjectControlStorage } from '../src/host/index.js'
+import { loadTemplate, renderTemplate } from '../src/templates/registry.js'
 
 const projectRoot = dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
 const migrationsDirectory = join(projectRoot, 'migrations')
@@ -204,6 +205,46 @@ test('write plan domain rules reject duplicates, unneeded directories and manife
   await assertRejectsWithCode(Promise.resolve().then(() => validateWritePlanDomain(createPlan({
     manifestHash: sha256('different manifest bytes'),
   }))), 'MANIFEST_INVALID')
+})
+
+test('Project Home plans bind the versioned template to the fixed three zones and workspace manifest', async () => {
+  const template = loadTemplate('minimal-standard', '2.0.0')
+  const rendered = renderTemplate(template, {
+    projectId: 'prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711',
+    name: 'Project Home Test',
+    slug: 'project-home-test',
+    createdAt: '2026-08-25T05:30:00.000Z',
+  })
+  const operations = template.files.map(entry => entry.kind === 'directory'
+    ? dirOp(entry.relativePath)
+    : fileOp(entry.relativePath, rendered.contents.get(entry.relativePath)))
+  const plan = {
+    syncPolicy: 'atomic_create',
+    manifestHash: sha256(rendered.contents.get(template.manifestPath)),
+    operations,
+  }
+  const canonical = validateWritePlanDomain(plan)
+  assert.equal(canonical.some(operation => operation.relativePath === '.project-home/project-home.json'), true)
+  assert.equal(canonical.some(operation => operation.relativePath === 'workspace/.dsh-project/project.yaml'), true)
+  for (const zone of ['workspace', 'worktrees', 'local']) {
+    assert.equal(canonical.some(operation => operation.relativePath === zone), true)
+  }
+
+  const withoutMarker = operations.filter(operation => !['.project-home', '.project-home/project-home.json'].includes(operation.relativePath))
+  await assertRejectsWithCode(Promise.resolve().then(() => validateWritePlanDomain({ ...plan, operations: withoutMarker })), 'MANIFEST_INVALID')
+
+  const mixed = [
+    ...operations,
+    dirOp('.dsh-project'),
+    fileOp('.dsh-project/project.yaml', MANIFEST_YAML),
+  ]
+  await assertRejectsWithCode(Promise.resolve().then(() => validateWritePlanDomain({ ...plan, operations: mixed })), 'MANIFEST_INVALID')
+
+  const outside = [...operations, dirOp('outside'), fileOp('outside/payload.txt', 'outside')]
+  await assertRejectsWithCode(Promise.resolve().then(() => validateWritePlanDomain({ ...plan, operations: outside })), 'PATH_OUTSIDE_WORKSPACE')
+
+  const withoutLocal = operations.filter(operation => !operation.relativePath.startsWith('local'))
+  await assertRejectsWithCode(Promise.resolve().then(() => validateWritePlanDomain({ ...plan, operations: withoutLocal })), 'MANIFEST_INVALID')
 })
 
 test('a whole-tree create stages, renames atomically, verifies hashes and journals files_committed', async (t) => {

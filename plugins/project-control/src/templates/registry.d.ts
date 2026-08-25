@@ -15,6 +15,8 @@ export interface ProjectTemplate {
   readonly displayName: string
   readonly description: string | null
   readonly protocolVersion: string
+  readonly layout: 'legacy-workspace' | 'project-home'
+  readonly manifestPath: '.dsh-project/project.yaml' | 'workspace/.dsh-project/project.yaml'
   readonly files: ReadonlyArray<TemplateFileEntry>
   readonly templateHash: string
 }
@@ -32,10 +34,11 @@ export declare function loadTemplate(templateId: string, templateVersion: string
 
 export declare function renderTemplate(
   template: ProjectTemplate,
-  params: { projectId: string; name: string; createdAt: string },
+  params: { projectId: string; name: string; createdAt: string; slug?: string },
 ): {
   contents: Map<string, Buffer>
   manifestObject: Record<string, any>
+  markerObject: Record<string, any> | null
 }
 
 export declare function computeTemplateHash(

@@ -8,6 +8,12 @@ import addFormats from 'ajv-formats'
 import { canonicalJson } from '../host/canonical-json.js'
 import { parseYamlSubset } from '../discovery/runtime.js'
 import { validateProjectManifest } from '../manifest-validator.ts'
+import {
+  PROJECT_HOME_MANIFEST_PATH,
+  PROJECT_HOME_MARKER_PATH,
+  validateProjectHomeIdentity,
+  validateProjectHomeMarker,
+} from '../project-home.ts'
 
 /** The registry is bundled into lib/index.js, so import.meta.url differs between
  * source runs (src/templates/registry.js) and built runs (lib/index.js). Resolve
@@ -56,10 +62,11 @@ const TEMPLATE_SCHEMA_PATH = existingFile([
     import.meta.url,
   )),
 ])
-const PROJECT_MANIFEST_PATH = '.dsh-project/project.yaml'
-const PLACEHOLDERS = Object.freeze([
+const LEGACY_PROJECT_MANIFEST_PATH = '.dsh-project/project.yaml'
+const COMMON_PLACEHOLDERS = Object.freeze([
   '{{PROJECT_ID}}', '{{PROJECT_NAME}}', '{{CREATED_AT}}', '{{TEMPLATE_ID}}', '{{TEMPLATE_VERSION}}',
 ])
+const PROJECT_HOME_PLACEHOLDERS = Object.freeze([...COMMON_PLACEHOLDERS, '{{PROJECT_SLUG}}'])
 
 export class TemplateRegistryError extends Error {
   constructor(code, message, details) {
@@ -90,6 +97,7 @@ export function listTemplateVersions() {
     for (const versionEntry of readdirSync(join(TEMPLATES_DIRECTORY, entry.name), { withFileTypes: true })) {
       if (!versionEntry.isDirectory() || !TEMPLATE_VERSION.test(versionEntry.name)) continue
       const template = loadTemplate(entry.name, versionEntry.name)
+      if (template.layout !== 'project-home') continue
       versions.push(Object.freeze({
         templateId: template.templateId,
         templateVersion: template.templateVersion,
@@ -137,19 +145,33 @@ function freezeTemplate(parsed) {
     }
     return Object.freeze({ kind: 'file', relativePath: entry.relativePath, content: entry.content })
   })
-  validateTemplateHostRules(parsed.metadata, files)
+  const layout = detectTemplateLayout(files)
+  const manifestPath = layout === 'project-home' ? PROJECT_HOME_MANIFEST_PATH : LEGACY_PROJECT_MANIFEST_PATH
+  validateTemplateHostRules(parsed.metadata, files, layout, manifestPath)
   return Object.freeze({
     templateId: parsed.metadata.templateId,
     templateVersion: parsed.metadata.templateVersion,
     displayName: parsed.metadata.displayName,
     description: parsed.metadata.description ?? null,
     protocolVersion: parsed.metadata.protocolVersion,
+    layout,
+    manifestPath,
     files: Object.freeze(files),
     templateHash: computeTemplateHash(parsed.metadata, files),
   })
 }
 
-function validateTemplateHostRules(metadata, files) {
+function detectTemplateLayout(files) {
+  const filePaths = new Set(files.filter(entry => entry.kind === 'file').map(entry => entry.relativePath))
+  const hasLegacyManifest = filePaths.has(LEGACY_PROJECT_MANIFEST_PATH)
+  const hasProjectHomeManifest = filePaths.has(PROJECT_HOME_MANIFEST_PATH)
+  const hasProjectHomeMarker = filePaths.has(PROJECT_HOME_MARKER_PATH)
+  if (hasProjectHomeMarker && hasProjectHomeManifest && !hasLegacyManifest) return 'project-home'
+  if (!hasProjectHomeMarker && !hasProjectHomeManifest && hasLegacyManifest) return 'legacy-workspace'
+  fail('TEMPLATE_INVALID', '模板必须完整选择 legacy workspace 或 Project Home 布局，不能混用。')
+}
+
+function validateTemplateHostRules(metadata, files, layout, manifestPath) {
   if (metadata.templateId !== undefined && files.length === 0) {
     fail('TEMPLATE_INVALID', '模板不包含任何文件。', { templateId: metadata.templateId })
   }
@@ -181,18 +203,30 @@ function validateTemplateHostRules(metadata, files) {
       fail('TEMPLATE_INVALID', '模板缺少文件所需的目录声明。', { relativePath: directory })
     }
   }
-  const manifestEntries = fileEntries.filter(entry => entry.relativePath === PROJECT_MANIFEST_PATH)
+  const manifestEntries = fileEntries.filter(entry => entry.relativePath === manifestPath)
   if (manifestEntries.length !== 1) {
-    fail('TEMPLATE_INVALID', '模板必须恰好包含一个 .dsh-project/project.yaml 文件条目。')
+    fail('TEMPLATE_INVALID', `模板必须恰好包含一个 ${manifestPath} 文件条目。`)
   }
   const manifestContent = manifestEntries[0].content
-  for (const token of PLACEHOLDERS) {
+  for (const token of COMMON_PLACEHOLDERS) {
     if (!manifestContent.includes(token)) {
       fail('TEMPLATE_INVALID', 'project.yaml 模板必须使用全部五个占位符。', { missing: token })
     }
   }
+  if (layout === 'project-home') {
+    const markerEntries = fileEntries.filter(entry => entry.relativePath === PROJECT_HOME_MARKER_PATH)
+    if (markerEntries.length !== 1) {
+      fail('TEMPLATE_INVALID', `Project Home 模板必须恰好包含一个 ${PROJECT_HOME_MARKER_PATH} 文件条目。`)
+    }
+    for (const token of ['{{PROJECT_ID}}', '{{PROJECT_SLUG}}', '{{CREATED_AT}}']) {
+      if (!markerEntries[0].content.includes(token)) {
+        fail('TEMPLATE_INVALID', 'Project Home marker 必须使用身份、slug 与创建时间占位符。', { missing: token })
+      }
+    }
+  }
+  const placeholders = layout === 'project-home' ? PROJECT_HOME_PLACEHOLDERS : COMMON_PLACEHOLDERS
   for (const entry of fileEntries) {
-    const stripped = PLACEHOLDERS.reduce((text, token) => text.split(token).join(''), entry.content)
+    const stripped = placeholders.reduce((text, token) => text.split(token).join(''), entry.content)
     if (/\{\{|\}\}/.test(stripped)) {
       fail('TEMPLATE_INVALID', '模板包含未定义的占位符片段。', { relativePath: entry.relativePath })
     }
@@ -228,10 +262,12 @@ export function renderTemplate(template, params) {
     '{{TEMPLATE_ID}}': template.templateId,
     '{{TEMPLATE_VERSION}}': template.templateVersion,
   }
+  if (template.layout === 'project-home') values['{{PROJECT_SLUG}}'] = requireParam(params, 'slug')
+  const placeholders = template.layout === 'project-home' ? PROJECT_HOME_PLACEHOLDERS : COMMON_PLACEHOLDERS
   const rendered = new Map()
   for (const entry of template.files) {
     if (entry.kind === 'directory') continue
-    const content = PLACEHOLDERS.reduce(
+    const content = placeholders.reduce(
       (text, token) => text.split(token).join(values[token]),
       entry.content,
     )
@@ -240,7 +276,10 @@ export function renderTemplate(template, params) {
     }
     rendered.set(entry.relativePath, Buffer.from(content, 'utf8'))
   }
-  const manifestBytes = rendered.get(PROJECT_MANIFEST_PATH)
+  const manifestBytes = rendered.get(template.manifestPath)
+  if (manifestBytes === undefined) {
+    fail('TEMPLATE_RENDER_FAILED', '渲染结果缺少 project.yaml。', { manifestPath: template.manifestPath })
+  }
   const manifestText = manifestBytes.toString('utf8')
   let manifestObject
   try {
@@ -252,7 +291,35 @@ export function renderTemplate(template, params) {
   if (!validation.valid) {
     fail('TEMPLATE_RENDER_FAILED', '渲染后的 project.yaml 没有通过 manifest Schema。', { errors: validation.errors })
   }
-  return Object.freeze({ contents: rendered, manifestObject })
+  let markerObject = null
+  if (template.layout === 'project-home') {
+    const markerBytes = rendered.get(PROJECT_HOME_MARKER_PATH)
+    if (markerBytes === undefined) {
+      fail('TEMPLATE_RENDER_FAILED', '渲染结果缺少 Project Home marker。')
+    }
+    try {
+      markerObject = JSON.parse(markerBytes.toString('utf8'))
+    } catch (error) {
+      fail('TEMPLATE_RENDER_FAILED', '渲染后的 Project Home marker 无法解析。', { cause: String(error) })
+    }
+    const markerValidation = validateProjectHomeMarker(markerObject)
+    if (!markerValidation.valid) {
+      fail('TEMPLATE_RENDER_FAILED', '渲染后的 Project Home marker 没有通过 Schema。', {
+        errors: markerValidation.errors,
+      })
+    }
+    try {
+      validateProjectHomeIdentity(markerObject, manifestObject)
+    } catch (error) {
+      fail('TEMPLATE_RENDER_FAILED', 'Project Home marker 与 workspace manifest 身份不一致。', {
+        causeCode: error?.code ?? 'UNKNOWN',
+      })
+    }
+    if (markerObject.slug !== params.slug) {
+      fail('TEMPLATE_RENDER_FAILED', 'Project Home marker slug 与目标目录不一致。')
+    }
+  }
+  return Object.freeze({ contents: rendered, manifestObject, markerObject })
 }
 
 function requireParam(params, field) {
