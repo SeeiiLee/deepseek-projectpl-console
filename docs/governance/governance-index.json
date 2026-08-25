@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T08:20:00.000Z",
+  "generatedAt": "2026-08-25T08:32:00.000Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -188,7 +188,7 @@
       "next": "G3-CROSS-HARNESS-PILOT"
     },
     "g3CrossHarness": {
-      "status": "candidate-validated-pending-main-local-commit",
+      "status": "committed-local-not-pushed-not-published",
       "toolboxProjectHome": "F:\\Projects\\toolbox",
       "toolboxCommit": "600b296a57685609426138733ff8745196425c86",
       "toolboxTests": "18/18",
@@ -197,9 +197,12 @@
       "memoryTests": "6/6",
       "toolboxReceipt": "F:\\Projects\\toolbox\\local\\receipts\\op_g3-toolbox-projection-20260825-01.json",
       "memoryReceipt": "F:\\Projects\\memory-system\\local\\receipts\\op_g3-memory-host-pilot-20260825-02.json",
+      "mainCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
+      "mainReceipt": "../local/receipts/op_g3_cross_harness_20260825_01.json",
+      "mainCommitReceipt": "../local/receipts/op_g3_cross_harness_20260825_01-commit.json",
       "terminalState": "applied_shadow",
       "stableMutation": false,
-      "nextAfterCommit": "G4-AMAZON-MIGRATION-PILOT"
+      "next": "G4-AMAZON-MIGRATION-PILOT"
     }
   },
   "g4MigrationOrder": [

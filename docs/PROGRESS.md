@@ -2,6 +2,7 @@
 
 ## 2026-08-25：G3 跨 Harness shadow 试点通过，等待本地基线提交
 
+- G3 主仓 11 文件候选已按 receipt 精确提交为 `1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7`（父提交 `834f7bb`）；commit blob 与候选逐文件一致，未 push、未发布。候选与 commit receipt 分别为 Project Home `local/receipts/op_g3_cross_harness_20260825_01.json` 和 `op_g3_cross_harness_20260825_01-commit.json`。
 - 新建标准 Project Home：`F:\Projects\toolbox` 与 `F:\Projects\memory-system`，均使用 `workspace/worktrees/local` 三分区；UUIDv7 只在本地 manifest/marker 保留，未写真实 Project Control DB。两仓分别形成干净本地提交 `600b296` 与 `c0a0b03`，无 remote、未 push、未发布。
 - D5-0 最小工具层已冻结七份 schema、surface registry、七类 Harness descriptor、base/项目 profile、六态 resolver、retire receipt 语义拒绝器、逐实例投影 adapter 和完整 `project-governance-context` Skill。Toolbox 测试 18/18、Skill 结构校验通过。
 - DSH Dev 与 Codex 均完成 apply → doctor → rollback → re-apply；最终 Skill 树 SHA-256 均为 `998e3d...2089c`，状态仅为 `applied_shadow`。执行中发现 doctor 错拿 registry 首实例检查 Codex receipt 的 bug，已改为按 `harnessInstanceId` 精确选择并补回归测试。

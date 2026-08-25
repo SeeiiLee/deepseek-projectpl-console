@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5=`28d7c8c`、G1=`f5c58e5`、G2-P0=`8dff0e3`、G2-P1=`535185b`。G3 的 Toolbox/Memory 两个标准 Project Home 已建立本地 Git 基线；DSH Dev/Codex 治理 Skill 可回滚 shadow 投影、只读 memory-host 双端一致与 leak=0 均已通过，当前只剩主仓本地提交与 live-state 对齐。Cyrus 的连续授权继续有效；push/发布、真实 Stable/Dev 切换和旧项目源删除仍未授权。随后 G4 只允许 Amazon 单项目试迁并在验证后暂停；量化、食溯等待新决策。B1b 继续暂停。
+当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5=`28d7c8c`、G1=`f5c58e5`、G2-P0=`8dff0e3`、G2-P1=`535185b`、G3=`1f8fcd6`。Toolbox=`600b296`、Memory=`c0a0b03`；DSH Dev/Codex 治理 Skill 可回滚 shadow 投影、只读 memory-host 双端一致与 leak=0 均已通过。当前任务只允许 G4 Amazon 单项目试迁并在验证后暂停；量化、食溯等待新决策。push/发布、真实 Stable/Dev 切换和旧项目源删除仍未授权，B1b 继续暂停。
 
 ## 权威链
 

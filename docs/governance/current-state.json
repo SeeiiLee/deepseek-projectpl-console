@@ -1,22 +1,22 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T08:20:00.000Z",
+  "recordedAt": "2026-08-25T08:32:00.000Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-g3-candidate-validated",
+    "status": "canonical-workspace-g3-committed-local-g4-amazon-next",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "834f7bb749dcf0570be15b2db9b75ba81ada5c9a",
-    "headAtRecord": "834f7bb749dcf0570be15b2db9b75ba81ada5c9a",
-    "workingTreeState": "g3-candidate-validated-pending-local-commit",
+    "approvedParentCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
+    "headAtRecord": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
+    "workingTreeState": "g3-committed-local-g4-state-reconciliation-candidate",
     "commitAuthorized": true,
-    "lastAuthorizedCommit": "834f7bb749dcf0570be15b2db9b75ba81ada5c9a",
+    "lastAuthorizedCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
@@ -26,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g3-candidate-validated-pending-local-commit",
+    "phase": "g3-committed-local-g4-amazon-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -163,12 +163,15 @@
       "deletionAcceptance": "task-owned-temporary-fixtures-only"
     },
     "g3": {
-      "status": "candidate-validated-pending-main-local-commit",
+      "status": "committed-local-not-pushed-not-published",
       "scope": "toolbox Skill projection plus memory-host status/recall on DSH Dev and Codex; no real Stable binding",
       "toolboxCommit": "600b296a57685609426138733ff8745196425c86",
       "memoryCommit": "c0a0b037152fbe01ca1d56692a3006a15c041641",
       "toolboxTests": "18/18",
       "memoryTests": "6/6",
+      "mainCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
+      "acceptanceReceipt": "../local/receipts/op_g3_cross_harness_20260825_01.json",
+      "commitReceipt": "../local/receipts/op_g3_cross_harness_20260825_01-commit.json",
       "terminalState": "applied_shadow",
       "stableMutation": false
     }
@@ -213,7 +216,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "G3-CROSS-HARNESS-PILOT",
-    "goal": "Commit the validated G3 candidate locally, reconcile live state to G4, then start only the Amazon migration pilot."
+    "id": "G4-AMAZON-MIGRATION-PILOT",
+    "goal": "Migrate only Amazon Store into its standard F:\\Projects Project Home with copy, hash verification and rollback evidence; preserve the legacy source and pause after acceptance before any Quant or meal-tracker migration."
   }
 }
