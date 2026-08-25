@@ -1,21 +1,23 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T05:55:54.643Z",
+  "recordedAt": "2026-08-25T06:27:48.385Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-locally-validated",
+    "status": "canonical-workspace-g1-committed-local",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "c27e989381c34dc06d4f4af1845f6122c0b00c2b",
-    "headAtRecord": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
-    "workingTreeState": "dirty-g1-locally-validated-receipted-candidate",
-    "commitAuthorized": false
+    "approvedParentCommit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
+    "headAtRecord": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
+    "workingTreeState": "clean-g1-committed-local-not-pushed",
+    "commitAuthorized": true,
+    "lastAuthorizedCommit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
+    "lastCommitAuthorizationConsumed": true
   },
   "releaseBaseline": {
     "stableVersion": "0.4.5",
@@ -23,7 +25,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g1-locally-validated-receipted-awaiting-commit-authorization",
+    "phase": "g1-committed-local-g2-p0-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -42,9 +44,17 @@
     "g0_1GovernanceReceipt": "../local/receipts/op_g0_1_governance_reconcile_20260825_01.json",
     "candidateFreezeReceipt": "../local/receipts/op_g0_5_candidate_freeze_20260825_01.json",
     "g1Receipt": "../local/receipts/op_g1_project_home_20260825_01.json",
+    "g1CommitReceipt": "../local/receipts/op_g1_project_home_20260825_01-commit.json",
     "g0_5Commit": {
       "commit": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
       "parent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b",
+      "pushed": false,
+      "published": false
+    },
+    "g1Commit": {
+      "commit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
+      "parent": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
+      "candidateAggregateSha256": "728414A24D740258AD7482AB6E2D146118552FF7B1BF521E0B4F2004ACD3ADA2",
       "pushed": false,
       "published": false
     }
@@ -72,7 +82,7 @@
       ]
     },
     "g1": {
-      "status": "locally-validated-receipted-awaiting-commit-authorization",
+      "status": "committed-local-not-pushed-not-published",
       "projectHomeContract": "project-home/v1",
       "newTemplateVersions": [
         "minimal-standard@2.0.0",
@@ -108,8 +118,26 @@
     "cyrus-quant-trading",
     "meal-tracker"
   ],
+  "standingAuthorization": {
+    "id": "governance-development-continuous-v1",
+    "grantedBy": "Cyrus",
+    "grantedAt": "2026-08-25T06:27:48.385Z",
+    "localValidatedCommits": true,
+    "taskOwnedTemporaryCleanup": true,
+    "push": false,
+    "publish": false,
+    "realStableOrDevCutover": false,
+    "legacyProjectSourceDeletion": false,
+    "scopeEnd": "pause-after-amazon-migration-pilot-verification"
+  },
+  "g4MigrationGate": {
+    "mode": "amazon-pilot-only",
+    "amazonStore": "authorized-for-pilot-after-g2-and-g3",
+    "pauseAfterAmazonVerification": true,
+    "cyrusQuantTrading": "not-authorized-pending-amazon-review",
+    "mealTracker": "not-authorized-pending-amazon-review"
+  },
   "blockingConditions": [
-    "g1_candidate_uncommitted_pending_explicit_commit_authorization",
     "packed_package_set_boot_log_mutability_deferred_to_g2_p0",
     "project_control_binding_still_points_to_legacy_d_path",
     "dev_and_stable_project_id_conflict_unresolved",
@@ -124,7 +152,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "G1-COMMIT-AUTHORIZATION",
-    "goal": "Request explicit authorization for one commit containing the exact receipted G1 candidate; do not push or publish."
+    "id": "G2-P0-PREFLIGHT",
+    "goal": "Define and receipt the narrow G2-P0 task that makes packed package sets immutable and redirects boot logs to isolated userData/local; do not start B1b or touch real Stable/Dev binding."
   }
 }

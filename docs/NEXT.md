@@ -2,10 +2,10 @@
 
 状态：**治理收敛优先，B1b 暂停**
 当前 Stable：**0.4.5 已发布并完成真实插件更新验收**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，G0.5 基线提交 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`（父提交 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，G1 本地基线提交 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`（父提交为 G0.5 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-25 当前唯一执行顺序**：G0.5 已提交 → G1 Project Home 机器合同已本地实现并通过门禁、等待独立 commit 授权 → G2 local retention/cleanup 闭环 → G3 toolbox Skill + memory-host 双端试点 → 逐项目 G4 迁移 → 复盘后恢复 B1b。下方旧功能排期只作历史记录，不覆盖本指针。
+> **2026-08-25 当前唯一执行顺序**：G0.5 已提交 → G1 Project Home 已精确提交为 `f5c58e5`（未 push/发布）→ G2-P0 先关闭 packed package set 可变性，再完成 local retention/cleanup 闭环 → G3 toolbox Skill + memory-host 双端试点 → G4 仅做 Amazon 单项目试迁并暂停复盘 → Cyrus 再决定是否迁量化、食溯 → 复盘后恢复 B1b。Cyrus 已授予“治理与开发连续执行包 V1”，G2/G3 内通过 receipt 与门禁的本地 commit 无需逐次询问；下方旧功能排期只作历史记录，不覆盖本指针。
 
 ## G0：当前收口任务
 
@@ -20,15 +20,15 @@
 9. [x] G0.5 冻结当前候选的逐文件清单与聚合 hash，确认 ignored `artifacts/`、package 和 run 均未进入候选；freeze receipt 位于 Project Home `local/receipts/`。
 10. [x] Cyrus 单独授权并完成 G0.5 精确提交：`28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`；未 push、未发布。
 
-G0.5 已成为 Git 可重建基线。G1 已完成本地实现和失败关闭验证，当前执行指针是 **G1 精确候选复核与独立 commit 授权闸门**；B1b 继续暂停，裸 `node --test` 不得作为全量入口，正式入口固定为 `npm test`。
+G0.5 与 G1 已依次成为 Git 可重建本地基线，G1 commit 为 `f5c58e5`，候选和提交结果均有 Project Home 外部 receipt；未 push、未发布。当前执行指针是 **G2-P0 开工前审计：关闭 packed package set 启动日志写回**；B1b 继续暂停，裸 `node --test` 不得作为全量入口，正式入口固定为 `npm test`。
 
 ## G1–G4：后续治理实现顺序
 
-- **G1 Project Home（本地实现完成，待独立 commit 授权）**：`project-home/v1` schema/fixtures、Host 纯函数、三分区 Write Plan、三套不可变 `2.0.0` 模板和 W1–W4 组合验证已落地；旧 `1.0.0` 只保留回放，primary workspace 只指向 `workspace`，整屋 plan 目标指向 Project Home。未修改 migration/DB schema/HTTP/UI/侧栏/收件箱，也未写真实 binding。
+- **G1 Project Home（已提交完成）**：`project-home/v1` schema/fixtures、Host 纯函数、三分区 Write Plan、三套不可变 `2.0.0` 模板和 W1–W4 组合验证已落地并提交为 `f5c58e5`；旧 `1.0.0` 只保留回放，primary workspace 只指向 `workspace`，整屋 plan 目标指向 Project Home。未修改 migration/DB schema/HTTP/UI/侧栏/收件箱，也未写真实 binding；未 push、未发布。
 - **G2 Local 生命周期**：首个 P0 先把 packed package set 固定为只读，并将 `boot-error.log` 从 `resources/app` 迁到隔离 userData/local；随后要求所有 run/artifact 创建即登记，实现 cleanup plan/apply/verify/receipt、磁盘门槛和调度健康，只在一次性 fixture 上做真实删除验收。
 - **G2 前临时 packed 规则**：人工/packed E2E 只从 F 盘 canonical 生成；一个任务最多一套按内容寻址的共享只读 package set，各隔离 run 只引用、不逐 run 复制。没有磁盘 preflight 和明确 packed 范围就不开跑。
 - **G3 跨 Harness**：toolbox 先 DSH Dev + Codex；memory-host 先 status/recall，只读、单写者、显式 `project_id`、逐端质量/泄漏评测；Global AGENTS 规范源通过 hash receipt 投影。
-- **G4 存量迁移（Cyrus 2026-08-25 最终顺序）**：Amazon Store（skills + 调研报告）→ 量化（初版架构）→ meal_tracker/食溯（复杂项目，最后）。每个项目单独获得路径、`project_id`/binding、junction、观察期和清理授权；顺序不代表自动授权，本 G1 不搬迁三者。
+- **G4 存量迁移（Amazon 单项目试迁闸门）**：顺序仍为 Amazon Store（skills + 调研报告）→ 量化（初版架构）→ meal_tracker/食溯（复杂项目，最后），但当前只授权 Amazon 试迁。Amazon 单独完成路径、`project_id`/binding、可回滚切换、观察和验收后必须暂停；量化、食溯不得自动开始，等待 Cyrus 看完 Amazon 结果再决定。旧源目录删除不在连续授权内。
 
 ## 历史计划（以下内容不再是当前执行指针）
 

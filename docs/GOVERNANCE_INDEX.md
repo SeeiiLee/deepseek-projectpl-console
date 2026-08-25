@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5 已以 `28d7c8c` 提交到 A 线最终 `c27e989` 之上。G1 已在该基线上本地实现并以 `local/receipts/op_g1_project_home_20260825_01.json` 收口：`project-home/v1`、三套 `2.0.0` 三分区模板、整屋原子 Write Plan 与 `workspace` primary binding，同时保持 `1.0.0` 历史回放；当前等待 G1 独立 commit 授权。packed 日志写回证据按 Cyrus 决策保留并转 G2-P0；没有新建 package/run。G4 顺序固定为 Amazon → 量化 → 食溯。B1b、真实 Project Control binding、G2 local retention 与 G3 跨 Harness 仍未晋升。
+当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5 为 `28d7c8c`，G1 已在其上精确提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`，候选与 commit receipts 分别为 `local/receipts/op_g1_project_home_20260825_01.json` 和 `local/receipts/op_g1_project_home_20260825_01-commit.json`。`project-home/v1`、三套 `2.0.0` 三分区模板、整屋原子 Write Plan 与 `workspace` primary binding 已成为本地 Git 可重建基线，同时保持 `1.0.0` 历史回放；未 push、未发布。Cyrus 已授予“治理与开发连续执行包 V1”：G2、G3 范围内通过 receipt 与门禁的本地 commit 不再逐项询问，push/发布、真实 Stable/Dev 切换和旧项目源删除仍未授权。packed 日志写回证据转 G2-P0。G4 只允许先做 Amazon 单项目试迁并在验证后暂停；量化、食溯等待 Amazon 复盘后的新决策。B1b 继续暂停。
 
 ## 权威链
 

@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T05:55:54.643Z",
+  "generatedAt": "2026-08-25T06:27:48.385Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -33,7 +33,16 @@
       }
     ],
     "commitPolicy": "explicit-user-authorization",
-    "publishPolicy": "explicit-user-authorization"
+    "publishPolicy": "explicit-user-authorization",
+    "standingAuthorization": {
+      "id": "governance-development-continuous-v1",
+      "status": "active",
+      "localValidatedCommits": true,
+      "taskOwnedTemporaryCleanup": true,
+      "push": false,
+      "publish": false,
+      "scopeEnd": "pause-after-amazon-migration-pilot-verification"
+    }
   },
   "packedTestPolicy": {
     "status": "interim-until-g2-machine-enforcement",
@@ -134,7 +143,7 @@
       "contentSha256": "B5559F81E248128A62DC7AB6CE61E6C74A0A06764DB0842D0741AD4D5495790B"
     },
     "g1ProjectHome": {
-      "status": "locally-validated-receipted-awaiting-commit-authorization",
+      "status": "committed-local-not-pushed-not-published",
       "schema": "protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json",
       "templates": [
         "minimal-standard@2.0.0",
@@ -144,6 +153,8 @@
       "primaryWorkspace": "Project Home\\workspace",
       "formalTest": "796/796",
       "receipt": "../local/receipts/op_g1_project_home_20260825_01.json",
+      "commitReceipt": "../local/receipts/op_g1_project_home_20260825_01-commit.json",
+      "commit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     }
   },
@@ -152,6 +163,11 @@
     "cyrus-quant-trading",
     "meal-tracker"
   ],
+  "g4MigrationGate": {
+    "mode": "amazon-pilot-only",
+    "pauseAfterAmazonVerification": true,
+    "laterProjectsRequireNewCyrusDecision": true
+  },
   "externalEvidence": {
     "aLineCleanup": {
       "status": "verified-read-only",

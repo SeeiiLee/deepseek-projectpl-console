@@ -1,5 +1,14 @@
 # Progress
 
+## 2026-08-25：G1 精确提交完成，live-state 转向 G2-P0
+
+- Cyrus 授予“治理与开发连续执行包 V1”：当前治理收口及 G2/G3 内通过 receipt 与门禁的本地 commit、任务自有临时文件清理不再逐项询问；push、发布、真实 Stable/Dev 切换与旧项目源删除不在授权内。G4 进一步收紧为 Amazon 单项目试迁，Amazon 验证后必须暂停，量化和 meal_tracker/食溯等待新决策。
+- Cyrus 明确授权 receipt 冻结的一个 G1 commit；Git index 的 35 个路径、逐 blob 字节与聚合 SHA-256 `728414A24D740258AD7482AB6E2D146118552FF7B1BF521E0B4F2004ACD3ADA2` 均与候选 receipt 一致后，提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`（父提交 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`）。未 push、未发布。
+- 首次 `git commit` 因本机没有作者配置而失败，未产生中间 commit；随后只用上一笔 canonical commit 的既有身份 `Cyrus <cyrus@local.invalid>` 作为一次性参数完成提交，没有修改 repo-local 或 global Git 配置。
+- 外部提交结果 receipt：`local/receipts/op_g1_project_home_20260825_01-commit.json`，记录授权范围、commit/tree/parent、候选 receipt hash、提交后门禁和未 push/发布边界。
+- 提交后轻量门禁复核：governance 21/21、checkout 1257 文件、launch ready、`git diff --check` 通过；工作树与暂存区为空，`artifacts` 仍为 5233 文件 / 837,754,746 bytes，临时 packed profile 与 Smoke 进程均为 0。
+- 本次 live-state 对齐只把人机入口从“等待 G1 commit”推进为“G1 已提交、G2-P0 下一步”；不修改产品代码，不开始 G2/B1b，不产生 package/run。新的治理收口 commit、push、发布仍是独立授权闸门。
+
 ## 2026-08-25：G1 Project Home 本地实现完成，发现 packed 资产可变性 bug 后停在决策闸门
 
 - Cyrus 后续拍板：G4 迁移顺序改为 Amazon Store → 量化 → meal_tracker/食溯；packed 日志追加保留为证据，不扩大 G1，修复转为 G2-P0；G1 生成 `local/receipts/op_g1_project_home_20260825_01.json` 后停在独立 commit 授权闸门，本轮不 commit。
