@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T07:35:12.455Z",
+  "generatedAt": "2026-08-25T07:42:28.828Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -45,7 +45,7 @@
     }
   },
   "packedTestPolicy": {
-    "status": "g2-p1-machine-enforced-locally-validated-awaiting-exact-local-commit",
+    "status": "g2-p1-machine-enforced-committed-local",
     "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
     "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
     "managedRoot": "Project Home\\local\\package-sets",
@@ -168,7 +168,7 @@
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     },
     "g2PackedImmutability": {
-      "status": "p1-locally-validated-awaiting-exact-local-commit",
+      "status": "p1-committed-local-not-pushed-not-published",
       "managedPackageSetTreeHash": "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
       "managedPackageSetCount": 1,
       "buildReceiptSchemaVersion": 3,
@@ -177,11 +177,14 @@
       "registryRevision": 9,
       "retentionPolicy": "recommended-v1",
       "cleanupReceipt": "../local/receipts/op-g2-p1-lifecycle-bootstrap-20260825-01-cleanup-receipt.json",
+      "acceptanceReceipt": "../local/receipts/op_g2_p1_20260825_01.json",
+      "commitReceipt": "../local/receipts/op_g2_p1_20260825_01-commit.json",
+      "commit": "535185b01fe6be76d7256665029be774b77b5d27",
       "physicalPackageSetCount": 1,
       "packageSetProvenanceRecords": 2,
       "formalTest": "818/818",
       "realDeletionAcceptance": "task-owned-temporary-fixtures-only",
-      "next": "G3-CROSS-HARNESS-PILOT-after-exact-local-commit"
+      "next": "G3-CROSS-HARNESS-PILOT"
     }
   },
   "g4MigrationOrder": [

@@ -55,7 +55,7 @@
 | governance/项目路径绑定盘点表.md | 权威（v2，2026-08-25 联动） | 项目统一迁移第 0 步；目标改为 `F:\Projects\<slug>\workspace`；旧物理分类目录建议被 ADR-009 取代 |
 | GOVERNANCE_INDEX.md | 权威入口 | 治理总索引的人类可读入口；当前已记录 G2-P1 本地验收与 G3 执行指针，机器入口见下两行 |
 | governance/governance-index.json | 权威机器索引 | 权威优先级、固定合同 hash、实时状态入口、G2 local 生命周期合同和 fail-closed 规则 |
-| governance/current-state.json | 活跃机器状态 | 当前项目身份、A/B 基线、G2-P1 候选状态、阻断、保护路径和 G3 下一任务；每次交接必须刷新 |
+| governance/current-state.json | 活跃机器状态 | 当前项目身份、A/B 基线、G2-P1 已提交状态、阻断、保护路径和 G3 当前任务；每次交接必须刷新 |
 
 ## 设计（目标目录 design/）
 

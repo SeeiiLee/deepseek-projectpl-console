@@ -2,10 +2,10 @@
 
 状态：**治理收敛优先，B1b 暂停**
 当前 Stable：**0.4.5 已发布并完成真实插件更新验收**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，最新 Git 基线为 G2-P0 `8dff0e341707cac7167ac4a4aab9914fbf2321a9`（G1=`f5c58e5`，G0.5=`28d7c8c`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）；G2-P1 当前为已全量验证、待按连续授权精确本地提交的候选
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，最新产品/治理基线为 G2-P1 `535185b01fe6be76d7256665029be774b77b5d27`（G2-P0=`8dff0e3`，G1=`f5c58e5`，G0.5=`28d7c8c`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-25 当前唯一执行顺序**：G0.5 已提交 → G1 Project Home 已提交 → G2-P0 已提交 → G2-P1 registration/retention/cleanup 已本地全量验收，当前按 receipt 精确提交 → 随后执行 G3 toolbox Skill + memory-host 双端试点 → G4 仅做 Amazon 单项目试迁并暂停复盘 → Cyrus 再决定是否迁量化、食溯 → 复盘后恢复 B1b。Cyrus 已授予“治理与开发连续执行包 V1”，G2/G3 内通过 receipt 与门禁的本地 commit 无需逐次询问；下方旧功能排期只作历史记录，不覆盖本指针。
+> **2026-08-25 当前唯一执行顺序**：G0.5 已提交 → G1 Project Home 已提交 → G2-P0 已提交 → G2-P1 已提交为 `535185b` → **当前执行 G3 toolbox Skill + memory-host 双端试点** → G4 仅做 Amazon 单项目试迁并暂停复盘 → Cyrus 再决定是否迁量化、食溯 → 复盘后恢复 B1b。Cyrus 已授予“治理与开发连续执行包 V1”，G2/G3 内通过 receipt 与门禁的本地 commit 无需逐次询问；下方旧功能排期只作历史记录，不覆盖本指针。
 
 ## G0：当前收口任务
 
@@ -20,7 +20,7 @@
 9. [x] G0.5 冻结当前候选的逐文件清单与聚合 hash，确认 ignored `artifacts/`、package 和 run 均未进入候选；freeze receipt 位于 Project Home `local/receipts/`。
 10. [x] Cyrus 单独授权并完成 G0.5 精确提交：`28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`；未 push、未发布。
 
-G0.5、G1 与 G2-P0 已依次成为 Git 可重建本地基线。G2-P1 已完成本地实现和验收：package set/run 登记、配额、磁盘与调度健康、cleanup plan/apply/verify/receipt、中断续跑和同内容 provenance 去重全部通过；物理 package set 仍只有一套，旧 `artifacts` 证据未变。当前先完成 G2-P1 精确本地提交与 post-commit 对账，然后进入 **G3：toolbox Skill + memory-host 双端只读试点**；B1b 继续暂停，正式全量入口固定为 `npm test`。
+G0.5、G1、G2-P0 与 G2-P1 已依次成为 Git 可重建本地基线。G2-P1 的 package set/run 登记、配额、磁盘与调度健康、cleanup plan/apply/verify/receipt、中断续跑和同内容 provenance 去重全部通过；物理 package set 仍只有一套，旧 `artifacts` 证据未变。当前进入 **G3：toolbox Skill + memory-host 双端只读试点**；B1b 继续暂停，正式全量入口固定为 `npm test`。
 
 ## G1–G4：后续治理实现顺序
 

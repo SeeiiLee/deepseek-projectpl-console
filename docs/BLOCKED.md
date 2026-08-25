@@ -1,6 +1,6 @@
 # Blocked
 
-## 当前阻断（2026-08-25，G2-P1 已本地全量验收、下一步 G3）
+## 当前阻断（2026-08-25，G2-P1 已提交为 `535185b`、当前 G3）
 
 - **checkout EOL 阻断已关闭**：仓库 `.gitattributes`、repo-local `core.autocrlf=false`/`core.safecrlf=true`、机器门禁和测试已经形成三层闭环；正式 `npm test` 786/786，launch/diff 通过。旧失败证据继续保留在 `local/receipts/op_canonical_workspace_import_20260825_01-validation-failed.json`，新闭环见 checkout 与 baseline receipts。
 - **B1b 继续暂停，但不再因 B1a/G0.5/G1 代码阻断**：G0.5 与 G1 已依次提交；在 G2 retention 与 G3 跨 Harness 对齐完成前，仍不得开始 migration 0010、审批 DB、HTTP、UI、侧栏或收件箱。

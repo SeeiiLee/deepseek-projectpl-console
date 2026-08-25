@@ -2,6 +2,7 @@
 
 ## 2026-08-25：G2-P1 local 生命周期机器闭环本地验收通过
 
+- G2-P1 的 14 文件候选已按外部 receipt 的逐文件 hash 精确提交为 `535185b01fe6be76d7256665029be774b77b5d27`（父提交 `8dff0e3`）；commit blob 集与候选完全一致，提交后工作树干净，未 push、未发布。候选与 commit receipt 分别为 Project Home `local/receipts/op_g2_p1_20260825_01.json` 和 `op_g2_p1_20260825_01-commit.json`。
 - 新增 `scripts/local-lifecycle.mjs`：Project Home `local` 对象使用 append-only registry snapshot，package set/run 创建或受控对账即登记 `project_id`、owner、task、状态、预计字节、retention class、marker hash 与来源 hash；路径越界、身份不符、未知目录、symlink/junction/reparse point 和 marker/包体漂移均失败关闭。
 - 固化可版本化 `recommended-v1` 本机 policy：成功 run 取“最近 2 次且 7 天内全部保留”的 AND 语义；失败 run 最近 3 次、至少 14 天且 issue 未关闭不删；中断 run 72 小时；package set 最近 2 套且 7 天内全部保留；PINNED/ACTIVE/QUARANTINED 与被 run 引用的 package set 永不进入自动目标。登记总量上限 20 GiB，大任务后仍须保留至少 5 GiB 空间。
 - cleanup 实现 plan → hash/policy/revision check → apply → verify → append-only receipt；apply 每删一个对象即写 append-only journal，中断后只能从同一 plan hash 续跑。真实递归删除只在 `dsh-local-lifecycle-*` 一次性 task-owned fixture 中验收，现有 package set、旧 `artifacts` 和任何真实项目源均未作为删除目标。

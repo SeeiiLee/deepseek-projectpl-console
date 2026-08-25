@@ -1,23 +1,23 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T07:35:12.455Z",
+  "recordedAt": "2026-08-25T07:42:28.828Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-g1-committed-local",
+    "status": "canonical-workspace-g2-p1-committed-local",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
-    "headAtRecord": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
-    "workingTreeState": "g2-p1-locally-validated-candidate-awaiting-exact-local-commit",
+    "approvedParentCommit": "535185b01fe6be76d7256665029be774b77b5d27",
+    "headAtRecord": "535185b01fe6be76d7256665029be774b77b5d27",
+    "workingTreeState": "g2-p1-committed-local-g3-state-reconciliation-candidate",
     "commitAuthorized": true,
-    "lastAuthorizedCommit": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
-    "lastCommitAuthorizationConsumed": false,
+    "lastAuthorizedCommit": "535185b01fe6be76d7256665029be774b77b5d27",
+    "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
   "releaseBaseline": {
@@ -26,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g2-p1-locally-validated-awaiting-exact-local-commit-then-g3",
+    "phase": "g2-p1-committed-local-g3-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -65,6 +65,15 @@
       "candidateAggregateSha256": "3369241FB39A37CA50C6520D7BB6D198BF5E53BF0A774078AE002A4CE47785D7",
       "receipt": "../local/receipts/op_g2_p0_20260825_01.json",
       "commitReceipt": "../local/receipts/op_g2_p0_20260825_01-commit.json",
+      "pushed": false,
+      "published": false
+    },
+    "g2P1Commit": {
+      "commit": "535185b01fe6be76d7256665029be774b77b5d27",
+      "parent": "8dff0e341707cac7167ac4a4aab9914fbf2321a9",
+      "candidateAggregateSha256": "493EA5BDD7A836686F6EED6411480AC38FF6A7ADA9749241006AC1EFA7F3291F",
+      "receipt": "../local/receipts/op_g2_p1_20260825_01.json",
+      "commitReceipt": "../local/receipts/op_g2_p1_20260825_01-commit.json",
       "pushed": false,
       "published": false
     }
@@ -123,7 +132,7 @@
       }
     },
     "g2": {
-      "status": "p1-locally-validated-awaiting-exact-local-commit",
+      "status": "p1-committed-local-not-pushed-not-published",
       "bootLogRelativePath": "logs\\boot-error.log",
       "managedPackageSetsRoot": "Project Home\\local\\package-sets",
       "managedPackageSetCount": 1,
@@ -131,7 +140,6 @@
       "packageSetFiles": 5244,
       "packageSetBytes": 837790443,
       "buildReceiptSchemaVersion": 3,
-      "formalFullTests": "802/802",
       "packageSetReusedWithoutDrift": true,
       "legacyArtifactEvidenceUnchanged": true,
       "temporaryProfileCountAfter": 0,
@@ -155,7 +163,7 @@
       "deletionAcceptance": "task-owned-temporary-fixtures-only"
     },
     "g3": {
-      "status": "next-after-g2-p1-exact-local-commit",
+      "status": "current-authorized-next-task",
       "scope": "toolbox Skill projection plus memory-host status/recall on DSH Dev and Codex; no real Stable binding"
     }
   },
@@ -200,6 +208,6 @@
   ],
   "nextTask": {
     "id": "G3-CROSS-HARNESS-PILOT",
-    "goal": "After the G2-P1 exact local commit and post-commit state receipt, implement the bounded DSH Dev + Codex toolbox Skill and read-only memory-host status/recall pilot with explicit project_id and per-end quality/leakage evidence; do not touch real Stable binding or start G4 early."
+    "goal": "Implement the bounded DSH Dev + Codex toolbox Skill and read-only memory-host status/recall pilot with explicit project_id and per-end quality/leakage evidence; do not touch real Stable binding or start G4 early."
   }
 }
