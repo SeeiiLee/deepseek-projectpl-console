@@ -562,8 +562,9 @@ export function createProjectControlIntakeRuntime(options: {
       const fresh = await rescanCandidate(options.scanner, candidate)
       const manifest = requireManagedManifest(fresh)
       const project = requireMatchedProject(options.storage, candidate)
-      const identityEvidence = asObject(payload.identityEvidence)
-      if (!hostCommandMatches(command, {
+      const expectedIdentityEvidence = rebindIdentityEvidence(project, fresh, manifest)
+      if (expectedIdentityEvidence === null
+        || !hostCommandMatches(command, {
         candidateId,
         candidateRevision,
         applicationInstanceId: options.applicationInstanceId,
@@ -574,7 +575,7 @@ export function createProjectControlIntakeRuntime(options: {
         manifestHash: manifest.hash,
         manifestRelativePath: manifest.relativePath,
       })
-        || identityEvidence?.manifestHash !== manifest.hash) return null
+        || !rebindIdentityEvidenceMatches(payload.identityEvidence, expectedIdentityEvidence)) return null
       const pair = resolveReferencePair(options.storage, candidateId, {
         locationRef: payload.newLocationRef,
         sourceRootRef: payload.sourceRootRef,
@@ -619,6 +620,9 @@ export function createProjectControlIntakeRuntime(options: {
       const templatePayload = asObject(payload?.template)
       if (templatePayload?.templateId !== renderParams.templateId
         || templatePayload?.templateVersion !== renderParams.templateVersion) return null
+      const renderSlug = renderParams.slug
+      const renderProjectHomeRoot = renderParams.projectHomeRoot
+      const renderWorkspaceDisplayPath = renderParams.workspaceDisplayPath
       let template
       try {
         template = loadTemplate(renderParams.templateId ?? '', renderParams.templateVersion ?? '')
@@ -627,15 +631,18 @@ export function createProjectControlIntakeRuntime(options: {
       }
       if (template.templateHash !== templatePayload?.templateHash) return null
       const isProjectHome = template.layout === 'project-home'
-      if (isProjectHome && (renderParams.templateLayout !== 'project-home'
+      if (isProjectHome && (typeof renderSlug !== 'string'
+        || typeof renderProjectHomeRoot !== 'string'
+        || typeof renderWorkspaceDisplayPath !== 'string'
+        || renderParams.templateLayout !== 'project-home'
         || renderParams.manifestPath !== PROJECT_HOME_MANIFEST_PATH
-        || renderParams.slug !== renderParams.directoryName
-        || !isProjectHomeSlug(renderParams.slug)
-        || !sameWindowsPath(renderParams.projectHomeRoot, projectHomeRoot)
-        || !sameWindowsPath(plan.targetDisplayPath, win32.join(projectHomeRoot, renderParams.slug))
-        || !sameWindowsPath(renderParams.workspaceDisplayPath, win32.join(plan.targetDisplayPath, PROJECT_HOME_WORKSPACE_PATH))
+        || renderSlug !== renderParams.directoryName
+        || !isProjectHomeSlug(renderSlug)
+        || !sameWindowsPath(renderProjectHomeRoot, projectHomeRoot)
+        || !sameWindowsPath(plan.targetDisplayPath, win32.join(projectHomeRoot, renderSlug))
+        || !sameWindowsPath(renderWorkspaceDisplayPath, win32.join(plan.targetDisplayPath, PROJECT_HOME_WORKSPACE_PATH))
         || !sameWindowsPath(refs.sourceRoot.displayPath, projectHomeRoot)
-        || !sameWindowsPath(refs.location.displayPath, renderParams.workspaceDisplayPath))) return null
+        || !sameWindowsPath(refs.location.displayPath, renderWorkspaceDisplayPath))) return null
       const writePlanPayload = asObject(payload?.writePlan)
       if (writePlanPayload?.planId !== planId
         || writePlanPayload?.manifestHash !== plan.manifestHash
@@ -1181,11 +1188,19 @@ function buildLifecycleCommand(options: {
   }
   if (isRelocation) {
     if (manifest === null || options.project === null) {
-      throw projectControlHttpError('IDENTITY_EVIDENCE_REQUIRED', '只有受管理项目可以自动重新绑定位置。', 409)
+      throw projectControlHttpError('IDENTITY_EVIDENCE_REQUIRED', '新位置必须提供可验证的受管理项目 manifest。', 409)
     }
     const activeLocation = options.project.workspaceLocations?.find(location => location.isActive)
     if (activeLocation === undefined) {
       throw projectControlHttpError('REFERENCE_UNRESOLVED', '项目当前没有可核对的活动位置。', 409)
+    }
+    const identityEvidence = rebindIdentityEvidence(options.project, options.fresh, manifest)
+    if (identityEvidence === null) {
+      throw projectControlHttpError(
+        'IDENTITY_EVIDENCE_REQUIRED',
+        '新位置没有任何文档与已登记项目的内容哈希一致，不能自动重新绑定。',
+        409,
+      )
     }
     return {
       ...common,
@@ -1198,7 +1213,7 @@ function buildLifecycleCommand(options: {
         newLocationRef: options.refs.locationRef,
         sourceRootRef: options.refs.sourceRootRef,
         reason: 'moved',
-        identityEvidence: { kind: 'managed_manifest', manifestHash: manifest.hash },
+        identityEvidence,
       },
     }
   }
@@ -1227,6 +1242,58 @@ function buildLifecycleCommand(options: {
       documentBindings: options.input.documentBindings,
     },
   }
+}
+
+type RebindIdentityEvidence =
+  | { kind: 'managed_manifest'; manifestHash: string }
+  | { kind: 'legacy_fingerprint'; fingerprintHash: string; contentHashes: string[] }
+
+function rebindIdentityEvidence(
+  project: Readonly<ProjectView>,
+  fresh: ImportCandidateInput,
+  manifest: ManagedManifest,
+): RebindIdentityEvidence | null {
+  if (project.mode === 'managed') {
+    return { kind: 'managed_manifest', manifestHash: manifest.hash }
+  }
+  const bindings = (project.documentBindings ?? [])
+    .map(binding => ({
+      role: binding.role,
+      relativePath: binding.relativePath,
+      contentHash: binding.contentHash,
+    }))
+    .sort((left, right) => {
+      const leftKey = `${left.role}\u0000${left.relativePath}`
+      const rightKey = `${right.role}\u0000${right.relativePath}`
+      return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0
+    })
+  const freshHashes = new Set(fresh.documents.flatMap(document => (
+    typeof document.sha256 === 'string' ? [document.sha256] : []
+  )))
+  const contentHashes = [...new Set(bindings.flatMap(binding => (
+    typeof binding.contentHash === 'string' && freshHashes.has(binding.contentHash)
+      ? [binding.contentHash]
+      : []
+  )))].sort().slice(0, 50)
+  if (contentHashes.length === 0) return null
+  return {
+    kind: 'legacy_fingerprint',
+    fingerprintHash: sha256(Buffer.from(canonicalJson({
+      projectId: project.projectId,
+      documentBindings: bindings,
+    }), 'utf8')),
+    contentHashes,
+  }
+}
+
+function rebindIdentityEvidenceMatches(value: unknown, expected: RebindIdentityEvidence): boolean {
+  const actual = asObject(value)
+  if (actual?.kind !== expected.kind) return false
+  if (expected.kind === 'managed_manifest') return actual.manifestHash === expected.manifestHash
+  return actual.fingerprintHash === expected.fingerprintHash
+    && Array.isArray(actual.contentHashes)
+    && actual.contentHashes.length === expected.contentHashes.length
+    && actual.contentHashes.every((hash, index) => hash === expected.contentHashes[index])
 }
 
 interface ManagedManifest {

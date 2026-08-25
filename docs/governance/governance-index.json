@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T09:27:00.000Z",
+  "generatedAt": "2026-08-25T16:14:40.826Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -37,7 +37,7 @@
     "publishPolicy": "explicit-user-authorization",
     "standingAuthorization": {
       "id": "governance-development-continuous-v1",
-      "status": "active",
+      "status": "consumed-at-amazon-pilot-pause",
       "localValidatedCommits": true,
       "taskOwnedTemporaryCleanup": true,
       "push": false,
@@ -46,13 +46,14 @@
     }
   },
   "packedTestPolicy": {
-    "status": "g2-p1-machine-enforced-committed-local",
+    "status": "g2-p2-local-validated-not-committed",
     "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
     "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
     "managedRoot": "Project Home\\local\\package-sets",
     "integrityPolicy": "complete-win-unpacked-tree-sha256-before-and-after-runtime",
     "bootLogPolicy": "active Electron userData\\logs\\boot-error.log",
     "maxNewPackageSetsPerTask": 1,
+    "logicalTaskIdentity": "authoritative current-state.nextTask.id plus append-only cross-process one-build claim; override mismatch and source drift fail closed",
     "preflightRequired": true,
     "registrationPolicy": "package sets and runs register before use under Project Home local append-only ledger",
     "retentionPolicy": "recommended-v1; outside recent count AND older than minimum age",
@@ -153,6 +154,19 @@
       "status": "b1a-complete-and-validated-b1b-paused",
       "contentSha256": "B5559F81E248128A62DC7AB6CE61E6C74A0A06764DB0842D0741AD4D5495790B"
     },
+    "bG4ProjectControlRebindHotfix": {
+      "status": "local-candidate-validated-g2-p2-closed-awaiting-release-authorization",
+      "candidateId": "can_01a038b2-d821-7fac-ae47-fe28a94a5c78",
+      "targetPath": "F:\\Projects\\amazon-store\\workspace",
+      "identityRule": "linked_legacy relocation uses deterministic legacy_fingerprint and at least one registered document hash must match the fresh candidate",
+      "delivery": "reuse-a-line-generation-channel-with-project-control-exact-allowlist",
+      "candidateVersion": "0.1.0-rc.9",
+      "candidateAssetSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
+      "isolatedGenerationReceipt": "../local/runs/b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json",
+      "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
+      "next": "B-G4-0-RELEASE-AUTHORIZATION",
+      "forbidden": ["migration-or-database-schema", "b1b", "direct-stable-database-write", "real-stable-install-or-rebind", "commit-push-publish-delete"]
+    },
     "g1ProjectHome": {
       "status": "committed-local-not-pushed-not-published",
       "schema": "protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json",
@@ -169,23 +183,31 @@
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     },
     "g2PackedImmutability": {
-      "status": "p1-committed-local-not-pushed-not-published",
-      "managedPackageSetTreeHash": "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
-      "managedPackageSetCount": 1,
+      "status": "p2-local-validated-not-committed",
+      "activeManagedPackageSetTreeHash": "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5",
+      "managedPackageSetCount": 2,
       "buildReceiptSchemaVersion": 3,
       "legacyArtifactEvidenceUnchanged": true,
       "registrySchema": "local-object-registry/v1",
-      "registryRevision": 9,
+      "registryRevision": 38,
       "retentionPolicy": "recommended-v1",
       "cleanupReceipt": "../local/receipts/op-g2-p1-lifecycle-bootstrap-20260825-01-cleanup-receipt.json",
       "acceptanceReceipt": "../local/receipts/op_g2_p1_20260825_01.json",
       "commitReceipt": "../local/receipts/op_g2_p1_20260825_01-commit.json",
       "commit": "535185b01fe6be76d7256665029be774b77b5d27",
-      "physicalPackageSetCount": 1,
-      "packageSetProvenanceRecords": 2,
-      "formalTest": "818/818",
-      "realDeletionAcceptance": "task-owned-temporary-fixtures-only",
-      "next": "G3-CROSS-HARNESS-PILOT"
+      "physicalPackageSetCount": 2,
+      "packageSetProvenanceRecords": 5,
+      "formalTest": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
+      "logicalTaskClaim": "G2-P2-PACKED-PACKAGE-SET-TASK-IDENTITY revision 2 completed physicalCreated=false",
+      "remainingPackageSets": [
+        "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
+        "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5"
+      ],
+      "deletedSupersededPackageSet": "496b33571511585f21cb5c42f2219e5c32c8405d74465cf69fb72aa050a8512d",
+      "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
+      "unknownOrUnmanagedObjects": 0,
+      "deletionPerformed": true,
+      "next": "B-G4-0-RELEASE-AUTHORIZATION"
     },
     "g3CrossHarness": {
       "status": "committed-local-not-pushed-not-published",
@@ -205,8 +227,9 @@
       "next": "G4-AMAZON-MIGRATION-PILOT"
     },
     "g4AmazonFilesystemPilot": {
-      "status": "verified-paused-for-cyrus-observation",
+      "status": "identity-aligned-binding-and-kimi-compatibility-pending",
       "projectHome": "F:\\Projects\\amazon-store",
+      "canonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
       "copyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
       "acceptanceReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-acceptance.json",
       "governanceCommit": "216cfc481dd7084872272b51795864bd39443d14",
@@ -219,9 +242,16 @@
       "copiedBytes": 3246852499,
       "retainedLegacyFiles": 16037,
       "retainedLegacyBytes": 1133347993,
-      "identityState": "unresolved-unregistered",
+      "identityState": "resolved-existing-stable-project",
+      "projectId": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
+      "stableLocationId": "loc_01a01cb7-efbd-700e-92e0-59aec8ea1bb2",
+      "stableBindingPath": "F:\\documents\\Kimi\\Workspaces\\Amazon Store",
       "projectControlBinding": false,
-      "next": "G4-AMAZON-HUMAN-OBSERVATION"
+      "devRegistrationRole": "test-only-non-authoritative",
+      "kimiWorkspaceId": "wd_amazon-store_7f6c65590a90",
+      "kimiCompatibilityState": "junction-not-yet-applied-or-accepted",
+      "identityAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_identity_alignment_20260825_01.json",
+      "next": "G4-AMAZON-CODEX-CANONICAL-OBSERVATION"
     }
   },
   "g4MigrationOrder": [
@@ -230,14 +260,17 @@
     "meal-tracker"
   ],
   "g4MigrationGate": {
-    "mode": "amazon-pilot-only",
-    "amazonStatus": "filesystem-pilot-verified-paused-for-cyrus-observation",
+    "mode": "amazon-identity-aligned-cutover-pending",
+    "amazonStatus": "identity-aligned-codex-canonical-observation-next",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
     "amazonAcceptanceReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-acceptance.json",
     "amazonDestination": "F:\\Projects\\amazon-store",
-    "amazonProjectControlIdentity": "unresolved-unregistered",
+    "amazonProjectControlIdentity": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
     "amazonProjectControlBinding": false,
+    "amazonStableBindingPath": "F:\\documents\\Kimi\\Workspaces\\Amazon Store",
+    "amazonCanonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
+    "amazonKimiCompatibility": "junction-not-yet-applied-or-accepted",
     "pauseAfterAmazonVerification": true,
     "laterProjectsRequireNewCyrusDecision": true
   },

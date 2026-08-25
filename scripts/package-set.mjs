@@ -15,9 +15,13 @@ import { isAbsolute, join, relative, resolve } from 'node:path'
 
 import { createSourceReceipt, hashTree, sha256File, verifyBuildReceipt } from './build-receipt.mjs'
 import {
+  claimPackageSetBuildTask,
+  completePackageSetBuildTask,
   evaluateLargeRunPreflight,
+  failPackageSetBuildTask,
   installRetentionPolicy,
   readLocalRegistry,
+  readPackageSetBuildTask,
   registerLocalObject,
   resolveLocalLifecyclePaths,
 } from './local-lifecycle.mjs'
@@ -25,6 +29,13 @@ import {
 const FIVE_GIB = 5 * 1024 * 1024 * 1024
 const ONE_GIB = 1024 * 1024 * 1024
 const PACKAGE_HASH_PATTERN = /^[A-Fa-f0-9]{64}$/u
+const LOGICAL_TASK_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,95}$/iu
+
+function packageSetError(code, message) {
+  const error = new Error(`${code}: ${message}`)
+  error.code = code
+  return error
+}
 
 export function packageSetDirectoryName(hash) {
   if (typeof hash !== 'string' || !PACKAGE_HASH_PATTERN.test(hash)) {
@@ -144,6 +155,21 @@ function projectIdentity(projectRoot) {
   return { paths, projectId: marker.projectId }
 }
 
+export function resolvePackedLogicalTaskId({ projectRoot, env = process.env }) {
+  const { projectId } = projectIdentity(projectRoot)
+  const statePath = join(resolve(projectRoot), 'docs', 'governance', 'current-state.json')
+  const state = readJson(statePath)
+  const logicalTaskId = state?.nextTask?.id
+  if (state?.schemaVersion !== 'current-state/v1' || state.projectId !== projectId || typeof logicalTaskId !== 'string' || !LOGICAL_TASK_ID_PATTERN.test(logicalTaskId)) {
+    throw packageSetError('PACKED_LOGICAL_TASK_CONTEXT_INVALID', `current-state project identity or nextTask is invalid: ${statePath}`)
+  }
+  const override = typeof env?.DSH_LOGICAL_TASK_ID === 'string' ? env.DSH_LOGICAL_TASK_ID.trim() : ''
+  if (override !== '' && override !== logicalTaskId) {
+    throw packageSetError('PACKED_LOGICAL_TASK_ID_MISMATCH', `DSH_LOGICAL_TASK_ID=${override} does not match authoritative nextTask.id=${logicalTaskId}.`)
+  }
+  return logicalTaskId
+}
+
 function directoryBytes(root) {
   let bytes = 0
   const walk = current => {
@@ -181,6 +207,10 @@ export function registerManagedPackageSet({ projectRoot, root, status = 'ACTIVE'
   }
   const objectId = `pkg_${tree.hash}`
   const createdAt = marker.createdAt ?? receipt.generatedAt
+  const markerTaskId = marker.logicalTaskId ?? marker.operationId
+  if (!LOGICAL_TASK_ID_PATTERN.test(markerTaskId ?? '') || (marker.logicalTaskId !== undefined && marker.operationId !== marker.logicalTaskId)) {
+    throw new Error(`Managed package-set logical task identity is invalid: ${resolvedRoot}`)
+  }
   const result = registerLocalObject({
     projectRoot,
     projectId,
@@ -189,7 +219,7 @@ export function registerManagedPackageSet({ projectRoot, root, status = 'ACTIVE'
       kind: 'package-set',
       relativePath: `package-sets/${rel}`,
       ownerId: 'managed-package-set',
-      taskId: marker.operationId,
+      taskId: markerTaskId,
       createdAt,
       lastUsedAt,
       status,
@@ -269,13 +299,37 @@ export function ensureManagedPackageSet({
   projectRoot,
   packageSetsRoot = resolveManagedPackageSetsRoot(projectRoot),
   minimumFreeBytes = FIVE_GIB,
-  operationId = `op-package-set-${Date.now()}`,
+  logicalTaskId,
 } = {}) {
+  if (typeof logicalTaskId !== 'string' || !LOGICAL_TASK_ID_PATTERN.test(logicalTaskId)) {
+    throw packageSetError('PACKED_LOGICAL_TASK_ID_REQUIRED', 'a stable logicalTaskId from current-state.nextTask.id is required.')
+  }
+  const { projectId } = projectIdentity(projectRoot)
+  const currentSourceReceiptHash = sourceReceiptHash(projectRoot)
+  const existingTask = readPackageSetBuildTask({ projectRoot, projectId, logicalTaskId })
+  if (existingTask !== null && existingTask.sourceReceiptHash !== currentSourceReceiptHash) {
+    throw packageSetError('PACKAGE_SET_TASK_SOURCE_CHANGED', `logical task ${logicalTaskId} already claimed a different source; update current-state to an explicitly approved new task before another physical build.`)
+  }
+  if (existingTask?.status === 'failed') {
+    throw packageSetError('PACKAGE_SET_TASK_PREVIOUSLY_FAILED', `logical task ${logicalTaskId} already failed its one build attempt; no automatic retry is allowed.`)
+  }
   const reusable = findReusablePackageSet({ projectRoot, packageSetsRoot })
   if (reusable !== null) {
     const provenance = recordPackageSetProvenance({ projectRoot, root: reusable.root, receipt: reusable.receipt })
     const lifecycle = reconcileManagedPackageSets({ projectRoot, activeRoot: reusable.root })
-    return { ...reusable, provenance, lifecycle }
+    let packageSetTask = existingTask
+    if (existingTask?.status === 'claimed') {
+      const marker = readJson(join(reusable.root, 'package-set.json'))
+      packageSetTask = completePackageSetBuildTask({
+        projectRoot,
+        projectId,
+        logicalTaskId,
+        sourceReceiptHash: currentSourceReceiptHash,
+        packageSetTreeHash: reusable.receipt.packageSetTreeHash,
+        physicalCreated: (marker.logicalTaskId ?? marker.operationId) === logicalTaskId,
+      }).claim
+    }
+    return { ...reusable, provenance, lifecycle, packageSetTask }
   }
 
   mkdirSync(join(packageSetsRoot, '.staging'), { recursive: true })
@@ -283,9 +337,6 @@ export function ensureManagedPackageSet({
   const freeBytes = Number(disk.bavail) * Number(disk.bsize)
   if (!Number.isFinite(freeBytes) || freeBytes < minimumFreeBytes) {
     throw new Error(`Package-set preflight failed: ${freeBytes} free bytes is below ${minimumFreeBytes}.`)
-  }
-  if (!/^[a-z0-9][a-z0-9._-]{0,95}$/iu.test(operationId)) {
-    throw new Error('Package-set operationId is invalid.')
   }
   const lifecycleBefore = reconcileManagedPackageSets({ projectRoot })
   const lifecyclePreflight = evaluateLargeRunPreflight({
@@ -297,11 +348,18 @@ export function ensureManagedPackageSet({
   if (!lifecyclePreflight.ok) {
     throw new Error(`Package-set lifecycle preflight failed: ${lifecyclePreflight.issues.map(issue => issue.code).join(', ')}`)
   }
-  const stagingRoot = join(packageSetsRoot, '.staging', operationId)
+  const stagingRoot = join(packageSetsRoot, '.staging', logicalTaskId)
   assertOwnedStagingPath(packageSetsRoot, stagingRoot)
   if (existsSync(stagingRoot)) throw new Error(`Package-set staging path already exists: ${stagingRoot}`)
+  claimPackageSetBuildTask({
+    projectRoot,
+    projectId: lifecycleBefore.projectId,
+    logicalTaskId,
+    sourceReceiptHash: currentSourceReceiptHash,
+  })
 
   let finalized = false
+  let taskCompleted = false
   try {
     const result = spawnSync(process.execPath, ['scripts/pack-desktop.js', 'stable', 'dir'], {
       cwd: projectRoot,
@@ -333,7 +391,16 @@ export function ensureManagedPackageSet({
       if (collision === null) throw new Error(`Managed package-set destination exists with different or invalid bytes: ${finalRoot}`)
       const provenance = recordPackageSetProvenance({ projectRoot, root: finalRoot, receipt })
       const lifecycle = reconcileManagedPackageSets({ projectRoot, activeRoot: finalRoot })
-      return { ...collision, reusedAfterBuild: true, provenance, lifecyclePreflight, lifecycle }
+      const packageSetTask = completePackageSetBuildTask({
+        projectRoot,
+        projectId: lifecycleBefore.projectId,
+        logicalTaskId,
+        sourceReceiptHash: currentSourceReceiptHash,
+        packageSetTreeHash: receipt.packageSetTreeHash,
+        physicalCreated: false,
+      }).claim
+      taskCompleted = true
+      return { ...collision, reusedAfterBuild: true, provenance, lifecyclePreflight, lifecycle, packageSetTask }
     }
     writeFileSync(join(stagingRoot, 'package-set.json'), `${JSON.stringify({
       schemaVersion: 'managed-package-set/v1',
@@ -343,14 +410,39 @@ export function ensureManagedPackageSet({
       packageSetFileCount: receipt.packageSetFileCount,
       sourceFiles: receipt.sourceFiles,
       createdAt: new Date().toISOString(),
-      operationId,
+      operationId: logicalTaskId,
+      logicalTaskId,
       immutabilityMode: 'hash-guarded-runtime-no-writes',
     }, null, 2)}\n`, 'utf8')
     renameSync(stagingRoot, finalRoot)
     finalized = true
     const provenance = recordPackageSetProvenance({ projectRoot, root: finalRoot, receipt })
     const lifecycle = reconcileManagedPackageSets({ projectRoot, activeRoot: finalRoot })
-    return { ...packageSetPaths(finalRoot), receipt, verification, reused: false, freeBytesAtPreflight: freeBytes, provenance, lifecyclePreflight, lifecycle }
+    const packageSetTask = completePackageSetBuildTask({
+      projectRoot,
+      projectId: lifecycleBefore.projectId,
+      logicalTaskId,
+      sourceReceiptHash: currentSourceReceiptHash,
+      packageSetTreeHash: receipt.packageSetTreeHash,
+      physicalCreated: true,
+    }).claim
+    taskCompleted = true
+    return { ...packageSetPaths(finalRoot), receipt, verification, reused: false, freeBytesAtPreflight: freeBytes, provenance, lifecyclePreflight, lifecycle, packageSetTask }
+  } catch (error) {
+    if (!taskCompleted) {
+      try {
+        failPackageSetBuildTask({
+          projectRoot,
+          projectId: lifecycleBefore.projectId,
+          logicalTaskId,
+          sourceReceiptHash: currentSourceReceiptHash,
+          failureCode: typeof error?.code === 'string' ? error.code : 'PACKAGE_SET_BUILD_FAILED',
+        })
+      } catch {
+        // Preserve the original build failure; the immutable claim still prevents an automatic retry.
+      }
+    }
+    throw error
   } finally {
     if (!finalized && existsSync(stagingRoot)) {
       assertOwnedStagingPath(packageSetsRoot, stagingRoot)

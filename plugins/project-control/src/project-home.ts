@@ -20,7 +20,9 @@ function existingFile(candidates: string[]): string {
   for (const candidate of candidates) {
     if (existsSync(candidate)) return candidate
   }
-  return candidates[candidates.length - 1]
+  const fallback = candidates.at(-1)
+  if (fallback === undefined) throw new Error('Project Home schema path candidates are required.')
+  return fallback
 }
 
 const SCHEMA_PATH = existingFile([
@@ -70,7 +72,7 @@ export function validateProjectHomeMarker(value: unknown): {
   errors: Array<{ path: string; keyword: string }>
 } {
   const validate = validator()
-  const valid = validate(value)
+  const valid = validate(value) === true
   return {
     valid,
     errors: valid

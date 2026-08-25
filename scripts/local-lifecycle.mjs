@@ -22,6 +22,7 @@ const VALID_STATUSES = new Set(['ACTIVE', 'QUARANTINED', 'RETIRED', 'DELETABLE',
 const VALID_RETENTION_CLASSES = new Set(['successful-run', 'failed-run', 'interrupted-run', 'package-set'])
 const OPERATION_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,95}$/iu
 const OBJECT_ID_PATTERN = /^(?:run|pkg)_[a-z0-9][a-z0-9._-]{0,160}$/iu
+const SOURCE_HASH_PATTERN = /^[a-f0-9]{64}$/u
 
 export const DEFAULT_RETENTION_POLICY = Object.freeze({
   schemaVersion: 'local-retention-policy/v1',
@@ -71,6 +72,18 @@ function assertOperationId(value) {
   }
 }
 
+function lifecycleError(code, message) {
+  const error = new Error(`${code}: ${message}`)
+  error.code = code
+  return error
+}
+
+function assertSourceReceiptHash(value) {
+  if (typeof value !== 'string' || !SOURCE_HASH_PATTERN.test(value)) {
+    throw lifecycleError('PACKAGE_SET_SOURCE_HASH_INVALID', 'sourceReceiptHash must be 64 lowercase hexadecimal characters.')
+  }
+}
+
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value))
 }
@@ -94,6 +107,7 @@ export function resolveLocalLifecyclePaths(projectRoot) {
     registryDir: join(ledgersRoot, 'local-object-registry'),
     policyPath: join(ledgersRoot, 'retention-policy.json'),
     healthDir: join(ledgersRoot, 'lifecycle-health'),
+    packageSetTasksRoot: join(ledgersRoot, 'package-set-tasks'),
     lockPath: join(ledgersRoot, 'local-lifecycle.lock'),
     packageSetsRoot: join(localRoot, 'package-sets'),
     runsRoot: join(localRoot, 'runs'),
@@ -166,6 +180,141 @@ export function readLocalRegistry({ projectRoot, projectId }) {
     throw new Error('Local object registry identity or schema mismatch.')
   }
   return registry
+}
+
+function assertPackageSetTaskClaim(claim, { projectId, logicalTaskId }) {
+  if (claim?.schemaVersion !== 'package-set-build-task/v1' || claim.projectId !== projectId || claim.logicalTaskId !== logicalTaskId) {
+    throw lifecycleError('PACKAGE_SET_TASK_CLAIM_INVALID', `claim identity mismatch for ${logicalTaskId}.`)
+  }
+  assertSourceReceiptHash(claim.sourceReceiptHash)
+  if (!Number.isSafeInteger(claim.revision) || claim.revision < 1 || !['claimed', 'completed', 'failed'].includes(claim.status)) {
+    throw lifecycleError('PACKAGE_SET_TASK_CLAIM_INVALID', `claim state is invalid for ${logicalTaskId}.`)
+  }
+  return claim
+}
+
+export function readPackageSetBuildTask({ projectRoot, projectId, logicalTaskId }) {
+  const { paths } = assertProjectHome({ projectRoot, projectId })
+  assertOperationId(logicalTaskId)
+  const claim = readLatestSnapshot(join(paths.packageSetTasksRoot, logicalTaskId))
+  return claim === null ? null : assertPackageSetTaskClaim(claim, { projectId, logicalTaskId })
+}
+
+export function claimPackageSetBuildTask({
+  projectRoot,
+  projectId,
+  logicalTaskId,
+  sourceReceiptHash,
+  now = new Date().toISOString(),
+}) {
+  const { paths } = assertProjectHome({ projectRoot, projectId })
+  assertOperationId(logicalTaskId)
+  assertSourceReceiptHash(sourceReceiptHash)
+  assertIsoTimestamp(now, 'now')
+  return withLifecycleLock(paths, () => {
+    const taskDir = join(paths.packageSetTasksRoot, logicalTaskId)
+    const existing = readLatestSnapshot(taskDir)
+    if (existing !== null) {
+      const claim = assertPackageSetTaskClaim(existing, { projectId, logicalTaskId })
+      if (claim.sourceReceiptHash !== sourceReceiptHash) {
+        throw lifecycleError('PACKAGE_SET_TASK_SOURCE_CHANGED', `logical task ${logicalTaskId} already claimed source ${claim.sourceReceiptHash}; start an explicitly registered new task.`)
+      }
+      throw lifecycleError('PACKAGE_SET_TASK_ALREADY_CLAIMED', `logical task ${logicalTaskId} already consumed its one physical package-set build attempt.`)
+    }
+    const registry = readLatestSnapshot(paths.registryDir) ?? emptyRegistry(projectId)
+    const existingPhysical = registry.objects.filter(item => item.kind === 'package-set' && item.taskId === logicalTaskId)
+    if (existingPhysical.length > 0) {
+      throw lifecycleError('PACKAGE_SET_TASK_ALREADY_HAS_PHYSICAL_SET', `logical task ${logicalTaskId} is already recorded on ${existingPhysical.length} physical package set(s).`)
+    }
+    const claim = {
+      schemaVersion: 'package-set-build-task/v1',
+      projectId,
+      logicalTaskId,
+      sourceReceiptHash,
+      revision: 1,
+      status: 'claimed',
+      claimedAt: now,
+      maximumPhysicalPackageSets: 1,
+    }
+    claim.path = writeSnapshot(taskDir, claim, claim.revision)
+    return { claim, reused: false }
+  })
+}
+
+export function completePackageSetBuildTask({
+  projectRoot,
+  projectId,
+  logicalTaskId,
+  sourceReceiptHash,
+  packageSetTreeHash,
+  physicalCreated,
+  now = new Date().toISOString(),
+}) {
+  const { paths } = assertProjectHome({ projectRoot, projectId })
+  assertOperationId(logicalTaskId)
+  assertSourceReceiptHash(sourceReceiptHash)
+  assertSourceReceiptHash(packageSetTreeHash)
+  assertIsoTimestamp(now, 'now')
+  if (typeof physicalCreated !== 'boolean') throw lifecycleError('PACKAGE_SET_TASK_COMPLETION_INVALID', 'physicalCreated must be boolean.')
+  return withLifecycleLock(paths, () => {
+    const taskDir = join(paths.packageSetTasksRoot, logicalTaskId)
+    const current = readLatestSnapshot(taskDir)
+    if (current === null) throw lifecycleError('PACKAGE_SET_TASK_CLAIM_MISSING', `logical task ${logicalTaskId} has no build claim.`)
+    const claim = assertPackageSetTaskClaim(current, { projectId, logicalTaskId })
+    if (claim.sourceReceiptHash !== sourceReceiptHash) throw lifecycleError('PACKAGE_SET_TASK_SOURCE_CHANGED', `logical task ${logicalTaskId} completion source does not match its claim.`)
+    if (claim.status === 'completed') {
+      if (claim.packageSetTreeHash !== packageSetTreeHash || claim.physicalCreated !== physicalCreated) {
+        throw lifecycleError('PACKAGE_SET_TASK_COMPLETION_CONFLICT', `logical task ${logicalTaskId} already completed with different evidence.`)
+      }
+      return { claim, replayed: true }
+    }
+    if (claim.status !== 'claimed') throw lifecycleError('PACKAGE_SET_TASK_NOT_COMPLETABLE', `logical task ${logicalTaskId} is ${claim.status}.`)
+    const next = {
+      ...claim,
+      revision: claim.revision + 1,
+      status: 'completed',
+      completedAt: now,
+      packageSetTreeHash,
+      physicalCreated,
+    }
+    next.path = writeSnapshot(taskDir, next, next.revision)
+    return { claim: next, replayed: false }
+  })
+}
+
+export function failPackageSetBuildTask({
+  projectRoot,
+  projectId,
+  logicalTaskId,
+  sourceReceiptHash,
+  failureCode,
+  now = new Date().toISOString(),
+}) {
+  const { paths } = assertProjectHome({ projectRoot, projectId })
+  assertOperationId(logicalTaskId)
+  assertSourceReceiptHash(sourceReceiptHash)
+  assertIsoTimestamp(now, 'now')
+  if (typeof failureCode !== 'string' || failureCode.length === 0 || failureCode.length > 120) {
+    throw lifecycleError('PACKAGE_SET_TASK_FAILURE_INVALID', 'failureCode is required and bounded.')
+  }
+  return withLifecycleLock(paths, () => {
+    const taskDir = join(paths.packageSetTasksRoot, logicalTaskId)
+    const current = readLatestSnapshot(taskDir)
+    if (current === null) throw lifecycleError('PACKAGE_SET_TASK_CLAIM_MISSING', `logical task ${logicalTaskId} has no build claim.`)
+    const claim = assertPackageSetTaskClaim(current, { projectId, logicalTaskId })
+    if (claim.sourceReceiptHash !== sourceReceiptHash) throw lifecycleError('PACKAGE_SET_TASK_SOURCE_CHANGED', `logical task ${logicalTaskId} failure source does not match its claim.`)
+    if (claim.status === 'failed') return { claim, replayed: true }
+    if (claim.status !== 'claimed') throw lifecycleError('PACKAGE_SET_TASK_NOT_FAILABLE', `logical task ${logicalTaskId} is ${claim.status}.`)
+    const next = {
+      ...claim,
+      revision: claim.revision + 1,
+      status: 'failed',
+      failedAt: now,
+      failureCode,
+    }
+    next.path = writeSnapshot(taskDir, next, next.revision)
+    return { claim: next, replayed: false }
+  })
 }
 
 function writeRegistry(paths, registry, objects, updatedAt = new Date().toISOString()) {
@@ -594,6 +743,114 @@ export function createCleanupPlan({ projectRoot, projectId, operationId, now = n
   return plan
 }
 
+function assertAuthorizedSupersededObjects(registry, targetObjectId, supersededByObjectId) {
+  const target = registry.objects.find(item => item.objectId === targetObjectId && item.deletedAt === undefined)
+  const supersededBy = registry.objects.find(item => item.objectId === supersededByObjectId && item.deletedAt === undefined)
+  if (target?.kind !== 'package-set') throw lifecycleError('AUTHORIZED_CLEANUP_TARGET_INVALID', 'target must be a live registered package set.')
+  if (target.status !== 'RETIRED') throw lifecycleError('AUTHORIZED_CLEANUP_TARGET_NOT_RETIRED', `target ${targetObjectId} is ${String(target.status)}.`)
+  if (supersededBy?.kind !== 'package-set' || supersededBy.status !== 'ACTIVE') {
+    throw lifecycleError('AUTHORIZED_CLEANUP_SUPERSEDER_NOT_ACTIVE', 'superseding object must be a live ACTIVE package set.')
+  }
+  if (targetObjectId === supersededByObjectId) throw lifecycleError('AUTHORIZED_CLEANUP_TARGET_INVALID', 'target and superseding object must differ.')
+  const referenced = registry.objects.some(item => item.kind === 'run' && item.deletedAt === undefined && (item.references ?? []).includes(targetObjectId))
+  if (referenced) throw lifecycleError('AUTHORIZED_CLEANUP_TARGET_REFERENCED', `target ${targetObjectId} is referenced by a live run.`)
+  return { target, supersededBy }
+}
+
+function readAuthorizedCleanupReceipt({ paths, projectId, authorizationReceiptPath, targetTreeHash, expectedSha256 }) {
+  const resolvedReceipt = resolve(authorizationReceiptPath)
+  const receiptRelativePath = relative(paths.receiptsRoot, resolvedReceipt)
+  if (receiptRelativePath.startsWith('..') || isAbsolute(receiptRelativePath) || !existsSync(resolvedReceipt)) {
+    throw lifecycleError('AUTHORIZED_CLEANUP_RECEIPT_INVALID', 'authorization receipt is outside Project Home receipts or missing.')
+  }
+  const receiptSha256 = sha256File(resolvedReceipt)
+  if (expectedSha256 !== undefined && receiptSha256 !== expectedSha256) {
+    throw lifecycleError('AUTHORIZED_CLEANUP_RECEIPT_DRIFT', 'authorization receipt hash changed after preview.')
+  }
+  const receipt = readJson(resolvedReceipt)
+  const prefix = `lifecycle-delete-exact-${targetTreeHash}`
+  if (receipt.projectId !== projectId || !Array.isArray(receipt.authorization?.allowed) || !receipt.authorization.allowed.some(value => typeof value === 'string' && (value === prefix || value.startsWith(`${prefix}-`)))) {
+    throw lifecycleError('AUTHORIZED_CLEANUP_SCOPE_MISSING', `authorization receipt does not allow exact package set ${targetTreeHash}.`)
+  }
+  return { resolvedReceipt, receiptRelativePath: receiptRelativePath.split(sep).join('/'), receiptSha256 }
+}
+
+export function createAuthorizedSupersededPackageSetCleanupPlan({
+  projectRoot,
+  projectId,
+  operationId,
+  targetObjectId,
+  supersededByObjectId,
+  authorizationReceiptPath,
+  now = new Date().toISOString(),
+}) {
+  const { paths } = assertProjectHome({ projectRoot, projectId })
+  assertOperationId(operationId)
+  assertIsoTimestamp(now, 'now')
+  const { policy, policyHash } = readInstalledPolicy(paths, projectId)
+  const registry = readLocalRegistry({ projectRoot, projectId })
+  const unknown = discoverUnknownObjects(paths, registry)
+  if (unknown.length > 0) throw lifecycleError('AUTHORIZED_CLEANUP_UNKNOWN_OBJECT', `unknown or missing local objects: ${unknown.join(', ')}`)
+  const { target } = assertAuthorizedSupersededObjects(registry, targetObjectId, supersededByObjectId)
+  const targetVerified = validateObjectRecord(paths, projectId, target)
+  const authorization = readAuthorizedCleanupReceipt({
+    paths,
+    projectId,
+    authorizationReceiptPath,
+    targetTreeHash: target.sourceHashes.packageSetTreeHash,
+  })
+  const retained = registry.objects
+    .filter(item => item.deletedAt === undefined && item.objectId !== targetObjectId)
+    .map(item => {
+      validateObjectRecord(paths, projectId, item)
+      return { objectId: item.objectId, relativePath: item.relativePath, reason: item.objectId === supersededByObjectId ? 'active-superseder' : 'not-authorized-target' }
+    })
+    .sort((left, right) => left.relativePath.localeCompare(right.relativePath))
+  const targets = [{
+    objectId: target.objectId,
+    kind: target.kind,
+    relativePath: target.relativePath,
+    expectedBytes: target.expectedBytes,
+    markerRelativePath: target.markerRelativePath,
+    markerSha256: targetVerified.markerSha256,
+    sourceHashes: target.sourceHashes,
+    reason: 'cyrus-authorized-superseded-package-set',
+  }]
+  const plan = {
+    schemaVersion: 'local-cleanup-plan/v1',
+    planType: 'authorized-superseded-package-set/v1',
+    operationId,
+    projectId,
+    createdAt: now,
+    registryRevision: registry.revision,
+    policyId: policy.policyId,
+    policyHash,
+    authorization: {
+      receiptRelativePath: authorization.receiptRelativePath,
+      receiptSha256: authorization.receiptSha256,
+      targetObjectId,
+      supersededByObjectId,
+    },
+    applyAllowed: true,
+    estimatedBytes: target.expectedBytes,
+    targets,
+    retained,
+    blockers: [],
+  }
+  plan.planHash = hashJson(cleanupPlanPayload(plan))
+  const path = join(paths.receiptsRoot, `${operationId}-cleanup-plan.json`)
+  writeFileSync(path, `${JSON.stringify(plan, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' })
+  plan.path = path
+  writeHealth(paths, projectId, {
+    status: 'authorized-plan-ready',
+    lastPlanAt: now,
+    lastPlanOperationId: operationId,
+    unknownObjects: [],
+    lastFailure: null,
+  })
+  return plan
+}
+
 function currentFreeBytes(path) {
   const disk = statfsSync(path)
   return Number(disk.bavail) * Number(disk.bsize)
@@ -622,6 +879,21 @@ export function applyCleanupPlan({ projectRoot, projectId, planPath, now = new D
       return current?.deletedAt !== undefined && current.cleanupOperationId === plan.operationId
     })
     if (registry.revision !== plan.registryRevision && !replay) throw new Error(`Cleanup plan registry revision is stale: ${plan.registryRevision} != ${registry.revision}`)
+    if (plan.planType !== undefined) {
+      if (plan.planType !== 'authorized-superseded-package-set/v1' || plan.targets.length !== 1 || plan.targets[0].objectId !== plan.authorization?.targetObjectId) {
+        throw lifecycleError('AUTHORIZED_CLEANUP_PLAN_INVALID', 'authorized cleanup plan type or exact target is invalid.')
+      }
+      if (!replay) {
+        const { target } = assertAuthorizedSupersededObjects(registry, plan.authorization.targetObjectId, plan.authorization.supersededByObjectId)
+        readAuthorizedCleanupReceipt({
+          paths,
+          projectId,
+          authorizationReceiptPath: join(paths.receiptsRoot, ...plan.authorization.receiptRelativePath.split('/')),
+          targetTreeHash: target.sourceHashes.packageSetTreeHash,
+          expectedSha256: plan.authorization.receiptSha256,
+        })
+      }
+    }
     const operationDir = join(paths.ledgersRoot, 'cleanup-operations', plan.operationId)
     let journal = readLatestSnapshot(operationDir)
     if (journal !== null && (journal.projectId !== projectId || journal.planHash !== plan.planHash)) {

@@ -8,6 +8,7 @@ import { afterEach, test } from 'node:test'
 import { assemblePersonalScopeView, commitActivatingGeneration, ensurePersonalPluginLinks, PERSONAL_PLUGINS, promotePendingGeneration } from '../src/personal-plugins.js'
 import {
   assertExternalRootProvided,
+  EXTERNAL_PLUGIN_WHITELIST,
   getPluginStatus,
   loadCurrentGeneration,
   normalizeExternalState,
@@ -18,6 +19,11 @@ import {
 
 const COMMIT = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
 const owned = []
+
+test('external generation whitelist explicitly admits Project Control but not business-data plugins', () => {
+  assert.equal(EXTERNAL_PLUGIN_WHITELIST.includes('@cyrus/dsh-project-control'), true)
+  assert.equal(EXTERNAL_PLUGIN_WHITELIST.includes('@cyrus/dsh-memory'), false)
+})
 afterEach(() => {
   for (const path of owned.splice(0)) rmSync(path, { recursive: true, force: true })
 })

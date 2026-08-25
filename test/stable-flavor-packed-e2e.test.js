@@ -20,7 +20,7 @@ import { afterEach, test } from 'node:test'
 
 import { resolveBuildRoot } from '../scripts/build-kit.mjs'
 import { ensureNonDestructiveLifecycleCycle } from '../scripts/local-lifecycle.mjs'
-import { ensureManagedPackageSet, reconcileManagedPackageSets } from '../scripts/package-set.mjs'
+import { ensureManagedPackageSet, reconcileManagedPackageSets, resolvePackedLogicalTaskId } from '../scripts/package-set.mjs'
 import { prepareSmokeExecutable } from '../scripts/smoke-executable.js'
 import { PERSONAL_PLUGINS } from '../src/personal-plugins.js'
 import { UpdateService } from '../src/update-service.js'
@@ -220,15 +220,16 @@ function terminateTree(pid) {
 }
 
 test('stable packed Electron/Harness external plugin closure activates, restarts ACTIVE, rolls back to builtin', async () => {
+  const logicalTaskId = resolvePackedLogicalTaskId({ projectRoot: repoRoot })
   const lifecycle = reconcileManagedPackageSets({ projectRoot: repoRoot })
   ensureNonDestructiveLifecycleCycle({
     projectRoot: repoRoot,
     projectId: lifecycle.projectId,
-    operationId: `g2-p1-packed-preflight-${process.pid}-${Date.now()}`,
+    operationId: `${logicalTaskId}-preflight`,
   })
   const packageSet = ensureManagedPackageSet({
     projectRoot: repoRoot,
-    operationId: `g2-p0-formal-${process.pid}`,
+    logicalTaskId,
   })
   const executable = packageSet.exePath
   const packageHashesBefore = collectHashes(packageSet.winUnpacked)

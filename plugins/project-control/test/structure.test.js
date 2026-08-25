@@ -24,6 +24,7 @@ const consoleComponent = readFileSync(new URL('../src/client/ProjectConsole.tsx'
 const consoleCss = readFileSync(new URL('../src/client/ProjectConsole.module.css', import.meta.url), 'utf8')
 const updateViewer = readFileSync(new URL('../src/client/ProgressUpdateViewer.tsx', import.meta.url), 'utf8')
 const httpSource = readFileSync(new URL('../src/http.ts', import.meta.url), 'utf8')
+const hostBundle = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
 
 test('declares the user-visible Project Control plugin and Personal Shell dependency', () => {
   assert.equal(manifest.name, '@cyrus/dsh-project-control')
@@ -37,6 +38,8 @@ test('declares the user-visible Project Control plugin and Personal Shell depend
   assert.equal(manifest.dependencies.ajv, '8.20.0')
   assert.equal(manifest.dependencies['ajv-formats'], '3.0.1')
   assert.ok(manifest.files.includes('migrations/*.sql'))
+  assert.doesNotMatch(hostBundle, /from ["']ajv(?:\/dist\/2020\.js)?["']/)
+  assert.doesNotMatch(hostBundle, /from ["']ajv-formats["']/)
 })
 
 test('owns one versioned Host API and keeps storage imports out of the HTTP layer', () => {
@@ -158,6 +161,8 @@ test('uses a locally-scoped CSS Module without global selectors', () => {
   assert.doesNotMatch(candidateCss, /(^|\n)\s*(html|body|button|input|textarea|select)(?:\s|,|\{)/)
   assert.doesNotMatch(consoleCss, /:global/)
   assert.doesNotMatch(consoleCss, /(^|\n)\s*(html|body|button|input|textarea|select)(?:\s|,|\{)/)
+  assert.match(candidateCss, /\.details\s*\{[^}]*overflow-y:\s*auto;/s)
+  assert.match(candidateCss, /\.actions\s*\{[^}]*position:\s*sticky;[^}]*bottom:\s*0;/s)
 })
 
 test('ships the P7 console pages, commands and typed open intents', () => {

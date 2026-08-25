@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；G0.5=`28d7c8c`、G1=`f5c58e5`、G2-P0=`8dff0e3`、G2-P1=`535185b`、G3=`1f8fcd6`、G4 Amazon 治理收口=`216cfc4`。Toolbox=`600b296`、Memory=`c0a0b03`；DSH Dev/Codex 治理 Skill 可回滚 shadow 投影、只读 memory-host 双端一致与 leak=0 均已通过。G4 Amazon 文件系统试迁已在 `F:\Projects\amazon-store` 验证完成并按约暂停，Project Control 身份/binding 未伪造；量化、食溯等待新决策。push/发布、真实 Stable/Dev 切换和旧项目源删除仍未授权，B1b 继续暂停。
+当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。Amazon 正式身份是 `prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd`，canonical workspace 是 `F:\Projects\amazon-store\workspace`；旧 Kimi 目录仍在 Amazon Project Home 归档区。B-G4-0 `0.1.0-rc.9` 候选与 G2-P2 logical task/package-set 机器闭环均已本地通过，正式全量 826/826；packed 复用现有 `f515424f...`，没有新增第四套。经 Cyrus 精确授权，superseded `496b3357...` 已通过生命周期 receipt 删除，当前两套包均受管且 unknown/missing=0。候选尚未 commit/push/publish/install，真实 Stable 数据库与 binding 未改；下一步是精确 commit/发布链授权，不得直接跳到 Stable rebind。
 
 ## 权威链
 

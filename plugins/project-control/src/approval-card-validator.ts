@@ -820,7 +820,7 @@ function gateChecklistPassed(checklist: unknown): boolean {
 function isSensitivePath(rawPath: string): boolean {
   const normalized = rawPath.replace(/\\/g, '/').replace(/\/+$/, '')
   const segments = normalized.split('/').filter(Boolean)
-  const basename = segments.length > 0 ? segments[segments.length - 1] : ''
+  const basename = segments.at(-1) ?? ''
   if (segments.includes('migrations')) return true
   if (segments[0] === 'protocol') return true
   if (segments.includes('templates')) return true

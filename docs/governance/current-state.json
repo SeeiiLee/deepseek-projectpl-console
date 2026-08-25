@@ -1,22 +1,22 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T09:27:00.000Z",
+  "recordedAt": "2026-08-25T16:14:40.826Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-g4-amazon-filesystem-pilot-verified-paused",
+    "status": "canonical-workspace-b-g4-g2-p2-validated-release-gated",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "216cfc481dd7084872272b51795864bd39443d14",
-    "headAtRecord": "216cfc481dd7084872272b51795864bd39443d14",
-    "workingTreeState": "g4-amazon-filesystem-pilot-governance-committed-state-advance-candidate",
-    "commitAuthorized": true,
-    "lastAuthorizedCommit": "216cfc481dd7084872272b51795864bd39443d14",
+    "approvedParentCommit": "f3fba16caa3581da816acf8faa529d55fb03ca2e",
+    "headAtRecord": "f3fba16caa3581da816acf8faa529d55fb03ca2e",
+    "workingTreeState": "b-g4-0-plus-g2-p2-candidate-uncommitted",
+    "commitAuthorized": false,
+    "lastAuthorizedCommit": "f3fba16caa3581da816acf8faa529d55fb03ca2e",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
@@ -26,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g4-amazon-filesystem-pilot-verified-paused-for-human-observation",
+    "phase": "b-g4-0-project-control-rebind-hotfix",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -132,22 +132,22 @@
       }
     },
     "g2": {
-      "status": "p1-committed-local-not-pushed-not-published",
+      "status": "p2-local-validated-not-committed",
       "bootLogRelativePath": "logs\\boot-error.log",
       "managedPackageSetsRoot": "Project Home\\local\\package-sets",
-      "managedPackageSetCount": 1,
-      "packageSetTreeHash": "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
-      "packageSetFiles": 5244,
-      "packageSetBytes": 837790443,
+      "managedPackageSetCount": 2,
+      "activePackageSetTreeHash": "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5",
+      "managedPackageSetBytes": 1675860401,
       "buildReceiptSchemaVersion": 3,
       "packageSetReusedWithoutDrift": true,
       "legacyArtifactEvidenceUnchanged": true,
       "temporaryProfileCountAfter": 0,
       "smokeProcessCountAfter": 0,
       "registrySchema": "local-object-registry/v1",
-      "registryRevision": 9,
-      "registeredObjects": 1,
-      "registeredRuns": 0,
+      "registryRevision": 38,
+      "registeredObjectsIncludingDeleted": 4,
+      "registeredLiveObjects": 3,
+      "registeredRuns": 1,
       "retentionPolicy": "recommended-v1",
       "retentionSemantics": "outside-recent-count-AND-older-than-minimum-age",
       "maximumRegisteredBytes": 21474836480,
@@ -156,11 +156,30 @@
       "scheduleOverdueGraceHours": 12,
       "schedulerHealth": "healthy",
       "cleanupBootstrapReceipt": "../local/receipts/op-g2-p1-lifecycle-bootstrap-20260825-01-cleanup-receipt.json",
-      "physicalPackageSetCount": 1,
-      "packageSetProvenanceRecords": 2,
-      "formalFullTests": "818/818",
+      "physicalPackageSetCount": 2,
+      "packageSetProvenanceRecords": 5,
+      "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
+      "focusedTests": "g2-p2=7/7; lifecycle-plus-package-set=25/25",
       "windowsScheduledTaskCreated": false,
-      "deletionAcceptance": "task-owned-temporary-fixtures-only"
+      "deletionAcceptance": "task-owned fixtures plus Cyrus-authorized exact superseded package-set through lifecycle plan/apply/verify/receipt",
+      "g2P2Closure": {
+        "status": "closed-local-validated-not-committed",
+        "logicalTaskIdSource": "docs/governance/current-state.json::nextTask.id",
+        "claimSchema": "package-set-build-task/v1",
+        "claimRevision": 2,
+        "claimStatus": "completed",
+        "claimSourceReceiptHash": "f754adae4a01c3d9ff2a81ec04eeccf441ce091cab8055b6d20ae961674f25b1",
+        "claimPackageSetTreeHash": "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5",
+        "physicalCreatedByFormalTest": false,
+        "supersededDeletedSet": "496b33571511585f21cb5c42f2219e5c32c8405d74465cf69fb72aa050a8512d",
+        "deletedExpectedBytes": 838063243,
+        "authorizationReceipt": "../local/receipts/op_g2_p2_package_set_task_identity_20260826_01-cleanup-authorization.json",
+        "cleanupPlan": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-plan.json",
+        "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
+        "cleanupReceiptSha256": "559f2754856587b7a96f72c463bbb39313acbbd724146740fe981b85ef8de85f",
+        "unknownOrMissingObjects": 0,
+        "bG4RunStatus": "RETIRED-successful-run"
+      }
     },
     "g3": {
       "status": "committed-local-not-pushed-not-published",
@@ -176,8 +195,9 @@
       "stableMutation": false
     },
     "g4": {
-      "status": "amazon-filesystem-pilot-verified-paused",
+      "status": "amazon-identity-aligned-binding-and-kimi-compatibility-pending",
       "projectHome": "F:\\Projects\\amazon-store",
+      "canonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
       "workspaceFilesAfterGovernance": 5256,
       "copiedFiles": 5255,
       "copiedBytes": 3246852499,
@@ -192,8 +212,19 @@
       "checkoutGate": "1263 files",
       "launchGate": "passed",
       "diffCheck": "passed",
-      "identityState": "unresolved-unregistered",
+      "identityState": "resolved-existing-stable-project",
+      "projectId": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
+      "stableProjectName": "亚马逊运营主架构 · PRD",
+      "stableProjectMode": "linked_legacy",
+      "stableLocationId": "loc_01a01cb7-efbd-700e-92e0-59aec8ea1bb2",
+      "stableBindingPath": "F:\\documents\\Kimi\\Workspaces\\Amazon Store",
       "projectControlBinding": false,
+      "projectControlBindingState": "existing-stable-binding-still-points-to-legacy-kimi-path",
+      "devRegistrationRole": "test-only-non-authoritative",
+      "kimiWorkspaceId": "wd_amazon-store_7f6c65590a90",
+      "kimiAccessPath": "F:\\documents\\Kimi\\Workspaces\\Amazon Store",
+      "kimiCompatibilityState": "junction-not-yet-applied-or-accepted",
+      "identityAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_identity_alignment_20260825_01.json",
       "legacySourceDeleted": false,
       "quantMigrationStarted": false,
       "mealTrackerMigrationStarted": false
@@ -204,8 +235,32 @@
     "cyrus-quant-trading",
     "meal-tracker"
   ],
+  "bG4ProjectControlRebindHotfix": {
+    "status": "local-candidate-validated-g2-p2-closed-awaiting-release-authorization",
+    "amazonProjectId": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
+    "candidateId": "can_01a038b2-d821-7fac-ae47-fe28a94a5c78",
+    "candidateRevision": 2,
+    "targetPath": "F:\\Projects\\amazon-store\\workspace",
+    "legacySourceArchive": "F:\\Projects\\amazon-store\\local\\legacy-source\\amazon-store-before-g4-20260825",
+    "prepareState": "single-attempt-internal-error-no-lifecycle-submit",
+    "hostBlocker": "closed-in-local-rc9-candidate",
+    "uiBlocker": "closed-in-local-rc9-candidate",
+    "candidateVersion": "0.1.0-rc.9",
+    "candidateAssetSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
+    "candidateAssetBytes": 271580,
+    "isolatedGenerationReceipt": "../local/runs/b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json",
+    "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
+    "pluginGate": "18/18 packages; project-control=185/185",
+    "governanceGate": "22/22",
+    "packageSetGovernance": "passed: authoritative logical task claim completed, physicalCreated=false, exact superseded cleanup receipted, two managed sets remain",
+    "stableInstalled": false,
+    "realRebindExecuted": false,
+    "allowed": ["project-control-intake", "candidate-details-css", "tests-and-bundles", "v2-release-metadata", "release-allowlist", "local-fixture", "isolated-generation-test"],
+    "forbidden": ["migration", "database-schema", "b1b", "direct-stable-db-write", "real-stable-install", "real-rebind", "commit", "push", "publish", "delete"]
+  },
   "standingAuthorization": {
     "id": "governance-development-continuous-v1",
+    "status": "consumed-at-amazon-pilot-pause",
     "grantedBy": "Cyrus",
     "grantedAt": "2026-08-25T06:27:48.385Z",
     "localValidatedCommits": true,
@@ -217,8 +272,8 @@
     "scopeEnd": "pause-after-amazon-migration-pilot-verification"
   },
   "g4MigrationGate": {
-    "mode": "amazon-pilot-only",
-    "amazonStore": "filesystem-pilot-verified-paused-for-cyrus-observation",
+    "mode": "amazon-identity-aligned-cutover-pending",
+    "amazonStore": "identity-aligned-codex-canonical-observation-next",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
     "amazonAcceptanceReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01-acceptance.json",
@@ -226,17 +281,20 @@
     "amazonObservedBytes": 4380200492,
     "amazonDestinationWritten": true,
     "amazonDestination": "F:\\Projects\\amazon-store",
-    "amazonProjectControlIdentity": "unresolved-unregistered",
+    "amazonProjectControlIdentity": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
     "amazonProjectControlBinding": false,
+    "amazonStableBindingPath": "F:\\documents\\Kimi\\Workspaces\\Amazon Store",
+    "amazonCanonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
+    "amazonKimiCompatibility": "junction-not-yet-applied-or-accepted",
     "pauseAfterAmazonVerification": true,
     "cyrusQuantTrading": "not-authorized-pending-amazon-review",
     "mealTracker": "not-authorized-pending-amazon-review"
   },
   "blockingConditions": [
     "project_control_binding_still_points_to_legacy_d_path",
-    "dev_and_stable_project_id_conflict_unresolved",
-    "real_cross_harness_active_discovery_and_binding_not_yet_authorized",
-    "amazon_authoritative_project_id_and_project_control_binding_unresolved"
+    "amazon_stable_binding_still_points_to_legacy_kimi_path",
+    "project_control_rc9_candidate_uncommitted_unpublished_uninstalled",
+    "real_plugin_publish_install_and_rebind_not_authorized"
   ],
   "knownLimitations": [
     "legacy_workspace_artifacts_837754746_bytes_remain_preserved_outside_managed_local_pending_separate_cleanup_authorization",
@@ -249,7 +307,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "G4-AMAZON-HUMAN-OBSERVATION",
-    "goal": "Cyrus inspects F:\\Projects\\amazon-store. After that observation, decide the separate Project Control identity/binding action and whether to authorize Quant migration or resume B1b; meal-tracker remains last."
+    "id": "B-G4-0-RELEASE-AUTHORIZATION",
+    "goal": "Review the validated B-G4 plus G2-P2 receipt, then authorize an exact commit; push/plugins-v release, real Stable install, and a fresh read-only rebind preview remain separate fail-closed stages."
   }
 }

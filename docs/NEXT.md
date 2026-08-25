@@ -1,11 +1,11 @@
 # Next Development
 
-状态：**治理收敛优先，B1b 暂停**
+状态：**B-G4-0 与 G2-P2 本地候选已验收，等待精确 commit/发布链授权；B1b 暂停**
 当前 Stable：**0.4.5 已发布并完成真实插件更新验收**
 当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，G4 Amazon 治理收口=`216cfc4`，G3=`1f8fcd6`（Toolbox=`600b296`，Memory=`c0a0b03`，G2-P1=`535185b`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-25 当前唯一执行顺序**：G0.5/G1/G2/G3 已本地提交 → **G4 Amazon 文件系统试迁已完成并暂停** → Cyrus 人工观察 Amazon 新目录 → 另行决定 Project Control 身份/binding、量化迁移或恢复 B1b；食溯仍排最后。下方旧功能排期只作历史记录，不覆盖本指针。
+> **2026-08-26 当前唯一执行顺序**：B-G4-0 产品候选与 G2-P2 package-set 机器闭环均已本地验收，唯一一次正式全量 826/826，精确 superseded 清理已完成并写 receipt → Cyrus 复核最终 receipt → 单独授权后才允许精确 commit → push/`plugins-v*` 发布 → 真实 Stable 安装 → 再次只读核对候选并预览真实 rebind。commit、push/发布、Stable 安装和真实 rebind 仍是分开的失败关闭闸门；量化、食溯与 B1b 继续暂停。
 
 ## G0：当前收口任务
 
@@ -20,15 +20,21 @@
 9. [x] G0.5 冻结当前候选的逐文件清单与聚合 hash，确认 ignored `artifacts/`、package 和 run 均未进入候选；freeze receipt 位于 Project Home `local/receipts/`。
 10. [x] Cyrus 单独授权并完成 G0.5 精确提交：`28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`；未 push、未发布。
 
-G0.5、G1、G2 与 G3 已成为 Git 可重建本地基线；G3 的 Toolbox 18/18、Memory 6/6、双端可回滚投影与 leak=0 已通过。G4 Amazon 已在 `F:\Projects\amazon-store` 完成三分区文件试迁与机器验收，旧源保持不变，1.13 GB `Temp/tmp` 未重复复制。当前停在 **Cyrus 人工观察闸门**；未经新决定不得注册/bind Project Control、迁移量化/食溯或恢复 B1b。
+G0.5、G1、G2 与 G3 已成为 Git 可重建本地基线。G4 Amazon 文件复制和身份对齐已完成；旧源已同盘移动到 `F:\Projects\amazon-store\local\legacy-source\amazon-store-before-g4-20260825`，canonical workspace 未重做。Stable 项目仍 revision 1，数据库 active location 仍记录旧 Kimi 路径，path history 为空；候选 `can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 正确指向 canonical workspace。Host 身份证据和 UI 可达性缺陷已在本地 `0.1.0-rc.9` 候选关闭并完成隔离验收；真实 Stable 尚未安装该候选，不能声称 rebind 已可用。
+
+### B-G4-0 边界
+
+- 允许：Project Control intake 纯逻辑、CandidateDetails 局部 CSS、相关测试与 bundle、Project Control v2 独立发布元数据、发布脚本精确 allowlist/test、plugin lock、治理状态和本地 receipts。
+- 禁止：migration/DB schema、审批中心 B1b、第二套 rebind HTTP/存储逻辑、真实 Stable 安装或数据、既有 A 线 Release、Amazon 项目文件、量化/食溯、commit/push/publish。
+- 安全合同：`linked_legacy` rebind 使用已登记绑定的确定性 `legacy_fingerprint`，并要求至少一份已登记文档 hash 与新候选一致；没有交集就失败关闭。manifest 继续证明 candidate project_id，但不替代 legacy 身份证据。
 
 ## G1–G4：后续治理实现顺序
 
 - **G1 Project Home（已提交完成）**：`project-home/v1` schema/fixtures、Host 纯函数、三分区 Write Plan、三套不可变 `2.0.0` 模板和 W1–W4 组合验证已落地并提交为 `f5c58e5`；旧 `1.0.0` 只保留回放，primary workspace 只指向 `workspace`，整屋 plan 目标指向 Project Home。未修改 migration/DB schema/HTTP/UI/侧栏/收件箱，也未写真实 binding；未 push、未发布。
 - **G2 Local 生命周期（P0/P1 已本地全量验收）**：`boot-error.log` 位于各实例 `userData\logs`；完整 `win-unpacked` 受 hash 守护；package set/run 创建即登记；`recommended-v1` policy、20 GiB 登记配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 和中断 journal 已实现。相同包体的不同来源证明写外部 provenance，不复制第二套 0.8 GiB 包。Windows 计划任务仍未创建；逾期时大任务入口失败关闭并要求补跑。
-- **G2 前临时 packed 规则**：人工/packed E2E 只从 F 盘 canonical 生成；一个任务最多一套按内容寻址的共享只读 package set，各隔离 run 只引用、不逐 run 复制。没有磁盘 preflight 和明确 packed 范围就不开跑。
+- **G2-P2 已本地关闭**：人工/packed E2E 只从 F 盘 canonical 生成；logical task ID 必须与权威 `current-state.nextTask.id` 一致。同任务 append-only claim 最多允许一次物理构建尝试；相同来源只能复用，来源变化或失败后重试均失败关闭并要求先登记新任务。正式测试复用 `f515424f...`，没有新增第四套；当前物理包为 `58adf7b2...` RETIRED + `f515424f...` ACTIVE。
 - **G3 跨 Harness（候选已验证）**：Toolbox 规范源已对 DSH Dev/Codex 完成可回滚 `applied_shadow` 投影；memory-host status/recall 单 host 双端结果一致、显式 `project_id`、leak=0。真实宿主 discovery、真实 Stable/binding 与记忆数据迁移未做，不能声称 active。
-- **G4 存量迁移（Amazon 文件试迁已完成）**：顺序仍为 Amazon Store → 量化 → meal_tracker/食溯。Amazon 的文件分类、复制、必要路径修复、治理入口和机器验收已完成；`project_id`/binding 刻意留作独立事务。现等待 Cyrus 观察新目录，量化、食溯不得自动开始，旧源目录删除不在连续授权内。
+- **G4 存量迁移（Amazon 身份已对齐，binding/兼容切换待办）**：顺序仍为 Amazon Store → 量化 → meal_tracker/食溯。Amazon 的文件分类、复制、必要路径修复、治理入口和机器验收已完成；正式 Stable `project_id` 已确认且写入 Project Home marker，Dev 仅作测试。接下来依次是 Codex canonical 观察、Kimi 可回滚兼容联接、Kimi 人工验收、Stable rebind；量化和食溯不得自动开始，旧源目录删除不在本任务授权内。
 
 ## 历史计划（以下内容不再是当前执行指针）
 

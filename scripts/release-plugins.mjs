@@ -18,7 +18,11 @@ import { EXPECTED_HARNESS_COMMIT, EXPECTED_HARNESS_VERSION } from './build-kit.m
 
 const projectRoot = resolve(import.meta.dirname, '..')
 const readJson = path => JSON.parse(readFileSync(path, 'utf8'))
-const PILOT_PACKAGES = new Set(['@cyrus/dsh-anysearch', '@cyrus/dsh-trajectory-island'])
+const DEFAULT_RELEASE_PACKAGES = new Set(['@cyrus/dsh-anysearch', '@cyrus/dsh-trajectory-island'])
+const EXTERNAL_RELEASE_PACKAGES = new Set([
+  ...DEFAULT_RELEASE_PACKAGES,
+  '@cyrus/dsh-project-control',
+])
 const DEFAULT_REPOSITORY = 'SeeiiLee/deepseek-projectpl-console'
 
 function parseArgs(argv) {
@@ -52,7 +56,7 @@ function parseArgs(argv) {
  * Parse explicit plugin selection from --plugin/--plugins.
  * Rejects unknown whitelist names, duplicates, and empty selections.
  */
-export function parsePluginSelection(argv, { allowed = PILOT_PACKAGES } = {}) {
+export function parsePluginSelection(argv, { allowed = EXTERNAL_RELEASE_PACKAGES } = {}) {
   const selected = []
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
@@ -259,7 +263,7 @@ function writeReleaseFiles(outDir, releaseTag, minClient, indexPlugins, localFix
   ].join('\n'))
 }
 
-function validateStaging(outDir, releaseTag, minClient, { publicOnly = false, expectedPlugins = PILOT_PACKAGES, bootstrap } = {}) {
+function validateStaging(outDir, releaseTag, minClient, { publicOnly = false, expectedPlugins = DEFAULT_RELEASE_PACKAGES, bootstrap } = {}) {
   const index = readJson(join(outDir, 'plugin-index.json'))
   const manifest = readJson(join(outDir, 'release-manifest.json'))
   if (index.releaseTag !== releaseTag) throw new Error(`plugin-index.releaseTag ${index.releaseTag} != ${releaseTag}`)
@@ -454,7 +458,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   const selectedPlugins = parsePluginSelection(process.argv.slice(2))
   if (selectedPlugins.size === 0) {
-    for (const name of PILOT_PACKAGES) selectedPlugins.add(name)
+    for (const name of DEFAULT_RELEASE_PACKAGES) selectedPlugins.add(name)
   }
   if (args.localFixture && args.publish) throw new Error('--local-fixture 与 --publish 不能同时使用')
   if (!args.localFixture && !args.publish) throw new Error('必须指定 --local-fixture 或 --publish')

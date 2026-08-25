@@ -1,5 +1,48 @@
 # Progress
 
+## 2026-08-26：G2-P2 package-set 任务身份与精确清理闭环完成
+
+- packed E2E 不再用 PID/时间戳冒充任务身份：`resolvePackedLogicalTaskId` 从 Project Home 已验证身份和 `docs/governance/current-state.json::nextTask.id` 取得稳定 logical task ID；可选环境覆盖若与权威指针不一致，返回 `PACKED_LOGICAL_TASK_ID_MISMATCH`。
+- 新增 append-only `package-set-build-task/v1` claim ledger：同一 logical task 跨 Node 进程只能 claim 一次物理构建，来源变化返回 `PACKAGE_SET_TASK_SOURCE_CHANGED`，同来源重复 claim 返回 `PACKAGE_SET_TASK_ALREADY_CLAIMED`，失败 claim 不自动重试。G2-P2 真实 claim revision 2=`completed`，`physicalCreated=false`，正式 packed 复用了既有 `f515424f...`，物理包始终没有增加到第四套。
+- 新增 `authorized-superseded-package-set/v1` 清理计划：只接受 Project Home receipts 内 hash 固定、精确允许完整 package tree hash 的 Cyrus 授权；目标必须 RETIRED、零 live run 引用，superseder 必须 ACTIVE。apply 仍复用原有 registry revision、marker/tree hash、journal、verify 和 append-only receipt 合同。
+- 红测试为 5 tests / 0 pass / 5 fail；实现后 G2-P2 7/7，lifecycle/package-set 组合最终 25/25。唯一一次正式 `npm test` 为 826/826，fail/cancelled/skipped/todo=0；18 插件门禁通过，Project Control 保持 185/185。
+- 精确清理预览最初因 context receipt 只写了 `496b3357` 缩写而以 `AUTHORIZED_CLEANUP_SCOPE_MISSING` 失败关闭，未写计划、未删除；随后追加完整 hash 授权 supplement，未覆盖原 receipt。最终 plan 只含 `pkg_496b3357...8512d`，registry revision 36、838,063,243 bytes、RETIRED、引用 0，`f515424f...` ACTIVE。
+- lifecycle apply receipt=`local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json`，状态 `applied-and-verified`，只删除批准的 `496b3357...`，释放的计划字节 838,063,243；registry revision 37。后验仅余 `58adf7b2...` RETIRED 与 `f515424f...` ACTIVE，两者各精确命中一条 live registry，unknown/missing=0。B-G4 验收 run 已完成为 RETIRED/successful-run，registry revision 38。
+- 删除对象不能直接恢复，但它是 superseded 中间 build；可在恢复其 source receipt 对应源码状态后重新构建。未删除 A 线证据、Amazon 文件、真实 Stable 数据或另外两套 package set；未 commit/push/publish/install/rebind。G2-P2 阻断关闭，下一步回到 B-G4 精确 commit/发布链授权闸门。
+
+## 2026-08-25：B-G4-0 收口发现 G2 package-set 任务身份漏洞，发布暂停
+
+- B-G4-0 产品候选和本地验收本身保持通过，但在写最终 receipt 前发现正式 `npm test` 的 packed E2E 使用 `g2-p0-formal-${process.pid}` 作为 `operationId`；同一逻辑任务的两次全量运行因此被生命周期系统误判为两个任务，没有执行“每任务最多新增一套物理 package set”的限制。
+- 本任务新增了两套已登记、可审计的 package set：`sha256-496b3357...`（838,063,243 bytes，`taskId=g2-p0-formal-44820`，RETIRED）与 `sha256-f515424f...`（838,063,627 bytes，`taskId=g2-p0-formal-30088`，ACTIVE），合计 1,676,126,870 bytes；任务前既有 `sha256-58adf7b2...` 保持 RETIRED。三套均有 `package-set.json`、build receipt 和 registry 记录，不是 unknown/unmanaged 文件。
+- 两套新包来自候选在 typecheck 修复前后的真实字节差异；首套与最终套的源码证明差异包含 `plugin-set.lock.json`。最终候选仍是 `f515424f...` 对应状态，不能把首套 `496b3357...` 当成最终发布依据。
+- 没有删除、覆盖或手工改台账；B-G4 run 继续保持 ACTIVE，最终任务 receipt 暂不生成。发布、commit、push、Stable 安装和真实 rebind 全部暂停，先等待 Cyrus 批准 G2-P2：稳定逻辑 task identity、同任务物理包上限的跨进程失败关闭、机器回归测试，以及通过生命周期计划处理 superseded same-task set 的受控路径。
+
+## 2026-08-25：B-G4-0 本地候选完成并停在真实发布/安装闸门
+
+- `linked_legacy` relocation 不再伪造 `managed_manifest`：Host 使用所有已登记 binding 的稳定排序摘要生成 `legacy_fingerprint`，并要求新候选至少一份文档 SHA-256 与已登记文档相交；无交集返回 `IDENTITY_EVIDENCE_REQUIRED`，不提交 lifecycle。
+- CandidateDetails 已补内部纵向滚动和底部 sticky action，长候选的确认操作可达；没有新增第二套 rebind HTTP/存储路径。
+- Project Control 升为未发布的 `0.1.0-rc.9` v2 独立候选；Ajv 及其运行依赖只打入 Host bundle，发布 allowlist 只精确开放 Project Control，默认发布集合未扩大，Memory 仍禁止外置。
+- 最终本地单插件资产 `cyrus-dsh-project-control-0.1.0-rc.9.tgz` 为 271,580 bytes，SHA-256=`01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca`；index、release manifest、plugin lock 一致。
+- 最终隔离验收完成 `rc.8 builtin → rc.9 external generation → Host import → activation commit → builtin rollback`，临时 profile 已删除；PASS receipt 位于受管 run `b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json`。
+- 验收脚本第一次把 profile scope 组合视图错当成插件实体而失败；失败 receipt 与修正后 PASS receipt 均保留，未覆盖。随后 typecheck 又发现 8 个 Project Control 既有/本次可空值错误，全部做最小收窄并重建最终资产，旧 `15c36c...` fixture 只作 superseded 证据。
+- 最终门禁：`npm test` 819/819（fail/cancelled/skipped/todo=0）；`npm run check:plugins` 全部 18 插件通过，Project Control 185/185；governance 22/22、checkout 1,264 files、launch、lock check、`git diff --check` 全绿。
+- 全程未改 migration/DB schema/B1b/真实 Stable/A 线 Release/Amazon 文件，未 commit/push/publish/install/rebind/delete。下一步必须由 Cyrus 单独授权候选提交、发布、真实 Stable 安装和真实 rebind。
+
+## 2026-08-25：B-G4-0 rebind hotfix 开工基线
+
+- Cyrus 批准先走治理闭环，再复用 A 线 generation 逻辑修复 Project Control；真实发布和 Stable 安装保留为独立门禁。
+- Amazon 旧目录已同盘移动到 `F:\Projects\amazon-store\local\legacy-source\amazon-store-before-g4-20260825`，未删除、未复制；文件系统 receipt 与预操作 DB 备份位于 Amazon Project Home `local`。
+- Stable 只读复核：候选 `can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 为 `relocation_candidate`，manifest project_id 与正式 ID 一致，目标是 canonical workspace；项目仍 revision 1、旧 location active、path history 为空、integrity=`ok`。
+- 唯一一次获批 prepare 在 lifecycle 提交前返回 `INTERNAL_ERROR`；失败后立即停止且未重试。根因是 `linked_legacy` relocation 固定构造 `managed_manifest`，同时 CandidateDetails 缺少内部滚动。
+- 本任务不改 migration/DB schema/审批 B1b/真实 Stable/受保护 F 数据，不 commit/push/publish；先红测试，再实现，再做一套共享 package set 的隔离插件更新验收。
+
+## 2026-08-25：Amazon 正式身份与治理权威状态纠偏
+
+- Cyrus 明确：Dev 只作测试，所有正式项目身份以 Stable 或正式宿主为准；因此旧 `dev_and_stable_project_id_conflict_unresolved` 不再是正式身份阻断。
+- 对 Stable Project Control SQLite 以 `readOnly + PRAGMA query_only=ON` 复核：`prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd` 唯一命中「亚马逊运营主架构 · PRD」，`mode=linked_legacy`、`origin_kind=imported`、`lifecycle=active`、revision 1；active primary location 为 `loc_01a01cb7-efbd-700e-92e0-59aec8ea1bb2`，仍指向 `F:\documents\Kimi\Workspaces\Amazon Store`。
+- Amazon Project Home 已写入与 Stable ID 一致的正式 `project-home/v1` marker 和 `.dsh-project/project.yaml`；原 `project-home.pending.json` 原样保留为迁移前历史证据，不再作为当前入口。
+- 当前只完成治理身份对齐，没有修改 Stable 数据库、binding、Kimi 配置或目录，没有创建 junction，没有移动/删除旧 Amazon 目录。下一步是让 Amazon 的 Codex 任务从 canonical workspace 做观察；Kimi 兼容切换和 Stable rebind 仍分别失败关闭。
+
 ## 2026-08-25：G4 Amazon 文件系统试迁完成并按约暂停
 
 - Cyrus 明确把本轮缩回简单文件迁移：Amazon 的 Skill、MCP/工具、课程和调研/业务资料进入 `F:\Projects\amazon-store\workspace`，3 个加密文件只进入 `local/secure`；Project Control 注册/binding 不再作为复制前置条件，也没有伪造 `project_id`。

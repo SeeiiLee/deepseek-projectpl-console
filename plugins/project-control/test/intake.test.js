@@ -463,6 +463,173 @@ test('an accepted signed rebind replays before the relocation candidate is resol
   assert.equal(storage.listOutbox().length, 2)
 })
 
+test('a linked legacy relocation uses deterministic legacy evidence before rebinding', async t => {
+  const fixture = await setupLinkedLegacyRelocation(t)
+  const command = await fixture.runtime.intake.prepareCandidate(fixture.candidate.candidateId, {
+    registrationMode: 'managed',
+    name: fixture.candidate.suggestedName,
+    expectedRevision: fixture.candidate.revision,
+    documentBindings: [],
+  })
+
+  assert.equal(validateLifecycleCommand(command).ok, true)
+  assert.equal(command.kind, 'project.rebindLocation')
+  assert.equal(command.payload.expectedMode, 'linked_legacy')
+  assert.equal(command.payload.identityEvidence.kind, 'legacy_fingerprint')
+  assert.deepEqual(command.payload.identityEvidence.contentHashes, [fixture.registeredContentHash])
+  assert.match(command.payload.identityEvidence.fingerprintHash, /^sha256:[0-9a-f]{64}$/)
+
+  const forgedEvidence = structuredClone(command)
+  forgedEvidence.payload.identityEvidence.fingerprintHash = `sha256:${'f'.repeat(64)}`
+  assert.equal(await fixture.runtime.referenceResolver.resolveRebind(forgedEvidence), null)
+
+  const rebound = await submitLifecycle(fixture.origin, command)
+  assert.equal(rebound.status, 'accepted')
+  assert.equal(rebound.outcome, 'location_rebound')
+  const project = fixture.storage.getProject(fixture.projectId)
+  assert.equal(project.mode, 'linked_legacy')
+  assert.equal(
+    testWindowsPathKey(project.workspaceLocations.find(location => location.isActive)?.normalizedPath),
+    testWindowsPathKey(fixture.candidate.root.normalizedPath),
+  )
+})
+
+test('a linked legacy relocation without a matching registered document fails closed', async t => {
+  const fixture = await setupLinkedLegacyRelocation(t, {
+    relocationContentHash: `sha256:${'b'.repeat(64)}`,
+  })
+
+  await assert.rejects(fixture.runtime.intake.prepareCandidate(fixture.candidate.candidateId, {
+    registrationMode: 'managed',
+    name: fixture.candidate.suggestedName,
+    expectedRevision: fixture.candidate.revision,
+    documentBindings: [],
+  }), error => error?.code === 'IDENTITY_EVIDENCE_REQUIRED')
+  assert.equal(fixture.storage.getProject(fixture.projectId).revision, 1)
+})
+
+async function setupLinkedLegacyRelocation(t, options = {}) {
+  const tempRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-intake-legacy-rebind-'))
+  const oldRoot = join(tempRoot, 'Legacy Project Old')
+  const newRoot = join(tempRoot, 'Legacy Project New')
+  await mkdir(oldRoot)
+  const storage = await openProjectControlStorage({
+    databasePath: join(tempRoot, 'project-control.sqlite3'),
+    migrationsDirectory,
+    applicationVersion: '0.1.0-test',
+    instanceId: 'intake-legacy-rebind-test-writer',
+  })
+  t.after(() => {
+    storage.close()
+    return rm(tempRoot, { recursive: true, force: true })
+  })
+
+  const registeredContentHash = `sha256:${'a'.repeat(64)}`
+  let activeRoot = oldRoot
+  let detectedMode = 'linked_legacy'
+  let documentHash = registeredContentHash
+  let manifest = null
+  const observedAt = new Date().toISOString()
+  const scanner = {
+    async scanSourceDirectory() { assert.fail('unexpected source-root scan') },
+    async scanProjectDirectory(path) {
+      assert.equal(resolve(path), resolve(activeRoot))
+      return {
+        mode: 'single_project',
+        rootPath: { displayPath: activeRoot, normalizedPath: resolve(activeRoot) },
+        sourceRoot: null,
+        scannerVersion: 'legacy-rebind-test/1',
+        status: 'completed',
+        startedAt: observedAt,
+        completedAt: observedAt,
+        summary: { candidateCount: 1, documentCount: 1, issueCount: 0 },
+        candidates: [{
+          root: { displayPath: activeRoot, normalizedPath: resolve(activeRoot) },
+          detectedMode,
+          manifestProjectId: manifest?.projectId ?? null,
+          suggestedName: 'Legacy Relocation Project',
+          confidence: {
+            level: 'high',
+            evidence: ['README.md'],
+            ...(manifest === null ? {} : { manifest }),
+          },
+          status: 'discovered',
+          documents: [{
+            relativePath: 'README.md',
+            suggestedRole: 'readme',
+            sha256: documentHash,
+            title: 'Legacy Relocation Project',
+            preview: '# Legacy Relocation Project',
+            observedAt,
+            evidence: { signals: ['filename:README.md'] },
+          }],
+          issues: [],
+        }],
+      }
+    },
+  }
+  const secret = 'legacy-rebind-test-selection-secret-long-enough'
+  const runtime = createProjectControlIntakeRuntime({
+    storage,
+    scanner,
+    selectionSecret: secret,
+    applicationInstanceId: 'host-legacy-rebind-test',
+    applicationVersion: '0.1.0-test',
+  })
+  const origin = await serveLifecycleRuntime(t, storage, runtime)
+  const firstScan = await runtime.intake.scan({
+    mode: 'project-root',
+    selection: {
+      path: oldRoot,
+      authorization: issueProjectControlSelectionTicket({ kind: 'project-root', path: oldRoot, secret }),
+    },
+  })
+  const initial = firstScan.candidates[0]
+  const register = await runtime.intake.prepareCandidate(initial.candidateId, {
+    registrationMode: 'linked_legacy',
+    name: initial.suggestedName,
+    expectedRevision: initial.revision,
+    documentBindings: [{ role: 'readme', relativePath: 'README.md', contentHash: registeredContentHash }],
+  })
+  const registered = await submitLifecycle(origin, register)
+  assert.equal(registered.status, 'accepted')
+
+  await rename(oldRoot, newRoot)
+  activeRoot = newRoot
+  detectedMode = 'managed'
+  documentHash = options.relocationContentHash ?? registeredContentHash
+  manifest = {
+    projectId: registered.projectId,
+    hash: `sha256:${'c'.repeat(64)}`,
+    name: 'Legacy Relocation Project',
+    relativePath: '.dsh-project/project.yaml',
+    origin: { kind: 'imported' },
+    documentBindings: [{
+      role: 'readme',
+      relativePath: 'README.md',
+      contentHash: documentHash,
+      required: true,
+    }],
+  }
+  const relocationScan = await runtime.intake.scan({
+    mode: 'project-root',
+    selection: {
+      path: newRoot,
+      authorization: issueProjectControlSelectionTicket({ kind: 'project-root', path: newRoot, secret }),
+    },
+  })
+  const candidate = relocationScan.candidates[0]
+  assert.equal(candidate.status, 'relocation_candidate')
+  return {
+    candidate,
+    origin,
+    projectId: registered.projectId,
+    registeredContentHash,
+    runtime,
+    storage,
+  }
+}
+
 async function serveLifecycleRuntime(t, storage, runtime) {
   const read = {
     getStatus() {

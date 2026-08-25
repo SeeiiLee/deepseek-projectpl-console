@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-project-control",
   "description": "项目控制台：扫描、审阅并只读关联现有项目，保留真实数据库状态与项目列表。",
-  "version": "0.1.0-rc.8",
+  "version": "0.1.0-rc.9",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -46,12 +46,98 @@
     "react": "^18.2.0"
   },
   "dshComposable": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "role": "core",
-    "supports": {
-      "harness": [
-        "0.1.1-rc.2"
+    "compatibleHarness": {
+      "versionRange": "0.1.1-rc.2",
+      "commits": [
+        "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
       ]
+    },
+    "minClient": "0.4.5",
+    "seams": [],
+    "desktopCapabilities": [
+      "projectControl.selectDirectory"
+    ],
+    "requires": {
+      "packages": [
+        "@cyrus/dsh-personal-shell",
+        "@cyrus/dsh-workbench"
+      ],
+      "services": [
+        "webServer"
+      ]
+    },
+    "dependencies": {
+      "ajv": "8.20.0",
+      "ajv-formats": "3.0.1"
+    },
+    "peerDependencies": {
+      "@cyrus/dsh-personal-shell": "*",
+      "@cyrus/dsh-workbench": "*",
+      "@deepseek-ai/cordis": "^4.0.1",
+      "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
+      "@deepseek-ai/dsh-client-ui-slots": "0.1.1-rc.2",
+      "react": "^18.2.0"
+    },
+    "nativeDependencies": [],
+    "externalCommands": [],
+    "dataSchema": {
+      "owned": true,
+      "readableVersions": [
+        "9"
+      ],
+      "migrations": [],
+      "rollbackCompatible": true
+    },
+    "modelAssets": [],
+    "files": {
+      "list": [
+        "lib/client.js",
+        "lib/client.js.map",
+        "lib/index.js",
+        "migrations/0001_core_control_plane.sql",
+        "migrations/0002_registration_state.sql",
+        "migrations/0003_intake_discovery.sql",
+        "migrations/0004_windows_path_nocase.sql",
+        "migrations/0005_windows_unicode_path_key.sql",
+        "migrations/0006_file_sync_plans.sql",
+        "migrations/0007_file_sync_plan_refs.sql",
+        "migrations/0008_document_index.sql",
+        "migrations/0009_external_runtime.sql",
+        "package.json",
+        "templates/minimal-standard/1.0.0/template.json",
+        "templates/minimal-standard/2.0.0/template.json",
+        "templates/research-standard/1.0.0/template.json",
+        "templates/research-standard/2.0.0/template.json",
+        "templates/software-standard/1.0.0/template.json",
+        "templates/software-standard/2.0.0/template.json"
+      ],
+      "sha256": {
+        "lib/client.js": "74b064710dc0dcf34b0fbfd6aaaddcb4b296e806680f34243a02decc2a95f3a1",
+        "lib/client.js.map": "73dfb9d0376f61a6b21f80edeabe0c28905871591eee1b5172e7e8ff25d98191",
+        "lib/index.js": "7bac4d0ef8e881def6834fc46775595da544307cca5f59fa24c5b912c36ac227",
+        "migrations/0001_core_control_plane.sql": "303c5e921c298e0085652dc253f80322ec8e6febea188de00f3b0a12d54fef50",
+        "migrations/0002_registration_state.sql": "1d8705ec54ade9ba84e6d7eff46780a639f42d945242a253ab03f435bc2a2d08",
+        "migrations/0003_intake_discovery.sql": "8d6d3075cf952d919239ac95792ee0130dbf2e37f47168ca98e23ef5dc415ab3",
+        "migrations/0004_windows_path_nocase.sql": "ac465a2e4867d62852c3778a097b3380660bcacae0c297b094fa84ea78546560",
+        "migrations/0005_windows_unicode_path_key.sql": "143061e707f794c16f26b4b05858722b7b4e1249adf752e328e1d23c279d19f5",
+        "migrations/0006_file_sync_plans.sql": "117f1147648123ec7dc75739ea2d8fb7c443155201c9bd838eb44b1bc6b6b4ac",
+        "migrations/0007_file_sync_plan_refs.sql": "74ecd9e101ef3710131cf81bc80b037fb4dbaeed3c24129dcadecd7087f1b8fe",
+        "migrations/0008_document_index.sql": "1c3377b6588f9969cb7fbba3ca93a7ca7265b371ea77fb140ea935521173874a",
+        "migrations/0009_external_runtime.sql": "bf371c5c72151f5c63a28b27d6976676a702d1e4a7c016e5c5eee449f2794304",
+        "package.json": "96a2c0ebd5621f626c67410f910d5277cfd7ee5ea1e02e6048ac13c81bf4765a",
+        "templates/minimal-standard/1.0.0/template.json": "4e7ef5aaa96942dbc7243eef35684710fb2991a6004bc33a6e2502dad248fb8e",
+        "templates/minimal-standard/2.0.0/template.json": "a370b527fcf192839be68dec13a33b5f75e02d02d88b0d5b09723c4e71d369e8",
+        "templates/research-standard/1.0.0/template.json": "80fa0507cd3d6a69f8f9e743c13cd7ae8752dcd793c90d885b91d1e3dcc4b152",
+        "templates/research-standard/2.0.0/template.json": "e54b869a3b3f06412133cc71a2d6f0f073e62d453e2f22d87b47f7a2434fb1c8",
+        "templates/software-standard/1.0.0/template.json": "28ddfc83fe3516b3c60a70fec78d4fe64246a681a68bf986720f1d772720e6ee",
+        "templates/software-standard/2.0.0/template.json": "4a9776f914ba4dd532a3dc182ea514251588362ac698978ec6a9645014ca6f74"
+      }
+    },
+    "release": {
+      "batch": "B-G4-0",
+      "source": "a-line-generation-channel"
     }
   }
 }

@@ -8,6 +8,7 @@ import { dirname, join, resolve, sep } from 'node:path'
 export const EXTERNAL_PLUGIN_WHITELIST = Object.freeze([
   '@cyrus/dsh-anysearch',
   '@cyrus/dsh-trajectory-island',
+  '@cyrus/dsh-project-control',
 ])
 
 export const BATCH_SCHEMA_VERSION = 1

@@ -170,6 +170,10 @@ test('parsePluginSelection 接受单个/多个白名单插件并拒绝未知/重
     [...parsePluginSelection(['--plugins', '@cyrus/dsh-anysearch,@cyrus/dsh-trajectory-island'])],
     ['@cyrus/dsh-anysearch', '@cyrus/dsh-trajectory-island'],
   )
+  assert.deepEqual(
+    [...parsePluginSelection(['--plugin', '@cyrus/dsh-project-control'])],
+    ['@cyrus/dsh-project-control'],
+  )
   assert.throws(() => parsePluginSelection(['--plugins', '@cyrus/dsh-memory']), /未知插件/u)
   assert.throws(() => parsePluginSelection(['--plugin', '@cyrus/dsh-anysearch', '--plugin', '@cyrus/dsh-anysearch']), /重复插件/u)
   assert.throws(() => parsePluginSelection(['--plugins', '']), /不能为空/u)
