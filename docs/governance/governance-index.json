@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T16:35:43.378Z",
+  "generatedAt": "2026-08-25T17:21:48.8462650Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -46,7 +46,7 @@
     }
   },
   "packedTestPolicy": {
-    "status": "g2-p2-committed-local-not-pushed-not-published",
+    "status": "g2-p2-committed-and-pushed-as-ancestor-not-separately-published",
     "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
     "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
     "managedRoot": "Project Home\\local\\package-sets",
@@ -155,7 +155,7 @@
       "contentSha256": "B5559F81E248128A62DC7AB6CE61E6C74A0A06764DB0842D0741AD4D5495790B"
     },
     "bG4ProjectControlRebindHotfix": {
-      "status": "committed-local-g2-p2-closed-awaiting-push-release-authorization",
+      "status": "source-pushed-release-published-awaiting-stable-install-authorization",
       "candidateId": "can_01a038b2-d821-7fac-ae47-fe28a94a5c78",
       "targetPath": "F:\\Projects\\amazon-store\\workspace",
       "identityRule": "linked_legacy relocation uses deterministic legacy_fingerprint and at least one registered document hash must match the fresh candidate",
@@ -163,14 +163,24 @@
       "candidateVersion": "0.1.0-rc.9",
       "candidateAssetSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
       "commit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+      "sourceBranch": "codex/governance-alignment",
+      "sourceBranchHead": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+      "releaseTag": "plugins-v2026.08.25.1",
+      "releaseTagCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+      "releaseId": 376569643,
+      "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.25.1",
+      "releaseAssetCount": 4,
+      "releaseReceipt": "../local/receipts/op_b_g4_0_project_control_rc9_release_resume_20260826_01.json",
+      "releaseReceiptSha256": "83d798639bc7e6be155feb96aea117260529a1ad1595f2ac71a332cba6fc1cdd",
+      "stateAlignmentReceipt": "../local/receipts/op_b_g4_0_release_state_alignment_20260826_01.json",
       "commitReceipt": "../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json",
       "isolatedGenerationReceipt": "../local/runs/b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json",
       "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
-      "next": "B-G4-0-PUSH-RELEASE-AUTHORIZATION",
+      "next": "B-G4-0-STABLE-INSTALL-AUTHORIZATION",
       "forbidden": ["migration-or-database-schema", "b1b", "direct-stable-database-write", "real-stable-install-or-rebind", "push-publish-delete-without-new-authorization"]
     },
     "g1ProjectHome": {
-      "status": "committed-local-not-pushed-not-published",
+      "status": "committed-and-pushed-as-ancestor-not-separately-published",
       "schema": "protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json",
       "templates": [
         "minimal-standard@2.0.0",
@@ -185,7 +195,7 @@
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     },
     "g2PackedImmutability": {
-      "status": "p2-committed-local-not-pushed-not-published",
+      "status": "p2-committed-and-pushed-as-ancestor-not-separately-published",
       "activeManagedPackageSetTreeHash": "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5",
       "managedPackageSetCount": 2,
       "buildReceiptSchemaVersion": 3,
@@ -212,10 +222,10 @@
       "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
       "unknownOrUnmanagedObjects": 0,
       "deletionPerformed": true,
-      "next": "B-G4-0-PUSH-RELEASE-AUTHORIZATION"
+      "next": "B-G4-0-STABLE-INSTALL-AUTHORIZATION"
     },
     "g3CrossHarness": {
-      "status": "committed-local-not-pushed-not-published",
+      "status": "main-commit-pushed-as-ancestor-toolbox-and-memory-repositories-local-not-published",
       "toolboxProjectHome": "F:\\Projects\\toolbox",
       "toolboxCommit": "600b296a57685609426138733ff8745196425c86",
       "toolboxTests": "18/18",

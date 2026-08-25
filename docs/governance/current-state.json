@@ -1,22 +1,22 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T16:35:43.378Z",
+  "recordedAt": "2026-08-25T17:21:48.8462650Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-b-g4-g2-p2-committed-local-release-gated",
+    "status": "canonical-workspace-b-g4-rc9-release-published-stable-install-gated",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
-    "headAtRecord": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
-    "workingTreeState": "b-g4-0-plus-g2-p2-committed-local-governance-reconciliation",
-    "commitAuthorized": true,
-    "lastAuthorizedCommit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+    "approvedParentCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+    "headAtRecord": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+    "workingTreeState": "release-published-governance-state-alignment-uncommitted",
+    "commitAuthorized": false,
+    "lastAuthorizedCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
@@ -26,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "b-g4-0-committed-local-awaiting-push-release-authorization",
+    "phase": "b-g4-0-source-pushed-release-published-awaiting-stable-install-authorization",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -46,17 +46,37 @@
     "candidateFreezeReceipt": "../local/receipts/op_g0_5_candidate_freeze_20260825_01.json",
     "g1Receipt": "../local/receipts/op_g1_project_home_20260825_01.json",
     "g1CommitReceipt": "../local/receipts/op_g1_project_home_20260825_01-commit.json",
+    "releaseStateAlignmentContextReceipt": "../local/receipts/op_b_g4_0_release_state_alignment_20260826_01-context.json",
+    "releaseSource": {
+      "productCommit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+      "governanceCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+      "remoteBranch": "codex/governance-alignment",
+      "remoteBranchCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+      "tag": "plugins-v2026.08.25.1",
+      "tagCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+      "releaseId": 376569643,
+      "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.25.1",
+      "draft": false,
+      "prerelease": false,
+      "assetCount": 4,
+      "packageSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
+      "releaseReceipt": "../local/receipts/op_b_g4_0_project_control_rc9_release_resume_20260826_01.json",
+      "releaseReceiptSha256": "83d798639bc7e6be155feb96aea117260529a1ad1595f2ac71a332cba6fc1cdd",
+      "stateAlignmentReceipt": "../local/receipts/op_b_g4_0_release_state_alignment_20260826_01.json",
+      "stableInstalled": false,
+      "realRebindExecuted": false
+    },
     "g0_5Commit": {
       "commit": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
       "parent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b",
-      "pushed": false,
+      "pushed": true,
       "published": false
     },
     "g1Commit": {
       "commit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
       "parent": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
       "candidateAggregateSha256": "728414A24D740258AD7482AB6E2D146118552FF7B1BF521E0B4F2004ACD3ADA2",
-      "pushed": false,
+      "pushed": true,
       "published": false
     },
     "g2P0Commit": {
@@ -65,7 +85,7 @@
       "candidateAggregateSha256": "3369241FB39A37CA50C6520D7BB6D198BF5E53BF0A774078AE002A4CE47785D7",
       "receipt": "../local/receipts/op_g2_p0_20260825_01.json",
       "commitReceipt": "../local/receipts/op_g2_p0_20260825_01-commit.json",
-      "pushed": false,
+      "pushed": true,
       "published": false
     },
     "g2P1Commit": {
@@ -74,7 +94,7 @@
       "candidateAggregateSha256": "493EA5BDD7A836686F6EED6411480AC38FF6A7ADA9749241006AC1EFA7F3291F",
       "receipt": "../local/receipts/op_g2_p1_20260825_01.json",
       "commitReceipt": "../local/receipts/op_g2_p1_20260825_01-commit.json",
-      "pushed": false,
+      "pushed": true,
       "published": false
     }
   },
@@ -101,7 +121,7 @@
       ]
     },
     "g1": {
-      "status": "committed-local-not-pushed-not-published",
+      "status": "committed-and-pushed-as-ancestor-not-separately-published",
       "projectHomeContract": "project-home/v1",
       "newTemplateVersions": [
         "minimal-standard@2.0.0",
@@ -132,7 +152,7 @@
       }
     },
     "g2": {
-      "status": "p2-committed-local-not-pushed-not-published",
+      "status": "p2-committed-and-pushed-as-ancestor-not-separately-published",
       "bootLogRelativePath": "logs\\boot-error.log",
       "managedPackageSetsRoot": "Project Home\\local\\package-sets",
       "managedPackageSetCount": 2,
@@ -163,7 +183,7 @@
       "windowsScheduledTaskCreated": false,
       "deletionAcceptance": "task-owned fixtures plus Cyrus-authorized exact superseded package-set through lifecycle plan/apply/verify/receipt",
       "g2P2Closure": {
-        "status": "closed-and-committed-local-not-pushed-not-published",
+        "status": "closed-committed-and-pushed-as-ancestor-not-separately-published",
         "logicalTaskIdSource": "docs/governance/current-state.json::nextTask.id",
         "claimSchema": "package-set-build-task/v1",
         "claimRevision": 2,
@@ -185,13 +205,16 @@
       }
     },
     "g3": {
-      "status": "committed-local-not-pushed-not-published",
+      "status": "main-commit-pushed-as-ancestor-toolbox-and-memory-repositories-local-not-published",
       "scope": "toolbox Skill projection plus memory-host status/recall on DSH Dev and Codex; no real Stable binding",
       "toolboxCommit": "600b296a57685609426138733ff8745196425c86",
       "memoryCommit": "c0a0b037152fbe01ca1d56692a3006a15c041641",
       "toolboxTests": "18/18",
       "memoryTests": "6/6",
       "mainCommit": "1f8fcd6d2d7d3aba88f8fe9af4f0bbe4daac84c7",
+      "mainCommitPushedAsAncestor": true,
+      "toolboxRepositoryPushed": false,
+      "memoryRepositoryPushed": false,
       "acceptanceReceipt": "../local/receipts/op_g3_cross_harness_20260825_01.json",
       "commitReceipt": "../local/receipts/op_g3_cross_harness_20260825_01-commit.json",
       "terminalState": "applied_shadow",
@@ -239,19 +262,33 @@
     "meal-tracker"
   ],
   "bG4ProjectControlRebindHotfix": {
-    "status": "committed-local-g2-p2-closed-awaiting-push-release-authorization",
+    "status": "source-pushed-release-published-awaiting-stable-install-authorization",
     "amazonProjectId": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
     "candidateId": "can_01a038b2-d821-7fac-ae47-fe28a94a5c78",
     "candidateRevision": 2,
     "targetPath": "F:\\Projects\\amazon-store\\workspace",
     "legacySourceArchive": "F:\\Projects\\amazon-store\\local\\legacy-source\\amazon-store-before-g4-20260825",
     "prepareState": "single-attempt-internal-error-no-lifecycle-submit",
-    "hostBlocker": "closed-in-local-rc9-candidate",
-    "uiBlocker": "closed-in-local-rc9-candidate",
+    "hostBlocker": "closed-in-published-rc9-not-yet-installed",
+    "uiBlocker": "closed-in-published-rc9-not-yet-installed",
     "candidateVersion": "0.1.0-rc.9",
     "candidateAssetSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
     "candidateAssetBytes": 271580,
     "commit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+    "sourceBranch": "codex/governance-alignment",
+    "sourceBranchHead": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+    "sourcePushed": true,
+    "releaseTag": "plugins-v2026.08.25.1",
+    "releaseTagCommit": "4658a6e337deaa5b4529f2fdc4066aabd487d787",
+    "releaseId": 376569643,
+    "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.25.1",
+    "releasePublished": true,
+    "releaseDraft": false,
+    "releasePrerelease": false,
+    "releaseAssetCount": 4,
+    "releaseReceipt": "../local/receipts/op_b_g4_0_project_control_rc9_release_resume_20260826_01.json",
+    "releaseReceiptSha256": "83d798639bc7e6be155feb96aea117260529a1ad1595f2ac71a332cba6fc1cdd",
+    "stateAlignmentReceipt": "../local/receipts/op_b_g4_0_release_state_alignment_20260826_01.json",
     "commitReceipt": "../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json",
     "isolatedGenerationReceipt": "../local/runs/b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json",
     "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
@@ -298,12 +335,13 @@
   "blockingConditions": [
     "project_control_binding_still_points_to_legacy_d_path",
     "amazon_stable_binding_still_points_to_legacy_kimi_path",
-    "project_control_rc9_candidate_committed_local_unpublished_uninstalled",
-    "real_plugin_publish_install_and_rebind_not_authorized"
+    "project_control_rc9_release_published_but_not_installed",
+    "real_plugin_install_and_rebind_not_authorized"
   ],
   "knownLimitations": [
     "legacy_workspace_artifacts_837754746_bytes_remain_preserved_outside_managed_local_pending_separate_cleanup_authorization",
-    "windows_scheduled_task_not_created; overdue large-run and package-build preflights fail closed until maintenance catches up"
+    "windows_scheduled_task_not_created; overdue large-run and package-build preflights fail closed until maintenance catches up",
+    "project_governance_context_script_not_projected_into_workspace; canonical toolbox skill source path was used for this alignment"
   ],
   "protectedPaths": [
     "D:\\Deepseek Harness",
@@ -312,7 +350,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "B-G4-0-PUSH-RELEASE-AUTHORIZATION",
-    "goal": "Review exact commit 2400410 and its receipt, then authorize the exact push plus plugins-v release; real Stable install and a fresh read-only rebind preview remain separate fail-closed stages."
+    "id": "B-G4-0-STABLE-INSTALL-AUTHORIZATION",
+    "goal": "Review public Release 376569643 and its exact digest receipt, then separately authorize Project Control 0.1.0-rc.9 installation through the existing A-line plugin update channel. After installation verification, re-read the Amazon relocation candidate and preview rebind as another independent fail-closed stage."
   }
 }

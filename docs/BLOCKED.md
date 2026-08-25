@@ -1,18 +1,18 @@
 # Blocked
 
-## 当前阻断（2026-08-25，B-G4-0 Project Control rebind hotfix）
+## 当前阻断（2026-08-26，B-G4-0 rc.9 已发布、Stable 安装与 rebind 待授权）
 
-- **G2-P2 发布前阻断已关闭并形成本地 Git 事实**：packed E2E 已改用权威 `current-state.nextTask.id`，append-only claim 跨进程限制每 logical task 一次物理构建且来源变化失败关闭。唯一一次正式 826/826 复用 `f515424f...`、`physicalCreated=false`；Cyrus 精确授权的 superseded `496b3357...` 已经 plan → journal → verify → receipt 删除，当前只剩两套受管包，unknown/missing=0；实现已随 `2400410` 提交。该关闭与提交均不构成 push/publish/Stable 安装授权。
+- **G2-P2 发布前阻断已关闭并形成可远端追溯的 Git 事实**：packed E2E 已改用权威 `current-state.nextTask.id`，append-only claim 跨进程限制每 logical task 一次物理构建且来源变化失败关闭。唯一一次正式 826/826 复用 `f515424f...`、`physicalCreated=false`；Cyrus 精确授权的 superseded `496b3357...` 已经 plan → journal → verify → receipt 删除，当前只剩两套受管包，unknown/missing=0；实现随 `2400410` 提交并作为当前远端 branch/tag 的祖先。该发布前阻断已关闭，但不构成 Stable 安装或 rebind 授权。
 - **Host/UI 产品缺陷已在本地提交关闭，不再是代码阻断**：`linked_legacy` 使用确定性 `legacy_fingerprint` + 已登记文档 hash 交集，缺证据失败关闭；CandidateDetails 可滚动且 action sticky。最终 `0.1.0-rc.9` 单插件夹具完成隔离生成、加载、激活与回滚，Project Control 185/185、正式全量 826/826；精确提交为 `2400410`。
-- **已形成本地 Git 事实，但尚未形成发布/安装事实**：精确 28 文件候选已 commit，blob 集与 receipt 完全一致；尚未 push、未创建 GitHub `plugins-v*` Release、真实 Stable 也未安装 rc.9。下一步需要 Cyrus 单独授权 push/发布；Stable 安装仍是再下一道门，不能把本地 PASS 外推为生产已修复。
+- **source push 与插件 Release 事实已形成，生产安装事实尚未形成**：精确候选及治理提交已推送；现有 Release `376569643` 已从 draft 公开为 `plugins-v2026.08.25.1`，四项资产 digest 与本地 staging 一致，Project Control `0.1.0-rc.9` 包 SHA-256=`01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca`。真实 Stable 尚未安装 rc.9；下一步仍需 Cyrus 单独授权安装，不能把“已发布”外推为“生产已修复”。
 - **真实 binding 仍未切换**：旧目录已移动到 `F:\Projects\amazon-store\local\legacy-source\amazon-store-before-g4-20260825`，未删除、未复制；Stable 仍记录旧 Kimi 路径。安装候选后仍须重新只读核对候选、预览命令并单次执行，禁止直接改库、绕过 schema 或自动重试。
 
 - **Amazon 身份阻断已关闭，binding/Kimi 兼容仍待后续事务**：Stable 只读复核确认正式项目为 `prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd`（「亚马逊运营主架构 · PRD」），当前 active primary location 仍是 `F:\documents\Kimi\Workspaces\Amazon Store`。`F:\Projects\amazon-store` 已生成匹配该 ID 的正式 marker/manifest；这只解决身份，不代表真实 Stable binding 已切换。Kimi 旧路径兼容联接未实施、未人工验收，旧源仍不得删除。
 - **checkout EOL 阻断已关闭**：仓库 `.gitattributes`、repo-local `core.autocrlf=false`/`core.safecrlf=true`、机器门禁和测试已经形成三层闭环；正式 `npm test` 786/786，launch/diff 通过。旧失败证据继续保留在 `local/receipts/op_canonical_workspace_import_20260825_01-validation-failed.json`，新闭环见 checkout 与 baseline receipts。
 - **B1b 继续暂停，但不再因 B1a/G0.5/G1/G2/G3 代码阻断**：G2/G3 已完成本地验收；当前按 Cyrus 要求停在 Amazon 迁移人工观察点。恢复前仍不得开始 migration 0010、审批 DB、HTTP、UI、侧栏或收件箱。
-- **G1 Git 可重建阻断已关闭**：`project-home/v1`、三套 `2.0.0` 模板、整屋 plan 与 `workspace` primary binding 已精确提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`；候选 receipt 与 commit receipt 均位于 Project Home `local/receipts/`。该 commit 未 push、未发布；它不授权后续 commit、push 或发布。
+- **G1 Git 可重建阻断已关闭**：`project-home/v1`、三套 `2.0.0` 模板、整屋 plan 与 `workspace` primary binding 已精确提交为 `f5c58e5874a977aa5104a092e2e7c03472b6a4d7`；候选 receipt 与 commit receipt 均位于 Project Home `local/receipts/`。该 commit 已作为当前远端 branch 的祖先推送，但未作为独立产品发布；它不授权新的 commit、push 或发布。
 - **remote 旧规则冲突已关闭**：机器索引只登记 canonical `origin=https://github.com/SeeiiLee/deepseek-projectpl-console.git`；额外 remote、URL 漂移或显式 `pushurl` 均失败关闭。登记仅提供来源追溯，不授权 commit、push 或发布，也没有修改现有 remote 配置。
-- **G0.5 Git 可重建阻断已关闭**：精确候选已提交为 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`，其上的 G1 已提交为 `f5c58e5`；两者均未 push、未发布。
+- **G0.5 Git 可重建阻断已关闭**：精确候选已提交为 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`，其上的 G1 已提交为 `f5c58e5`；两者已作为当前远端 branch 的祖先推送，均未作为独立产品发布。
 - **DSH 本项目真实 Project Control 路径尚未晋升，但不存在正式 Dev/Stable 身份冲突**：Stable 正式 `project_id` 仍登记旧主路径 `D:\Deepseek Harness Personal`；Dev 数据库中的 `prj_01a00cfd-1fe4-7bb3-9123-027765662055` 明确是测试登记，只作诊断/回归输入，不参与正式项目身份。G1 没有写真实数据库；Stable binding 仍须另发受控事务。
 - **旧 workspace `artifacts` 继续作为历史证据保留，不再冒充 G2 未实现**：它位于 canonical workspace 的 ignored 历史位置，仍为 5233 文件 / 837,754,746 bytes，旧日志 SHA 未变；G2-P1 只管理 Project Home `local` 下带登记与 marker 的对象，不会跨区自动吞并或删除该历史证据。其迁移/删除需要单独清单和 Cyrus 删除授权，不阻断 G3。
 - **G2-P0 packed 可变性阻断已关闭**：启动日志已改写各实例 `userData\logs\boot-error.log`；build receipt v3 校验完整 `win-unpacked`，正式测试创建并复用唯一 `local/package-sets/sha256-58ad…`，三次启动后整树 SHA 不变。旧 `artifacts` 仍为 5233 文件 / 837,754,746 bytes，原日志 4581 bytes/SHA 不变；没有覆盖历史证据。
@@ -20,7 +20,7 @@
 - **G3 shadow 闭环已通过，但不能外推为所有 Harness active**：DSH Dev/Codex 的治理 Skill 投影、逐实例 receipt/rollback 与 memory-host fixture 双端 leak=0 已验收；真实宿主重启 discovery、真实 memory 数据和 Project Control binding 均未做。其他 Harness 仍是 unconfigured/not-applicable，必须逐实例接入与验收。
 - **G4 已在 Amazon 身份对齐后继续暂停物理切换**：复制、机器验收和正式 Stable 身份确认已完成；当前只允许下一步做 Codex canonical 观察。Kimi 兼容联接、Stable rebind、量化与 meal_tracker/食溯迁移都不是本次治理状态修正的授权内容，旧源目录不得删除。
 
-Cyrus 当前授权已覆盖并消费 B-G4-0/G2-P2 的本地治理、代码、测试、一次正式 packed 验收、`496b3357...` 精确生命周期删除、28 文件精确 commit 与本次 docs-only 状态推进；不覆盖 push、GitHub Release、真实 Stable 安装/rebind、其他删除或量化/食溯迁移。后续 packed E2E 必须从权威 nextTask 取得 logical task ID，并复用或最多新增一套按内容寻址的共享 package set。
+Cyrus 已分别授权并完成 B-G4-0/G2-P2 的本地治理、代码、测试、一次正式 packed 验收、`496b3357...` 精确生命周期删除、精确 commit、source push 和现有 Draft Release `376569643` 的公开；当前授权只覆盖本次 docs-only 发布状态对齐，不覆盖这批文档的 commit/push、真实 Stable 安装/rebind、其他删除或量化/食溯迁移。后续 packed E2E 必须从权威 nextTask 取得 logical task ID，并复用或最多新增一套按内容寻址的共享 package set。
 
 ## 历史 A 线状态（已完成并冻结）
 

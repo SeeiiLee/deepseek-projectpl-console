@@ -1,5 +1,14 @@
 # Progress
 
+## 2026-08-26：B-G4-0 source push 与 Project Control `0.1.0-rc.9` Release 已公开
+
+- Cyrus 精确授权后，`codex/governance-alignment` 与 tag `plugins-v2026.08.25.1` 已无 force、无覆盖地指向 `4658a6e337deaa5b4529f2fdc4066aabd487d787`；产品提交 `2400410ca10e4a8e792d276bcde89faeb778e1e6` 是其父提交。现有祖先提交因此可从该远端 branch 追溯；Toolbox/Memory 各自仓库仍无 remote、没有被一并发布。
+- 首次发布流程在 Release `376569643` 已创建为 draft 且四项资产上传后，因 draft 的 public `browser_download_url` 返回 404 而失败关闭；没有公开、自动重试、重传、创建第二个 Release 或重建 refs。失败 receipt=`../local/receipts/op_b_g4_0_project_control_rc9_release_20260826_01-failed.json`。
+- Cyrus 随后明确批准只恢复该 Draft Release。GitHub API 的四项 asset digest 与本地 staging SHA-256 全匹配后，仅把现有 draft 转为公开；Release=`https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.25.1`，非 draft、非 prerelease，四项资产，Project Control 包 271,580 bytes，SHA-256=`01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca`。
+- 发布恢复 receipt=`../local/receipts/op_b_g4_0_project_control_rc9_release_resume_20260826_01.json`，SHA-256=`83d798639bc7e6be155feb96aea117260529a1ad1595f2ac71a332cba6fc1cdd`。本地 staging 5 文件 / 273,461 bytes 保留且未跟踪，因为没有清理授权。
+- 本次只把 live governance 从“等待 push/Release”推进到“Release 已公开、等待 Stable 安装授权”。未安装或写真实 Stable、未执行 Amazon rebind、未开始 B1b、未删除 staging；本次治理文档尚未获得 commit/push 授权。
+- docs-only 状态对齐门禁：checkout contract 1,270 files、governance 22/22、launch、`git diff --check` 与 `project-governance-context` 均通过；正式 `npm test` 未重跑，避免为纯文档任务触发 packed E2E/run，继续引用候选已有的 826/826。验收 receipt=`../local/receipts/op_b_g4_0_release_state_alignment_20260826_01.json`。
+
 ## 2026-08-26：B-G4-0/G2-P2 精确提交与 post-commit 指针对齐
 
 - Cyrus 明确授权后，将冻结的 28 文件候选精确提交为 `2400410ca10e4a8e792d276bcde89faeb778e1e6`（parent=`f3fba16c...`，tree=`18a8b9a...`，subject=`feat(governance): close B-G4 and G2-P2 validation`）。commit path 集、逐 blob SHA-256/bytes 与候选 receipt 完全一致，聚合 SHA-256=`607de09501acf9e0ad9b9a7151206b9268fcde723df01639d1a6d9d13b3e8952`；提交后工作树干净。
