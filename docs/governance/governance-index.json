@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T07:42:28.828Z",
+  "generatedAt": "2026-08-25T08:20:00.000Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -20,7 +20,8 @@
     "machine": "docs/governance/governance-index.json",
     "currentState": "docs/governance/current-state.json",
     "projectManifest": ".dsh-project/project.yaml",
-    "agentInstructions": "AGENTS.md"
+    "agentInstructions": "AGENTS.md",
+    "globalAgentInstructions": "F:\\Projects\\toolbox\\workspace\\global\\AGENTS.md"
   },
   "repository": {
     "remotePolicyVersion": "registered-remotes/v1",
@@ -185,6 +186,20 @@
       "formalTest": "818/818",
       "realDeletionAcceptance": "task-owned-temporary-fixtures-only",
       "next": "G3-CROSS-HARNESS-PILOT"
+    },
+    "g3CrossHarness": {
+      "status": "candidate-validated-pending-main-local-commit",
+      "toolboxProjectHome": "F:\\Projects\\toolbox",
+      "toolboxCommit": "600b296a57685609426138733ff8745196425c86",
+      "toolboxTests": "18/18",
+      "memoryProjectHome": "F:\\Projects\\memory-system",
+      "memoryCommit": "c0a0b037152fbe01ca1d56692a3006a15c041641",
+      "memoryTests": "6/6",
+      "toolboxReceipt": "F:\\Projects\\toolbox\\local\\receipts\\op_g3-toolbox-projection-20260825-01.json",
+      "memoryReceipt": "F:\\Projects\\memory-system\\local\\receipts\\op_g3-memory-host-pilot-20260825-02.json",
+      "terminalState": "applied_shadow",
+      "stableMutation": false,
+      "nextAfterCommit": "G4-AMAZON-MIGRATION-PILOT"
     }
   },
   "g4MigrationOrder": [
@@ -232,6 +247,7 @@
     "protected_path_in_write_scope",
     "context_receipt_missing",
     "test_receipt_missing_before_handoff",
-    "checkout_contract_failed"
+    "checkout_contract_failed",
+    "toolbox_global_agents_authority_missing_or_conflicting"
   ]
 }

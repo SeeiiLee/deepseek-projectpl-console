@@ -2,10 +2,10 @@
 
 状态：**治理收敛优先，B1b 暂停**
 当前 Stable：**0.4.5 已发布并完成真实插件更新验收**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，最新产品/治理基线为 G2-P1 `535185b01fe6be76d7256665029be774b77b5d27`（G2-P0=`8dff0e3`，G1=`f5c58e5`，G0.5=`28d7c8c`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，当前 HEAD 为 G2 状态对齐 `834f7bb749dcf0570be15b2db9b75ba81ada5c9a`；G3 候选已通过，等待连续授权内的本地提交（G2-P1=`535185b`，G2-P0=`8dff0e3`，G1=`f5c58e5`，G0.5=`28d7c8c`；A 线冻结父基线仍为 `c27e989381c34dc06d4f4af1845f6122c0b00c2b`）
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-25 当前唯一执行顺序**：G0.5 已提交 → G1 Project Home 已提交 → G2-P0 已提交 → G2-P1 已提交为 `535185b` → **当前执行 G3 toolbox Skill + memory-host 双端试点** → G4 仅做 Amazon 单项目试迁并暂停复盘 → Cyrus 再决定是否迁量化、食溯 → 复盘后恢复 B1b。Cyrus 已授予“治理与开发连续执行包 V1”，G2/G3 内通过 receipt 与门禁的本地 commit 无需逐次询问；下方旧功能排期只作历史记录，不覆盖本指针。
+> **2026-08-25 当前唯一执行顺序**：G0.5/G1/G2 已提交 → **G3 toolbox Skill + memory-host 双端试点已通过，当前只做本地提交与状态对齐** → G4 仅做 Amazon 单项目试迁并暂停复盘 → Cyrus 再决定是否迁量化、食溯 → 复盘后恢复 B1b。Cyrus 的连续授权仍有效；下方旧功能排期只作历史记录，不覆盖本指针。
 
 ## G0：当前收口任务
 
@@ -20,14 +20,14 @@
 9. [x] G0.5 冻结当前候选的逐文件清单与聚合 hash，确认 ignored `artifacts/`、package 和 run 均未进入候选；freeze receipt 位于 Project Home `local/receipts/`。
 10. [x] Cyrus 单独授权并完成 G0.5 精确提交：`28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`；未 push、未发布。
 
-G0.5、G1、G2-P0 与 G2-P1 已依次成为 Git 可重建本地基线。G2-P1 的 package set/run 登记、配额、磁盘与调度健康、cleanup plan/apply/verify/receipt、中断续跑和同内容 provenance 去重全部通过；物理 package set 仍只有一套，旧 `artifacts` 证据未变。当前进入 **G3：toolbox Skill + memory-host 双端只读试点**；B1b 继续暂停，正式全量入口固定为 `npm test`。
+G0.5、G1、G2-P0 与 G2-P1 已依次成为 Git 可重建本地基线。G3 的 Toolbox 18/18、Memory 6/6、双端可回滚投影与 leak=0 已通过，当前只剩主仓本地提交和 live-state 对齐；完成后立即进入 **G4 Amazon 单项目试迁**，验收后必须暂停。B1b 继续暂停，正式全量入口固定为 `npm test`。
 
 ## G1–G4：后续治理实现顺序
 
 - **G1 Project Home（已提交完成）**：`project-home/v1` schema/fixtures、Host 纯函数、三分区 Write Plan、三套不可变 `2.0.0` 模板和 W1–W4 组合验证已落地并提交为 `f5c58e5`；旧 `1.0.0` 只保留回放，primary workspace 只指向 `workspace`，整屋 plan 目标指向 Project Home。未修改 migration/DB schema/HTTP/UI/侧栏/收件箱，也未写真实 binding；未 push、未发布。
 - **G2 Local 生命周期（P0/P1 已本地全量验收）**：`boot-error.log` 位于各实例 `userData\logs`；完整 `win-unpacked` 受 hash 守护；package set/run 创建即登记；`recommended-v1` policy、20 GiB 登记配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 和中断 journal 已实现。相同包体的不同来源证明写外部 provenance，不复制第二套 0.8 GiB 包。Windows 计划任务仍未创建；逾期时大任务入口失败关闭并要求补跑。
 - **G2 前临时 packed 规则**：人工/packed E2E 只从 F 盘 canonical 生成；一个任务最多一套按内容寻址的共享只读 package set，各隔离 run 只引用、不逐 run 复制。没有磁盘 preflight 和明确 packed 范围就不开跑。
-- **G3 跨 Harness**：toolbox 先 DSH Dev + Codex；memory-host 先 status/recall，只读、单写者、显式 `project_id`、逐端质量/泄漏评测；Global AGENTS 规范源通过 hash receipt 投影。
+- **G3 跨 Harness（候选已验证）**：Toolbox 规范源已对 DSH Dev/Codex 完成可回滚 `applied_shadow` 投影；memory-host status/recall 单 host 双端结果一致、显式 `project_id`、leak=0。真实宿主 discovery、真实 Stable/binding 与记忆数据迁移未做，不能声称 active。
 - **G4 存量迁移（Amazon 单项目试迁闸门）**：顺序仍为 Amazon Store（skills + 调研报告）→ 量化（初版架构）→ meal_tracker/食溯（复杂项目，最后），但当前只授权 Amazon 试迁。Amazon 单独完成路径、`project_id`/binding、可回滚切换、观察和验收后必须暂停；量化、食溯不得自动开始，等待 Cyrus 看完 Amazon 结果再决定。旧源目录删除不在连续授权内。
 
 ## 历史计划（以下内容不再是当前执行指针）

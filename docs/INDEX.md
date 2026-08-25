@@ -55,7 +55,7 @@
 | governance/项目路径绑定盘点表.md | 权威（v2，2026-08-25 联动） | 项目统一迁移第 0 步；目标改为 `F:\Projects\<slug>\workspace`；旧物理分类目录建议被 ADR-009 取代 |
 | GOVERNANCE_INDEX.md | 权威入口 | 治理总索引的人类可读入口；当前已记录 G2-P1 本地验收与 G3 执行指针，机器入口见下两行 |
 | governance/governance-index.json | 权威机器索引 | 权威优先级、固定合同 hash、实时状态入口、G2 local 生命周期合同和 fail-closed 规则 |
-| governance/current-state.json | 活跃机器状态 | 当前项目身份、A/B 基线、G2-P1 已提交状态、阻断、保护路径和 G3 当前任务；每次交接必须刷新 |
+| governance/current-state.json | 活跃机器状态 | 当前项目身份、A/B 基线、G3 shadow 候选状态、阻断、保护路径与 Amazon-only G4 闸门；每次交接必须刷新 |
 
 ## 设计（目标目录 design/）
 
@@ -103,7 +103,7 @@
 
 | 文档 | 状态 | 说明 |
 |---|---|---|
-| NEXT.md | 活跃（暂留根部） | 当前执行指针为 G2-P1 精确本地提交后进入 G3；G4 只授权 Amazon 试迁并暂停 |
+| NEXT.md | 活跃（暂留根部） | G3 候选已通过并等待本地提交/状态对齐；其后只执行 Amazon 试迁并暂停 |
 | HANDOVER_TO_DEEPSEEK_HARNESS.md | 活跃 | 总交接入口（compat.json handoverEntry） |
 | HANDOFF_WORKBENCH_LOCAL_FILE_IMAGE.md | 留档 | 工作台本地文件识图交接 |
 | PROGRESS.md | 活跃 | 进度与机器验收记录；当前记录到 G2-P1 818/818 |
@@ -141,7 +141,7 @@
 |---|---|---|
 | p4-model-manifests/ | 权威 | 模型哈希清单（发布红线引用） |
 | memory/ | 待清点 | 记忆系统工作文件 |
-| agent-instructions/ | 待清点 | agent 指令集 |
+| agent-instructions/ | 留档输入 | 旧 Global AGENTS 规范源已由 `F:\Projects\toolbox\workspace\global\AGENTS.md` 取代；本目录其他项目指令待清点 |
 | input/ | 待清点 | 输入材料 |
 | codex-scan/ | 活跃 | Codex 会话挖掘管线与脱敏产物（原始副本已删，源目录未动） |
 

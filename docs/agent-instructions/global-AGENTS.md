@@ -1,7 +1,7 @@
-# AGENTS.md（DeepSeek Harness Personal · 全局工作规则）
+# AGENTS.md（历史投影输入，已被 Toolbox 规范源取代）
 
-> 本文件是投影副本：规范源在 Personal 仓库 docs/agent-instructions/global-AGENTS.md，
-> 由受控投影脚本 scripts/project-global-agents.js 写入并做 SHA-256 校验；不要手改本副本。
+> 自 2026-08-25 G3 起，唯一规范源是 `F:\Projects\toolbox\workspace\global\AGENTS.md`。
+> 本文件只为历史回放保留；不得再由 `scripts/project-global-agents.js` 直写宿主。真实投影必须经过 Toolbox 的 plan/apply/receipt/doctor/rollback。
 > 不可协商红线由 System Prompt 的 personal:cross-project-policy section 承担，本文件不复制其全文（决策 8）。
 
 ## 一、适用与优先级

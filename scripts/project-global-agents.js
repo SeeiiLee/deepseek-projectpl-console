@@ -1,65 +1,37 @@
-// scripts/project-global-agents.js — Global AGENTS 受控投影（决策 8：只投影 Dev DSH_HOME）
-// 规范源：docs/agent-instructions/global-AGENTS.md
-// 目标：<DSH_HOME>/AGENTS.md（默认 %USERPROFILE%\.dsh\AGENTS.md）
-// 纪律：稳定版安装目录 / F 盘数据目录一律拒绝；写入前备份旧副本为 AGENTS.md.previous；
-//       写入后回读做 SHA-256 校验；打印目标绝对路径与两端哈希供审阅。
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { createHash } from 'node:crypto'
-import { homedir } from 'node:os'
-import { dirname, join, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { STABLE_DATA_HOME, STABLE_INSTALL_ROOT } from './protected-paths.js'
+// scripts/project-global-agents.js — Global AGENTS 兼容门禁
+// 规范源与写入生命周期已迁到 F:\Projects\toolbox；本文件只提供规范源身份校验，拒绝旧式无 receipt 直写。
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
-const MODULE_DIR = dirname(fileURLToPath(import.meta.url))
-export const CANONICAL_PATH = resolve(MODULE_DIR, '..', 'docs', 'agent-instructions', 'global-AGENTS.md')
+export const TOOLBOX_PROJECT_HOME = 'F:\\Projects\\toolbox'
+export const TOOLBOX_PROJECT_ID = 'prj_01a037e5-9537-7c20-bf0a-52d8f016d79f'
+export const CANONICAL_PATH = resolve(TOOLBOX_PROJECT_HOME, 'workspace', 'global', 'AGENTS.md')
 
-function inside(root, candidate) {
-  const normalized = resolve(root).replace(/[\\/]+$/u, '')
-  const target = resolve(candidate).toLowerCase()
-  return target === normalized.toLowerCase() || target.startsWith(normalized.toLowerCase() + sep)
-}
-
-export function resolveTargetHome(env = process.env) {
-  return resolve(env.DSH_HOME || join(env.USERPROFILE ?? homedir(), '.dsh'))
-}
-
-export function sha256Hex(text) {
-  return createHash('sha256').update(text).digest('hex')
-}
-
-export function projectGlobalAgents(home = resolveTargetHome(), canonicalPath = CANONICAL_PATH) {
-  for (const forbidden of [STABLE_INSTALL_ROOT, STABLE_DATA_HOME]) {
-    if (inside(forbidden, home)) {
-      throw new Error('投影拒绝：目标 home 位于稳定版安装/数据目录内。稳定版只走正式安装/升级流程（手册决策 8）。')
-    }
+export function validateCanonicalGlobalAgentsSource() {
+  const markerPath = resolve(TOOLBOX_PROJECT_HOME, '.project-home', 'project-home.json')
+  const manifestPath = resolve(TOOLBOX_PROJECT_HOME, 'workspace', '.dsh-project', 'project.yaml')
+  for (const path of [markerPath, manifestPath, CANONICAL_PATH]) {
+    if (!existsSync(path)) throw new Error(`TOOLBOX_GLOBAL_AGENTS_AUTHORITY_MISSING:${path}`)
   }
-  const target = join(resolve(home), 'AGENTS.md')
-  if (!target.toLowerCase().endsWith(sep + 'agents.md')) {
-    throw new Error('投影拒绝：目标不是 <DSH_HOME>/AGENTS.md。')
+  const marker = JSON.parse(readFileSync(markerPath, 'utf8'))
+  const manifestId = /^\s*projectId:\s*(prj_[0-9a-f-]+)\s*$/mu.exec(readFileSync(manifestPath, 'utf8'))?.[1]
+  if (marker.projectId !== TOOLBOX_PROJECT_ID || manifestId !== TOOLBOX_PROJECT_ID || marker.slug !== 'toolbox') {
+    throw new Error('TOOLBOX_GLOBAL_AGENTS_IDENTITY_CONFLICT')
   }
-  const content = readFileSync(canonicalPath, 'utf8')
-  const canonicalHash = sha256Hex(content)
-  const existed = existsSync(target)
-  const previous = existed ? readFileSync(target, 'utf8') : null
-  if (previous === content) {
-    return { target, changed: false, existed: true, canonicalHash, targetHash: canonicalHash, backup: null }
-  }
-  if (!existsSync(dirname(target))) mkdirSync(dirname(target), { recursive: true })
-  if (existed) writeFileSync(target + '.previous', previous)
-  writeFileSync(target, content)
-  const targetHash = sha256Hex(readFileSync(target, 'utf8'))
-  return { target, changed: true, existed, canonicalHash, targetHash, backup: existed ? target + '.previous' : null }
+  return { canonicalPath: CANONICAL_PATH, projectId: TOOLBOX_PROJECT_ID, markerPath, manifestPath }
 }
 
-if (process.argv[1] !== undefined && new URL('file://' + resolve(process.argv[1])).href === new URL(import.meta.url).href) {
-  const homeArg = process.argv[2] ? resolve(process.argv[2]) : resolveTargetHome()
-  const result = projectGlobalAgents(homeArg)
-  process.stdout.write('Global AGENTS 投影报告\n')
-  process.stdout.write('  规范源: ' + CANONICAL_PATH + '\n')
-  process.stdout.write('  目标:   ' + result.target + '\n')
-  process.stdout.write('  源哈希: ' + result.canonicalHash + '\n')
-  process.stdout.write('  目标哈希: ' + result.targetHash + '\n')
-  process.stdout.write('  变更:   ' + (result.changed ? '是（已写入' + (result.existed ? '，旧副本保留为 AGENTS.md.previous' : '，此前不存在') + '）' : '否（内容已一致）') + '\n')
-  process.stdout.write('  校验:   ' + (result.targetHash === result.canonicalHash ? 'PASS' : 'FAIL') + '\n')
-  process.exit(result.targetHash === result.canonicalHash ? 0 : 1)
+export function projectGlobalAgents() {
+  validateCanonicalGlobalAgentsSource()
+  throw new Error('TOOLBOX_PROJECTION_REQUIRED: use F:\\Projects\\toolbox\\workspace\\scripts\\toolbox.mjs plan/apply/doctor so every write has a precondition, receipt and rollback')
+}
+
+if (process.argv[1] !== undefined && pathToFileURL(resolve(process.argv[1])).href === new URL(import.meta.url).href) {
+  try {
+    projectGlobalAgents()
+  } catch (error) {
+    process.stderr.write(`${String(error?.message ?? error)}\n`)
+    process.exit(2)
+  }
 }

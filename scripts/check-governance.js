@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { CANONICAL_PATH } from './project-global-agents.js'
+import { CANONICAL_PATH, validateCanonicalGlobalAgentsSource } from './project-global-agents.js'
 import { readGitRemoteSnapshot, validateGitRemotePolicy } from './governance-remote-policy.js'
 import { PROTECTED_ROOTS, REPOSITORY_ROOT } from './protected-paths.js'
 
@@ -32,6 +32,12 @@ check('policy host bundle built', existsSync(join(REPOSITORY_ROOT, 'plugins', 'p
 check('policy client bundle built', existsSync(join(REPOSITORY_ROOT, 'plugins', 'personal-policy', 'lib', 'client.js')))
 
 // 3. AGENTS 投影哈希
+let globalAgentsAuthorityValid = false
+try {
+  validateCanonicalGlobalAgentsSource()
+  globalAgentsAuthorityValid = true
+} catch {}
+check('Global AGENTS canonical authority is the Toolbox Project Home', globalAgentsAuthorityValid, CANONICAL_PATH)
 const devHome = join(process.env.USERPROFILE ?? '', '.dsh')
 const agentsTarget = join(devHome, 'AGENTS.md')
 if (existsSync(agentsTarget)) {

@@ -11,7 +11,7 @@
 - **旧 workspace `artifacts` 继续作为历史证据保留，不再冒充 G2 未实现**：它位于 canonical workspace 的 ignored 历史位置，仍为 5233 文件 / 837,754,746 bytes，旧日志 SHA 未变；G2-P1 只管理 Project Home `local` 下带登记与 marker 的对象，不会跨区自动吞并或删除该历史证据。其迁移/删除需要单独清单和 Cyrus 删除授权，不阻断 G3。
 - **G2-P0 packed 可变性阻断已关闭**：启动日志已改写各实例 `userData\logs\boot-error.log`；build receipt v3 校验完整 `win-unpacked`，正式测试创建并复用唯一 `local/package-sets/sha256-58ad…`，三次启动后整树 SHA 不变。旧 `artifacts` 仍为 5233 文件 / 837,754,746 bytes，原日志 4581 bytes/SHA 不变；没有覆盖历史证据。
 - **G2-P1 local 生命周期机器闭环已本地关闭**：package set/run 创建登记、recent-count AND age retention、PINNED/引用保护、20 GiB 配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 与中断续跑已通过 818/818 正式全量。真实删除只发生于 task-owned 临时 fixture；物理 managed set 仍为唯一 58ad…，同内容不同来源只增加小型 provenance JSON。Windows 计划任务未创建，逾期通过大型 run/build preflight 失败关闭；启用系统计划任务仍需单独授权。
-- **跨 Harness 无缝续接尚未验收**：权威索引和 project_id 已对齐，但 toolbox 投影、memory-host、真实 binding 与逐端 context receipt 属 G3/G4，不能把当前单 workspace 通过外推为所有 Harness 已无缝接入。
+- **G3 shadow 闭环已通过，但不能外推为所有 Harness active**：DSH Dev/Codex 的治理 Skill 投影、逐实例 receipt/rollback 与 memory-host fixture 双端 leak=0 已验收；真实宿主重启 discovery、真实 memory 数据和 Project Control binding 均未做。其他 Harness 仍是 unconfigured/not-applicable，必须逐实例接入与验收。
 - **G4 批量迁移被 Amazon 试迁闸门主动截断**：连续授权只覆盖 G4 的 Amazon 单项目试迁；完成复制/校验/可回滚切换和人工观察后必须暂停。量化与 meal_tracker/食溯仍为未授权状态，不能因 Amazon 通过而自动继续；三个项目的旧源目录均不得在该授权下删除。
 
 允许连续执行：当前治理对齐、G2、G3，以及 G4 的 Amazon 单项目试迁；每个独立候选通过 receipt 与门禁后可创建本地 commit，并可清理带任务所有权标记的临时 profile、失败半成品和一次性 fixture。仍禁止修改 A Release、真实 Stable/Dev 切换、F 盘受保护数据、`D:\Deepseek Harness`、发布面、remote 配置、旧项目源目录；push/发布仍需另行授权。packed E2E 还必须满足机器索引的临时单 package-set 规则。

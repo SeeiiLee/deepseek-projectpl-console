@@ -1,5 +1,13 @@
 # Progress
 
+## 2026-08-25：G3 跨 Harness shadow 试点通过，等待本地基线提交
+
+- 新建标准 Project Home：`F:\Projects\toolbox` 与 `F:\Projects\memory-system`，均使用 `workspace/worktrees/local` 三分区；UUIDv7 只在本地 manifest/marker 保留，未写真实 Project Control DB。两仓分别形成干净本地提交 `600b296` 与 `c0a0b03`，无 remote、未 push、未发布。
+- D5-0 最小工具层已冻结七份 schema、surface registry、七类 Harness descriptor、base/项目 profile、六态 resolver、retire receipt 语义拒绝器、逐实例投影 adapter 和完整 `project-governance-context` Skill。Toolbox 测试 18/18、Skill 结构校验通过。
+- DSH Dev 与 Codex 均完成 apply → doctor → rollback → re-apply；最终 Skill 树 SHA-256 均为 `998e3d...2089c`，状态仅为 `applied_shadow`。执行中发现 doctor 错拿 registry 首实例检查 Codex receipt 的 bug，已改为按 `harnessInstanceId` 精确选择并补回归测试。
+- `memory-host/v1` 只发布 `memory_status`/`memory_recall`。同一 stdio host 进程并发服务 DSH Dev/Codex，结果 hash 一致；缺身份 recall、未知 instance、跨项目查询稳定拒绝，负控 sentinel 泄漏为 0。Memory 测试 6/6，最终 receipt 为 `F:\Projects\memory-system\local\receipts\op_g3-memory-host-pilot-20260825-02.json`。
+- DSH settings、Codex config.toml、Dev/Stable Project Control DB 的前后 SHA-256 均完全一致；未修改真实 Stable、真实 binding、凭据、B1b、A Release 或受保护 F 数据。Global AGENTS 唯一规范源已转到 Toolbox；Personal 仓库旧副本留档，旧无 receipt 直写入口失败关闭。
+
 ## 2026-08-25：G2-P1 local 生命周期机器闭环本地验收通过
 
 - G2-P1 的 14 文件候选已按外部 receipt 的逐文件 hash 精确提交为 `535185b01fe6be76d7256665029be774b77b5d27`（父提交 `8dff0e3`）；commit blob 集与候选完全一致，提交后工作树干净，未 push、未发布。候选与 commit receipt 分别为 Project Home `local/receipts/op_g2_p1_20260825_01.json` 和 `op_g2_p1_20260825_01-commit.json`。
