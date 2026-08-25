@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T16:14:40.826Z",
+  "generatedAt": "2026-08-25T16:35:43.378Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -46,7 +46,7 @@
     }
   },
   "packedTestPolicy": {
-    "status": "g2-p2-local-validated-not-committed",
+    "status": "g2-p2-committed-local-not-pushed-not-published",
     "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
     "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
     "managedRoot": "Project Home\\local\\package-sets",
@@ -155,17 +155,19 @@
       "contentSha256": "B5559F81E248128A62DC7AB6CE61E6C74A0A06764DB0842D0741AD4D5495790B"
     },
     "bG4ProjectControlRebindHotfix": {
-      "status": "local-candidate-validated-g2-p2-closed-awaiting-release-authorization",
+      "status": "committed-local-g2-p2-closed-awaiting-push-release-authorization",
       "candidateId": "can_01a038b2-d821-7fac-ae47-fe28a94a5c78",
       "targetPath": "F:\\Projects\\amazon-store\\workspace",
       "identityRule": "linked_legacy relocation uses deterministic legacy_fingerprint and at least one registered document hash must match the fresh candidate",
       "delivery": "reuse-a-line-generation-channel-with-project-control-exact-allowlist",
       "candidateVersion": "0.1.0-rc.9",
       "candidateAssetSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
+      "commit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+      "commitReceipt": "../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json",
       "isolatedGenerationReceipt": "../local/runs/b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json",
       "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
-      "next": "B-G4-0-RELEASE-AUTHORIZATION",
-      "forbidden": ["migration-or-database-schema", "b1b", "direct-stable-database-write", "real-stable-install-or-rebind", "commit-push-publish-delete"]
+      "next": "B-G4-0-PUSH-RELEASE-AUTHORIZATION",
+      "forbidden": ["migration-or-database-schema", "b1b", "direct-stable-database-write", "real-stable-install-or-rebind", "push-publish-delete-without-new-authorization"]
     },
     "g1ProjectHome": {
       "status": "committed-local-not-pushed-not-published",
@@ -183,7 +185,7 @@
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
     },
     "g2PackedImmutability": {
-      "status": "p2-local-validated-not-committed",
+      "status": "p2-committed-local-not-pushed-not-published",
       "activeManagedPackageSetTreeHash": "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5",
       "managedPackageSetCount": 2,
       "buildReceiptSchemaVersion": 3,
@@ -199,6 +201,9 @@
       "packageSetProvenanceRecords": 5,
       "formalTest": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
       "logicalTaskClaim": "G2-P2-PACKED-PACKAGE-SET-TASK-IDENTITY revision 2 completed physicalCreated=false",
+      "p2AcceptanceReceipt": "../local/receipts/op_g2_p2_package_set_task_identity_20260826_01.json",
+      "p2CommitReceipt": "../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json",
+      "p2Commit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
       "remainingPackageSets": [
         "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
         "f515424ff603cce6da271d60bf15a931865e7aa052386b6e618913ecedeb4ea5"
@@ -207,7 +212,7 @@
       "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
       "unknownOrUnmanagedObjects": 0,
       "deletionPerformed": true,
-      "next": "B-G4-0-RELEASE-AUTHORIZATION"
+      "next": "B-G4-0-PUSH-RELEASE-AUTHORIZATION"
     },
     "g3CrossHarness": {
       "status": "committed-local-not-pushed-not-published",

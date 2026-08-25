@@ -1,5 +1,12 @@
 # Progress
 
+## 2026-08-26：B-G4-0/G2-P2 精确提交与 post-commit 指针对齐
+
+- Cyrus 明确授权后，将冻结的 28 文件候选精确提交为 `2400410ca10e4a8e792d276bcde89faeb778e1e6`（parent=`f3fba16c...`，tree=`18a8b9a...`，subject=`feat(governance): close B-G4 and G2-P2 validation`）。commit path 集、逐 blob SHA-256/bytes 与候选 receipt 完全一致，聚合 SHA-256=`607de09501acf9e0ad9b9a7151206b9268fcde723df01639d1a6d9d13b3e8952`；提交后工作树干净。
+- 首次 commit 因环境没有作者配置而失败关闭，未生成提交；随后只在单次命令复用仓库最近提交作者 `Cyrus <cyrus@local.invalid>`，没有修改全局或 repo-local Git 配置。commit receipt=`../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json`，SHA-256=`a21b4f9e3108bc9bbc8d277230f07903e113e0f35c208af686ff8b5ad505abf3`。
+- 提交后轻量门禁：checkout 1265 files、governance 22/22、launch、`git diff --check` 全过；未重复运行正式 `npm test`，因为提交 blob 与此前唯一一次 826/826 验收候选逐字节一致，也没有生成新 package set/run。
+- 本次只推进治理指针：B-G4-0/G2-P2 状态改为 committed-local，下一门为 `B-G4-0-PUSH-RELEASE-AUTHORIZATION`。未 push、publish、安装 Stable、写真实 Stable 数据、执行 Amazon rebind、删除文件或开始 B1b。
+
 ## 2026-08-26：G2-P2 package-set 任务身份与精确清理闭环完成
 
 - packed E2E 不再用 PID/时间戳冒充任务身份：`resolvePackedLogicalTaskId` 从 Project Home 已验证身份和 `docs/governance/current-state.json::nextTask.id` 取得稳定 logical task ID；可选环境覆盖若与权威指针不一致，返回 `PACKED_LOGICAL_TASK_ID_MISMATCH`。
@@ -8,7 +15,7 @@
 - 红测试为 5 tests / 0 pass / 5 fail；实现后 G2-P2 7/7，lifecycle/package-set 组合最终 25/25。唯一一次正式 `npm test` 为 826/826，fail/cancelled/skipped/todo=0；18 插件门禁通过，Project Control 保持 185/185。
 - 精确清理预览最初因 context receipt 只写了 `496b3357` 缩写而以 `AUTHORIZED_CLEANUP_SCOPE_MISSING` 失败关闭，未写计划、未删除；随后追加完整 hash 授权 supplement，未覆盖原 receipt。最终 plan 只含 `pkg_496b3357...8512d`，registry revision 36、838,063,243 bytes、RETIRED、引用 0，`f515424f...` ACTIVE。
 - lifecycle apply receipt=`local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json`，状态 `applied-and-verified`，只删除批准的 `496b3357...`，释放的计划字节 838,063,243；registry revision 37。后验仅余 `58adf7b2...` RETIRED 与 `f515424f...` ACTIVE，两者各精确命中一条 live registry，unknown/missing=0。B-G4 验收 run 已完成为 RETIRED/successful-run，registry revision 38。
-- 删除对象不能直接恢复，但它是 superseded 中间 build；可在恢复其 source receipt 对应源码状态后重新构建。未删除 A 线证据、Amazon 文件、真实 Stable 数据或另外两套 package set；未 commit/push/publish/install/rebind。G2-P2 阻断关闭，下一步回到 B-G4 精确 commit/发布链授权闸门。
+- 删除对象不能直接恢复，但它是 superseded 中间 build；可在恢复其 source receipt 对应源码状态后重新构建。未删除 A 线证据、Amazon 文件、真实 Stable 数据或另外两套 package set；该验收阶段未 commit/push/publish/install/rebind。后续精确 commit 已单列记录在上方，push/发布/安装/rebind 仍未发生。
 
 ## 2026-08-25：B-G4-0 收口发现 G2 package-set 任务身份漏洞，发布暂停
 

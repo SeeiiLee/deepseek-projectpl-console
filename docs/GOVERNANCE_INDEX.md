@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。Amazon 正式身份是 `prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd`，canonical workspace 是 `F:\Projects\amazon-store\workspace`；旧 Kimi 目录仍在 Amazon Project Home 归档区。B-G4-0 `0.1.0-rc.9` 候选与 G2-P2 logical task/package-set 机器闭环均已本地通过，正式全量 826/826；packed 复用现有 `f515424f...`，没有新增第四套。经 Cyrus 精确授权，superseded `496b3357...` 已通过生命周期 receipt 删除，当前两套包均受管且 unknown/missing=0。候选尚未 commit/push/publish/install，真实 Stable 数据库与 binding 未改；下一步是精确 commit/发布链授权，不得直接跳到 Stable rebind。
+当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。Amazon 正式身份是 `prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd`，canonical workspace 是 `F:\Projects\amazon-store\workspace`；旧 Kimi 目录仍在 Amazon Project Home 归档区。B-G4-0 `0.1.0-rc.9` 候选与 G2-P2 logical task/package-set 机器闭环均已本地通过并精确提交为 `2400410ca10e4a8e792d276bcde89faeb778e1e6`，正式全量 826/826；packed 复用现有 `f515424f...`，没有新增第四套。经 Cyrus 精确授权，superseded `496b3357...` 已通过生命周期 receipt 删除，当前两套包均受管且 unknown/missing=0。该提交尚未 push/publish/install，真实 Stable 数据库与 binding 未改；下一步是单独授权 push/`plugins-v*` Release，不得直接跳到 Stable 安装或 rebind。
 
 ## 权威链
 

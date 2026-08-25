@@ -1,22 +1,22 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T16:14:40.826Z",
+  "recordedAt": "2026-08-25T16:35:43.378Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-workspace-b-g4-g2-p2-validated-release-gated",
+    "status": "canonical-workspace-b-g4-g2-p2-committed-local-release-gated",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "f3fba16caa3581da816acf8faa529d55fb03ca2e",
-    "headAtRecord": "f3fba16caa3581da816acf8faa529d55fb03ca2e",
-    "workingTreeState": "b-g4-0-plus-g2-p2-candidate-uncommitted",
-    "commitAuthorized": false,
-    "lastAuthorizedCommit": "f3fba16caa3581da816acf8faa529d55fb03ca2e",
+    "approvedParentCommit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+    "headAtRecord": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+    "workingTreeState": "b-g4-0-plus-g2-p2-committed-local-governance-reconciliation",
+    "commitAuthorized": true,
+    "lastAuthorizedCommit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
@@ -26,7 +26,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "b-g4-0-project-control-rebind-hotfix",
+    "phase": "b-g4-0-committed-local-awaiting-push-release-authorization",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -132,7 +132,7 @@
       }
     },
     "g2": {
-      "status": "p2-local-validated-not-committed",
+      "status": "p2-committed-local-not-pushed-not-published",
       "bootLogRelativePath": "logs\\boot-error.log",
       "managedPackageSetsRoot": "Project Home\\local\\package-sets",
       "managedPackageSetCount": 2,
@@ -163,7 +163,7 @@
       "windowsScheduledTaskCreated": false,
       "deletionAcceptance": "task-owned fixtures plus Cyrus-authorized exact superseded package-set through lifecycle plan/apply/verify/receipt",
       "g2P2Closure": {
-        "status": "closed-local-validated-not-committed",
+        "status": "closed-and-committed-local-not-pushed-not-published",
         "logicalTaskIdSource": "docs/governance/current-state.json::nextTask.id",
         "claimSchema": "package-set-build-task/v1",
         "claimRevision": 2,
@@ -178,7 +178,10 @@
         "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
         "cleanupReceiptSha256": "559f2754856587b7a96f72c463bbb39313acbbd724146740fe981b85ef8de85f",
         "unknownOrMissingObjects": 0,
-        "bG4RunStatus": "RETIRED-successful-run"
+        "bG4RunStatus": "RETIRED-successful-run",
+        "acceptanceReceipt": "../local/receipts/op_g2_p2_package_set_task_identity_20260826_01.json",
+        "commitReceipt": "../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json",
+        "commit": "2400410ca10e4a8e792d276bcde89faeb778e1e6"
       }
     },
     "g3": {
@@ -236,7 +239,7 @@
     "meal-tracker"
   ],
   "bG4ProjectControlRebindHotfix": {
-    "status": "local-candidate-validated-g2-p2-closed-awaiting-release-authorization",
+    "status": "committed-local-g2-p2-closed-awaiting-push-release-authorization",
     "amazonProjectId": "prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd",
     "candidateId": "can_01a038b2-d821-7fac-ae47-fe28a94a5c78",
     "candidateRevision": 2,
@@ -248,6 +251,8 @@
     "candidateVersion": "0.1.0-rc.9",
     "candidateAssetSha256": "01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca",
     "candidateAssetBytes": 271580,
+    "commit": "2400410ca10e4a8e792d276bcde89faeb778e1e6",
+    "commitReceipt": "../local/receipts/op_b_g4_0_project_control_rebind_hotfix_20260825_01-commit.json",
     "isolatedGenerationReceipt": "../local/runs/b-g4-0-project-control-rc9-20260825/isolated-generation-final-receipt.json",
     "formalFullTests": "826/826; fail=0; cancelled=0; skipped=0; todo=0",
     "pluginGate": "18/18 packages; project-control=185/185",
@@ -256,7 +261,7 @@
     "stableInstalled": false,
     "realRebindExecuted": false,
     "allowed": ["project-control-intake", "candidate-details-css", "tests-and-bundles", "v2-release-metadata", "release-allowlist", "local-fixture", "isolated-generation-test"],
-    "forbidden": ["migration", "database-schema", "b1b", "direct-stable-db-write", "real-stable-install", "real-rebind", "commit", "push", "publish", "delete"]
+    "forbidden": ["migration", "database-schema", "b1b", "direct-stable-db-write", "real-stable-install", "real-rebind", "push-without-new-authorization", "publish-without-new-authorization", "delete"]
   },
   "standingAuthorization": {
     "id": "governance-development-continuous-v1",
@@ -293,7 +298,7 @@
   "blockingConditions": [
     "project_control_binding_still_points_to_legacy_d_path",
     "amazon_stable_binding_still_points_to_legacy_kimi_path",
-    "project_control_rc9_candidate_uncommitted_unpublished_uninstalled",
+    "project_control_rc9_candidate_committed_local_unpublished_uninstalled",
     "real_plugin_publish_install_and_rebind_not_authorized"
   ],
   "knownLimitations": [
@@ -307,7 +312,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "B-G4-0-RELEASE-AUTHORIZATION",
-    "goal": "Review the validated B-G4 plus G2-P2 receipt, then authorize an exact commit; push/plugins-v release, real Stable install, and a fresh read-only rebind preview remain separate fail-closed stages."
+    "id": "B-G4-0-PUSH-RELEASE-AUTHORIZATION",
+    "goal": "Review exact commit 2400410 and its receipt, then authorize the exact push plus plugins-v release; real Stable install and a fresh read-only rebind preview remain separate fail-closed stages."
   }
 }
