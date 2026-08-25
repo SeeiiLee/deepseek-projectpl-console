@@ -4,16 +4,17 @@
 // Stable packed E2E verifies the receipt before trusting an existing EXE.
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { join, relative, resolve, sep } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { EXPECTED_HARNESS_COMMIT } from './build-kit.mjs'
 import { DEV_E2E_DRIVER_SCHEMA_VERSION, DEV_E2E_DRIVER_VERSION } from '../src/dev-e2e-driver.js'
 
-export const RECEIPT_SCHEMA_VERSION = 2
+export const RECEIPT_SCHEMA_VERSION = 3
 
 export const RECEIPT_SOURCE_FILES = Object.freeze([
   'package.json',
   'plugin-set.lock.json',
   'src/main.js',
+  'src/boot-log.js',
   'src/update-service.js',
   'src/update-core.js',
   'src/dev-e2e-driver.js',
@@ -27,14 +28,11 @@ export const RECEIPT_SOURCE_FILES = Object.freeze([
   'src/build-flavor.js',
   'scripts/build-plugins.js',
   'scripts/pack-desktop.js',
+  'scripts/package-set.mjs',
   'scripts/apply-harness-tsdown-fallback.mjs',
 ])
 
-// Runtime artifacts that are not build inputs and must not make the tree hash
-// non-deterministic.
-const PACKAGED_EXCLUDE_RELATIVE = new Set([
-  'boot-error.log',
-])
+const PACKAGED_EXCLUDE_RELATIVE = new Set()
 
 export function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
@@ -87,6 +85,7 @@ export function hashTree(directory, { excludeRelative = PACKAGED_EXCLUDE_RELATIV
 
 export function writeBuildReceipt({ projectRoot, flavor, exePath, packagedAppDir, receiptPath, e2eBuild = false, installerSha256 }) {
   const packagedTree = hashTree(packagedAppDir)
+  const packageSetTree = hashTree(dirname(exePath))
   const receipt = {
     ...createSourceReceipt(projectRoot),
     schemaVersion: RECEIPT_SCHEMA_VERSION,
@@ -100,6 +99,8 @@ export function writeBuildReceipt({ projectRoot, flavor, exePath, packagedAppDir
     ...(installerSha256 === undefined ? {} : { installerSha256 }),
     packagedTreeHash: packagedTree.hash,
     packagedFileCount: packagedTree.fileCount,
+    packageSetTreeHash: packageSetTree.hash,
+    packageSetFileCount: packageSetTree.fileCount,
   }
   const resolvedReceiptPath = receiptPath ?? join(resolve(projectRoot), 'artifacts', 'build-receipt.json')
   writeFileSync(resolvedReceiptPath, `${JSON.stringify(receipt, null, 2)}\n`, { encoding: 'utf8' })
@@ -189,6 +190,16 @@ export function verifyBuildReceipt({
       if (expectedFlavor === 'dev' && !flavorText.includes("'dev'")) {
         issues.push('packaged resources/app build-flavor is not dev')
       }
+    }
+  }
+  const packageSetRoot = dirname(exePath)
+  if (existsSync(packageSetRoot)) {
+    const currentPackageSet = hashTree(packageSetRoot)
+    if (receipt.packageSetTreeHash !== currentPackageSet.hash) {
+      issues.push(`package-set tree hash mismatch: receipt ${String(receipt.packageSetTreeHash)} != current ${currentPackageSet.hash}`)
+    }
+    if (receipt.packageSetFileCount !== currentPackageSet.fileCount) {
+      issues.push(`package-set file count mismatch: receipt ${String(receipt.packageSetFileCount)} != current ${currentPackageSet.fileCount}`)
     }
   }
   return { ok: issues.length === 0, issues }

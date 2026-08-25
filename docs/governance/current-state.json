@@ -1,7 +1,7 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-25T06:27:48.385Z",
+  "recordedAt": "2026-08-25T06:50:20.757Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
@@ -25,7 +25,7 @@
     "developmentParent": "c27e989381c34dc06d4f4af1845f6122c0b00c2b"
   },
   "governanceConvergence": {
-    "phase": "g1-committed-local-g2-p0-next",
+    "phase": "g2-p0-locally-validated-g2-p1-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -111,6 +111,21 @@
         "smokeProcessCountAfter": 0,
         "disposition": "preserved-by-cyrus-decision-deferred-to-g2-p0"
       }
+    },
+    "g2": {
+      "status": "p0-locally-validated-p1-next",
+      "bootLogRelativePath": "logs\\boot-error.log",
+      "managedPackageSetsRoot": "Project Home\\local\\package-sets",
+      "managedPackageSetCount": 1,
+      "packageSetTreeHash": "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
+      "packageSetFiles": 5244,
+      "packageSetBytes": 837790443,
+      "buildReceiptSchemaVersion": 3,
+      "formalFullTests": "802/802",
+      "packageSetReusedWithoutDrift": true,
+      "legacyArtifactEvidenceUnchanged": true,
+      "temporaryProfileCountAfter": 0,
+      "smokeProcessCountAfter": 0
     }
   },
   "g4MigrationOrder": [
@@ -138,7 +153,6 @@
     "mealTracker": "not-authorized-pending-amazon-review"
   },
   "blockingConditions": [
-    "packed_package_set_boot_log_mutability_deferred_to_g2_p0",
     "project_control_binding_still_points_to_legacy_d_path",
     "dev_and_stable_project_id_conflict_unresolved",
     "local_retention_cleanup_machine_loop_not_implemented",
@@ -152,7 +166,7 @@
     "A line GitHub Releases"
   ],
   "nextTask": {
-    "id": "G2-P0-PREFLIGHT",
-    "goal": "Define and receipt the narrow G2-P0 task that makes packed package sets immutable and redirects boot logs to isolated userData/local; do not start B1b or touch real Stable/Dev binding."
+    "id": "G2-P1-LIFECYCLE-CONTRACT",
+    "goal": "Implement machine registration, quota and cleanup plan/apply/verify/receipt for managed package sets and runs, using only task-owned fixtures for deletion; do not start B1b or touch real Stable/Dev binding."
   }
 }

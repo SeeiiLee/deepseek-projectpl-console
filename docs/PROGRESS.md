@@ -1,5 +1,15 @@
 # Progress
 
+## 2026-08-25：G2-P0 packed package set 不可变性本地验收通过
+
+- 根因关闭：`src/main.js::appendBootLog` 不再按应用源码目录推导日志位置，新增纯函数/写入 seam，把日志固定到当前 Electron 实例的绝对 `userData\logs\boot-error.log`；Stable、Dev、smoke 因 userData 不同自然隔离。
+- build receipt 升级为 schema v3：新 writer/build 工具加入 source hash，除 `resources/app` 外新增完整 `win-unpacked` 文件数与树 SHA-256；`boot-error.log` 不再是排除项，任何 package set 文件增删改均失败关闭。
+- 新增 Project Home managed package-set seam：只在 `local/package-sets/.staging/<operation>` 构建，F 盘低于 5 GiB 失败关闭；成功后按完整树 hash 固化为 `local/package-sets/sha256-<hash>`，相同 source/package receipt 自动复用，失败 staging 只按所有权边界清理。`pack-desktop.js` 的输出覆盖只允许落在该 `.staging` 根，不能借环境变量写任意路径。
+- 红测试证据：初次定向运行 13 项中 4 项失败，分别证明缺少 boot-log 模块、缺少 package-set 模块、完整包外层文件漂移未检出、`boot-error.log` 被错误排除。修复后定向组合 22/22，全量正式 `npm test` 802/802，fail/cancelled/skipped/todo 均为 0。
+- 真实 packed 验收只新建一套 `sha256-58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d`：5244 文件 / 837,790,443 bytes。激活、重启 ACTIVE、回滚三次启动全部引用同一套；每次结束后的完整树逐文件 SHA 与启动前一致，日志只出现在临时 userData。正式全量再次复用该套，没有第二次构建。
+- 后验卫生：managed sets=1、staging=0、临时 `dsh-packed-e2e-profile-*`=0、Smoke 进程=0；旧 workspace `artifacts` 仍为 5233 文件 / 837,754,746 bytes，旧 `boot-error.log` 4581 bytes、SHA `90FDCDF2C16C89074806A141C9950EB55884C812BB7229242D0A881A2A487535`，零漂移且未删除/截断。
+- G2-P0 没有修改 B1b migration/DB/HTTP/UI/侧栏/收件箱，没有触碰真实 Stable/Dev binding、A Release、上游或受保护 F 数据。下一步为 G2-P1：registration、retention、quota 与 cleanup plan/apply/verify/receipt，只在 task-owned fixture 上做删除验收。
+
 ## 2026-08-25：G1 精确提交完成，live-state 转向 G2-P0
 
 - Cyrus 授予“治理与开发连续执行包 V1”：当前治理收口及 G2/G3 内通过 receipt 与门禁的本地 commit、任务自有临时文件清理不再逐项询问；push、发布、真实 Stable/Dev 切换与旧项目源删除不在授权内。G4 进一步收紧为 Amazon 单项目试迁，Amazon 验证后必须暂停，量化和 meal_tracker/食溯等待新决策。

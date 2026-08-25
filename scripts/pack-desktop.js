@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { delimiter, join, resolve } from 'node:path'
+import { delimiter, isAbsolute, join, relative, resolve } from 'node:path'
 import { writeBuildReceipt } from './build-receipt.mjs'
 
 // Flavor-aware packager. Builds the same tree under two completely separate
@@ -20,6 +20,17 @@ const validTargets = new Set(['nsis', 'portable', 'dir'])
 if ((flavor !== 'stable' && flavor !== 'dev') || targets.length === 0 || targets.some(target => !validTargets.has(target))) {
   process.stderr.write('usage: node scripts/pack-desktop.js <stable|dev> <nsis|portable|dir> [...]\n')
   process.exit(2)
+}
+
+const defaultArtifactOutput = join(projectRoot, flavor === 'dev' ? 'artifacts-dev' : 'artifacts')
+const outputOverride = process.env.DSH_ARTIFACT_DIR?.trim()
+const artifactOutput = outputOverride ? resolve(outputOverride) : defaultArtifactOutput
+if (outputOverride) {
+  const managedRoot = join(resolve(projectRoot, '..'), 'local', 'package-sets', '.staging')
+  const rel = relative(managedRoot, artifactOutput)
+  if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error(`DSH_ARTIFACT_DIR must be an operation-owned path below ${managedRoot}.`)
+  }
 }
 
 const flavorFile = join(projectRoot, 'src', 'build-flavor.js')
@@ -62,6 +73,7 @@ try {
   run('launch gate', process.execPath, ['scripts/verify-launch.js'])
   const builder = join(projectRoot, 'node_modules', 'electron-builder', 'out', 'cli', 'cli.js')
   const builderArgs = [builder, '--win', ...targets, '--x64', '--publish', 'never']
+  builderArgs.push(`-c.directories.output=${artifactOutput}`)
   if (flavor === 'dev') {
     builderArgs.push(
       '-c.appId=com.cyrus.deepseek-harness-personal-dev',
@@ -69,26 +81,21 @@ try {
       '-c.nsis.shortcutName=DeepSeek Harness Personal Dev',
       '-c.nsis.artifactName=DeepSeek-Harness-Personal-Dev-${version}-setup-${arch}.${ext}',
       '-c.portable.artifactName=DeepSeek-Harness-Personal-Dev-${version}-portable-${arch}.${ext}',
-      '-c.directories.output=artifacts-dev',
     )
   }
   run(`electron-builder (${flavor})`, process.execPath, builderArgs, { PATH: pnpmShimPath })
-  const unpackedExe = flavor === 'dev'
-    ? join(projectRoot, 'artifacts-dev', 'win-unpacked', 'DeepSeek Harness Personal Dev.exe')
-    : join(projectRoot, 'artifacts', 'win-unpacked', 'DeepSeek Harness Personal.exe')
-  const unpackedAppDir = flavor === 'dev'
-    ? join(projectRoot, 'artifacts-dev', 'win-unpacked', 'resources', 'app')
-    : join(projectRoot, 'artifacts', 'win-unpacked', 'resources', 'app')
+  const unpackedExe = join(artifactOutput, 'win-unpacked', flavor === 'dev'
+    ? 'DeepSeek Harness Personal Dev.exe'
+    : 'DeepSeek Harness Personal.exe')
+  const unpackedAppDir = join(artifactOutput, 'win-unpacked', 'resources', 'app')
   if (existsSync(unpackedExe) && existsSync(unpackedAppDir)) {
-    const receiptPath = flavor === 'dev'
-      ? join(projectRoot, 'artifacts-dev', 'build-receipt.json')
-      : join(projectRoot, 'artifacts', 'build-receipt.json')
+    const receiptPath = join(artifactOutput, 'build-receipt.json')
     const receipt = writeBuildReceipt({ projectRoot, flavor, exePath: unpackedExe, packagedAppDir: unpackedAppDir, receiptPath, e2eBuild })
     process.stdout.write(`build receipt written: ${receipt.path}\n`)
   }
   if (targets.some(target => target === 'nsis' || target === 'portable')) {
     run('artifact checksums', process.execPath, ['scripts/write-artifact-checksums.js'], {
-      DSH_ARTIFACT_DIR: flavor === 'dev' ? 'artifacts-dev' : 'artifacts',
+      DSH_ARTIFACT_DIR: artifactOutput,
     })
   }
 } catch (error) {

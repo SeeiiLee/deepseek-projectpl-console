@@ -9,8 +9,8 @@
 - **G0.5 Git 可重建阻断已关闭**：精确候选已提交为 `28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef`，其上的 G1 已提交为 `f5c58e5`；两者均未 push、未发布。
 - **真实 Project Control 路径/身份尚未晋升**：Stable 权威 `project_id` 仍登记旧主路径 `D:\Deepseek Harness Personal`；Dev 数据库另有冲突身份 `prj_01a00cfd-1fe4-7bb3-9123-027765662055`。G1 只修通新建时“整屋文件目标 / workspace 主 location”的代码 seam，没有 migration 或真实数据库写入；真实 binding 与双 ID 仍须另发受控事务。
 - **local 生命周期机器闭环尚未实现**：当前只创建了隔离分区与 receipt 目录，尚无 register → cleanup-plan → apply → verify → receipt、保留上限、磁盘阈值和调度健康实现。正式 packed E2E 已登记留下 workspace ignored `artifacts/` 5233 文件 / 837,754,746 bytes；临时 E2E profile 已清零。该目录留待 G2 按合同迁入/清理，本轮不擅自删除，也不批量迁移旧 run/cache。
-- **G2 前只具备临时防扩增规则，不等于机器清理已上线**：人工/packed 测试从 F 盘 canonical 出发，每任务最多一套共享、按内容寻址的只读 package set，run 只引用而不复制；无 preflight 不运行。该规则能阻止本轮继续制造副本，但自动登记、配额、到期清理和调度健康仍须 G2 实现。
-- **共享 packed package set 会被启动日志写回，已拍板保留证据并转 G2-P0**：G1 正式 `npm test` 796/796 后，临时 profile 和 Smoke 进程已清零、`artifacts` 文件数仍为 5233，但 `artifacts/win-unpacked/resources/app/boot-error.log` 被 `src/main.js::appendBootLog` 追加 1,527 bytes，总量变为 837,754,746 bytes。Cyrus 已决定不扩大 G1、不截断日志；G2 首步把 boot log 改写到隔离 userData/local，并证明共享 package set 只读。
+- **G2-P0 packed 可变性阻断已关闭**：启动日志已改写各实例 `userData\logs\boot-error.log`；build receipt v3 校验完整 `win-unpacked`，正式测试创建并复用唯一 `local/package-sets/sha256-58ad…`，三次启动后整树 SHA 不变。旧 `artifacts` 仍为 5233 文件 / 837,754,746 bytes，原日志 4581 bytes/SHA 不变；没有覆盖历史证据。
+- **G2-P1 local 生命周期机器闭环尚未实现**：P0 已阻止 package set 运行时漂移和重复构建，但自动登记所有 package set/run、保留上限、配额、cleanup plan/apply/verify/receipt、磁盘调度健康仍未落地。当前唯一 managed set 必须保留；真实删除验收只能使用带任务所有权标记的一次性 fixture。
 - **跨 Harness 无缝续接尚未验收**：权威索引和 project_id 已对齐，但 toolbox 投影、memory-host、真实 binding 与逐端 context receipt 属 G3/G4，不能把当前单 workspace 通过外推为所有 Harness 已无缝接入。
 - **G4 批量迁移被 Amazon 试迁闸门主动截断**：连续授权只覆盖 G4 的 Amazon 单项目试迁；完成复制/校验/可回滚切换和人工观察后必须暂停。量化与 meal_tracker/食溯仍为未授权状态，不能因 Amazon 通过而自动继续；三个项目的旧源目录均不得在该授权下删除。
 

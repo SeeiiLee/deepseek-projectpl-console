@@ -27,6 +27,7 @@ function makeFixture() {
     'package.json': JSON.stringify({ name: 'fixture', version: '0.4.2' }),
     'plugin-set.lock.json': '{}',
     'src/main.js': 'main',
+    'src/boot-log.js': 'bl',
     'src/update-service.js': 'us',
     'src/update-core.js': 'uc',
     'src/personal-plugins.js': 'pp',
@@ -40,6 +41,7 @@ function makeFixture() {
     'src/build-flavor.js': "export const BUILD_FLAVOR = 'stable'\n",
     'scripts/build-plugins.js': 'bp',
     'scripts/pack-desktop.js': 'pd',
+    'scripts/package-set.mjs': 'ps',
     'scripts/apply-harness-tsdown-fallback.mjs': 'af',
   }
   for (const [file, content] of Object.entries(sourceFiles)) {
@@ -61,6 +63,7 @@ function makeFixture() {
   }
   const exePath = join(root, 'win-unpacked', 'DeepSeek Harness Personal.exe')
   writeFileRecursive(exePath, 'exe-bytes')
+  writeFileRecursive(join(root, 'win-unpacked', 'resources.pak'), 'resource-bytes')
   const receiptPath = join(root, 'receipt.json')
   const receipt = writeBuildReceipt({
     projectRoot: root,
@@ -106,6 +109,22 @@ test('build receipt fails when a resources/app protected file is tampered', () =
   const result = verifyBuildReceipt({ projectRoot: root, receipt, exePath, packagedAppDir: appDir, expectedFlavor: 'stable' })
   assert.equal(result.ok, false)
   assert.ok(result.issues.some(issue => /packaged resources\/app tree hash mismatch/u.test(issue)))
+})
+
+test('build receipt fails when any complete package-set file is tampered', () => {
+  const { root, appDir, exePath, receipt } = makeFixture()
+  writeFileSync(join(root, 'win-unpacked', 'resources.pak'), 'tampered-resource')
+  const result = verifyBuildReceipt({ projectRoot: root, receipt, exePath, packagedAppDir: appDir, expectedFlavor: 'stable' })
+  assert.equal(result.ok, false)
+  assert.ok(result.issues.some(issue => /package-set tree hash mismatch/u.test(issue)))
+})
+
+test('boot-error.log is not excluded from package immutability checks', () => {
+  const { root, appDir, exePath, receipt } = makeFixture()
+  writeFileSync(join(appDir, 'boot-error.log'), 'runtime mutation')
+  const result = verifyBuildReceipt({ projectRoot: root, receipt, exePath, packagedAppDir: appDir, expectedFlavor: 'stable' })
+  assert.equal(result.ok, false)
+  assert.ok(result.issues.some(issue => /resources\/app tree hash mismatch|package-set tree hash mismatch/u.test(issue)))
 })
 
 test('build receipt fails when a packaged file is missing', () => {

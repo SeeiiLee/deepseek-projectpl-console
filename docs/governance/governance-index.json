@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-25T06:27:48.385Z",
+  "generatedAt": "2026-08-25T06:50:20.757Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -45,9 +45,12 @@
     }
   },
   "packedTestPolicy": {
-    "status": "interim-until-g2-machine-enforcement",
+    "status": "g2-p0-machine-enforced-g2-p1-retention-pending",
     "packageSetPolicy": "single-content-addressed-read-only-package-set-per-build",
     "runInputPolicy": "runs-reference-shared-assets-never-copy-packages-per-run",
+    "managedRoot": "Project Home\\local\\package-sets",
+    "integrityPolicy": "complete-win-unpacked-tree-sha256-before-and-after-runtime",
+    "bootLogPolicy": "active Electron userData\\logs\\boot-error.log",
     "maxNewPackageSetsPerTask": 1,
     "preflightRequired": true,
     "packedE2eDuringG0_1": "forbidden"
@@ -156,6 +159,14 @@
       "commitReceipt": "../local/receipts/op_g1_project_home_20260825_01-commit.json",
       "commit": "f5c58e5874a977aa5104a092e2e7c03472b6a4d7",
       "deferredGovernanceIssue": "packed package boot log writes into resources/app; evidence preserved and fix deferred to G2-P0"
+    },
+    "g2PackedImmutability": {
+      "status": "p0-locally-validated-p1-next",
+      "managedPackageSetTreeHash": "58adf7b2c17a51a330116919375dcc7562db059323602d696b88299d78af7c3d",
+      "managedPackageSetCount": 1,
+      "buildReceiptSchemaVersion": 3,
+      "formalTest": "802/802",
+      "legacyArtifactEvidenceUnchanged": true
     }
   },
   "g4MigrationOrder": [

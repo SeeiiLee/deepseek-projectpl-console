@@ -18,17 +18,14 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, test } from 'node:test'
 
-import { verifyBuildReceipt } from '../scripts/build-receipt.mjs'
 import { resolveBuildRoot } from '../scripts/build-kit.mjs'
+import { ensureManagedPackageSet } from '../scripts/package-set.mjs'
 import { prepareSmokeExecutable } from '../scripts/smoke-executable.js'
 import { PERSONAL_PLUGINS } from '../src/personal-plugins.js'
 import { UpdateService } from '../src/update-service.js'
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const COMMIT = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
-const PACKAGED_EXE = join(repoRoot, 'artifacts', 'win-unpacked', 'DeepSeek Harness Personal.exe')
-const PACKAGED_APP_DIR = join(repoRoot, 'artifacts', 'win-unpacked', 'resources', 'app')
-const PACKAGED_RECEIPT = join(repoRoot, 'artifacts', 'build-receipt.json')
 const owned = []
 afterEach(() => {
   for (const path of owned.splice(0)) rmSync(path, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
@@ -36,56 +33,6 @@ afterEach(() => {
 
 function sha256File(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex')
-}
-
-function readBuildReceipt() {
-  if (!existsSync(PACKAGED_RECEIPT)) return null
-  try {
-    return JSON.parse(readFileSync(PACKAGED_RECEIPT, 'utf8'))
-  } catch {
-    return null
-  }
-}
-
-function verifyCurrentReceipt(receipt) {
-  return verifyBuildReceipt({
-    projectRoot: repoRoot,
-    receipt,
-    exePath: PACKAGED_EXE,
-    packagedAppDir: PACKAGED_APP_DIR,
-    expectedFlavor: 'stable',
-  })
-}
-
-function runStablePackDir() {
-  const result = spawnSync(process.execPath, ['scripts/pack-desktop.js', 'stable', 'dir'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    windowsHide: true,
-    timeout: 600_000,
-  })
-  if (result.status !== 0) {
-    throw new Error(`pack:win:dir failed (${String(result.status)}).\n${result.stderr || result.stdout}`)
-  }
-  if (!existsSync(PACKAGED_EXE)) throw new Error('pack:win:dir did not produce artifacts/win-unpacked exe')
-}
-
-function ensureStablePackagedExecutable() {
-  const existingReceipt = readBuildReceipt()
-  if (existingReceipt !== null) {
-    const verification = verifyCurrentReceipt(existingReceipt)
-    if (verification.ok) return PACKAGED_EXE
-  }
-  // Never trust an EXE just because it exists: rebuild unless the receipt
-  // proves it was produced from the current source/lock/client version.
-  runStablePackDir()
-  const receipt = readBuildReceipt()
-  if (receipt === null) throw new Error('pack:win:dir did not write artifacts/build-receipt.json')
-  const verification = verifyCurrentReceipt(receipt)
-  if (!verification.ok) {
-    throw new Error(`pack:win:dir produced a receipt that does not match current source: ${verification.issues.join('; ')}`)
-  }
-  return PACKAGED_EXE
 }
 
 function collectHashes(directory, output = {}, prefix = '') {
@@ -272,7 +219,19 @@ function terminateTree(pid) {
 }
 
 test('stable packed Electron/Harness external plugin closure activates, restarts ACTIVE, rolls back to builtin', async () => {
-  const executable = ensureStablePackagedExecutable()
+  const packageSet = ensureManagedPackageSet({
+    projectRoot: repoRoot,
+    operationId: `g2-p0-formal-${process.pid}`,
+  })
+  const executable = packageSet.exePath
+  const packageHashesBefore = collectHashes(packageSet.winUnpacked)
+  const assertPackageSetUnchanged = (label) => {
+    assert.deepEqual(
+      collectHashes(packageSet.winUnpacked),
+      packageHashesBefore,
+      `managed package set changed after ${label}`,
+    )
+  }
 
   // All three launches share one temporary Profile (userData, DSH_HOME,
   // agentsHome, workspace, Project Control home). The external plugin root is
@@ -304,6 +263,9 @@ test('stable packed Electron/Harness external plugin closure activates, restarts
     profile,
     resultPath: join(profileRoot, 'result-1.json'),
   })
+  assertPackageSetUnchanged('activation launch')
+  assert.equal(existsSync(join(profile.userData, 'logs', 'boot-error.log')), true, 'boot log must be written below isolated userData')
+  assert.equal(existsSync(join(packageSet.appDir, 'boot-error.log')), false, 'packaged resources/app must not receive boot logs')
   const currentPath = join(externalRoot, 'current.json')
   assert.equal(existsSync(currentPath), true, 'current.json was not committed after first launch')
   const current = JSON.parse(readFileSync(currentPath, 'utf8'))
@@ -327,6 +289,7 @@ test('stable packed Electron/Harness external plugin closure activates, restarts
     profile,
     resultPath: join(profileRoot, 'result-2.json'),
   })
+  assertPackageSetUnchanged('restart launch')
 
   // Rollback through the public UpdateService entry to builtin.
   const service = new UpdateService({
@@ -354,6 +317,7 @@ test('stable packed Electron/Harness external plugin closure activates, restarts
     profile,
     resultPath: join(profileRoot, 'result-3.json'),
   })
+  assertPackageSetUnchanged('rollback launch')
   const rolledBackScopeStat = lstatSync(profileScope)
   assert.equal(rolledBackScopeStat.isSymbolicLink(), false, 'profile @cyrus should no longer be a single external junction after rollback')
 })
