@@ -1,17 +1,11 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import type { AnySchema, ValidateFunction } from 'ajv'
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
+import { runtimeSchemaPath } from './runtime-schema.ts'
 
-const COMMAND_SCHEMA_PATH = fileURLToPath(new URL(
-  '../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-envelope.schema.json',
-  import.meta.url,
-))
-const RESULT_SCHEMA_PATH = fileURLToPath(new URL(
-  '../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-result.schema.json',
-  import.meta.url,
-))
+const COMMAND_SCHEMA_PATH = runtimeSchemaPath('lifecycleCommand')
+const RESULT_SCHEMA_PATH = runtimeSchemaPath('lifecycleResult')
 
 let commandValidator: ValidateFunction<LifecycleCommand> | undefined
 let commandValidatorUnavailable = false

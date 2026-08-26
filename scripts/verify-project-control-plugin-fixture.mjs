@@ -15,8 +15,8 @@ import {
 import { UpdateService } from '../src/update-service.js'
 
 const PROJECT_CONTROL = '@cyrus/dsh-project-control'
-const BASELINE_VERSION = '0.1.0-rc.8'
-const CANDIDATE_VERSION = '0.1.0-rc.9'
+const BASELINE_VERSION = '0.1.0-rc.9'
+const CANDIDATE_VERSION = '0.1.0-rc.10'
 
 function parseArgs(argv) {
   const result = {}
@@ -77,7 +77,7 @@ async function verifyFixture(fixtureRoot) {
   assert.equal(entry.packageName, PROJECT_CONTROL)
   assert.equal(entry.version, CANDIDATE_VERSION)
   assert.equal(entry.externalEligible, true)
-  assert.equal(index.minClient, '0.4.5')
+  assert.equal(index.minClient, '0.4.6')
   assert.equal(release.localFixture, true)
   assert.equal(release.releaseTag, index.releaseTag)
   assert.equal(release.assets.length, 1)
@@ -115,7 +115,7 @@ async function main() {
     evidence.assetSize = fixture.entry.assetSize
     evidence.compatibleHarnessCommit = fixture.index.compatibleHarness.commit
 
-    temporaryRoot = await mkdtemp(join(tmpdir(), 'dsh-b-g4-0-project-control-'))
+    temporaryRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-rc10-schema-'))
     const userData = join(temporaryRoot, 'user-data')
     const dshHome = join(temporaryRoot, 'dsh-home')
     const baselineRoot = await createBaselineRoot(repositoryRoot, temporaryRoot)
@@ -123,7 +123,7 @@ async function main() {
     process.env.DSH_PERSONAL_PLUGIN_INDEX = fixture.indexPath
 
     service = new UpdateService({
-      app: { getVersion: () => '0.4.5', isPackaged: true },
+      app: { getVersion: () => '0.4.6', isPackaged: true },
       shell: {},
       userDataPath: userData,
       projectRoot: baselineRoot,
@@ -159,6 +159,15 @@ async function main() {
     const installedRoot = join(generationDir, 'packages', 'project-control', CANDIDATE_VERSION)
     const hostModule = await import(`${pathToFileURL(join(installedRoot, 'lib', 'index.js')).href}?acceptance=${Date.now()}`)
     assert.equal(typeof hostModule.validateLifecycleCommand, 'function')
+    assert.equal(typeof hostModule.validateLifecycleResult, 'function')
+    assert.equal(typeof hostModule.validateProjectManifest, 'function')
+    const manifest = await readJson(join(repositoryRoot, 'protocol', 'project-control', 'v1alpha1', 'examples', 'project-manifest.valid.json'))
+    const lifecycleCommand = await readJson(join(repositoryRoot, 'protocol', 'project-control', 'v1alpha1', 'lifecycle', 'examples', 'command-rebind-location.valid.json'))
+    const lifecycleResult = await readJson(join(repositoryRoot, 'protocol', 'project-control', 'v1alpha1', 'lifecycle', 'examples', 'result-rebind-location.valid.json'))
+    assert.equal(hostModule.validateProjectManifest(manifest).valid, true)
+    assert.equal(hostModule.validateLifecycleCommand(lifecycleCommand).ok, true)
+    assert.equal(hostModule.validateLifecycleResult(lifecycleResult).ok, true)
+    checks.installedSchemaValidation = 'pass'
     checks.selfContainedHostImport = 'pass'
 
     const activation = startPendingActivation({
@@ -214,7 +223,7 @@ async function main() {
     checks.temporaryProfileRemoved = temporaryRoot === undefined || !existsSync(temporaryRoot) ? 'pass' : 'fail'
     await writeJsonExclusive(receiptPath, {
       schemaVersion: 1,
-      task: 'B-G4-0 Project Control rebind hotfix isolated generation acceptance',
+      task: 'Project Control 0.1.0-rc.10 self-contained Schema isolated generation acceptance',
       startedAt,
       completedAt: new Date().toISOString(),
       outcome,

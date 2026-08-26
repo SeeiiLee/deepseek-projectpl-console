@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path'
 import { PERSONAL_PLUGINS } from '../src/personal-plugins.js'
 import { applyHarnessTsdownFallback } from './apply-harness-tsdown-fallback.mjs'
 import { ensureHarnessSourceLink, resolveBuildRoot } from './build-kit.mjs'
+import { stageProjectControlRuntimeSchemas } from './project-control-runtime-schemas.mjs'
 
 const projectRoot = resolve(import.meta.dirname, '..')
 const forceRebuild = process.argv.includes('--force')
@@ -57,6 +58,9 @@ for (const { packageName, directoryName } of PERSONAL_PLUGINS) {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   if (manifest.name !== packageName) {
     throw new Error(`Expected ${packageName} at ${directory}, found ${JSON.stringify(manifest.name)}.`)
+  }
+  if (packageName === '@cyrus/dsh-project-control') {
+    stageProjectControlRuntimeSchemas(projectRoot)
   }
   if (!forceRebuild && isFreshBuild(directory)) {
     process.stdout.write(`Up to date ${packageName} — skipping rebuild.\n`)

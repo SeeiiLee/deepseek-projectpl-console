@@ -12,6 +12,7 @@ const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.
 const host = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8')
 const http = readFileSync(new URL('../src/http.ts', import.meta.url), 'utf8')
 const lifecycleValidator = readFileSync(new URL('../src/lifecycle-validator.ts', import.meta.url), 'utf8')
+const runtimeSchema = readFileSync(new URL('../src/runtime-schema.ts', import.meta.url), 'utf8')
 const client = readFileSync(new URL('../src/client/index.ts', import.meta.url), 'utf8')
 const contract = readFileSync(new URL('../src/client/contract.ts', import.meta.url), 'utf8')
 const component = readFileSync(new URL('../src/client/ProjectControlPlaceholder.tsx', import.meta.url), 'utf8')
@@ -86,8 +87,11 @@ test('always closes storage when route disposal fails and aggregates dual failur
 })
 
 test('loads the canonical lifecycle schema lazily and keeps read routes independent', () => {
-  assert.match(lifecycleValidator, /protocol\/project-control\/v1alpha1\/lifecycle\/schemas\/lifecycle-command-envelope\.schema\.json/)
-  assert.match(lifecycleValidator, /protocol\/project-control\/v1alpha1\/lifecycle\/schemas\/lifecycle-command-result\.schema\.json/)
+  assert.match(runtimeSchema, /protocol\/project-control\/v1alpha1\/lifecycle\/schemas\/lifecycle-command-envelope\.schema\.json/)
+  assert.match(runtimeSchema, /protocol\/project-control\/v1alpha1\/lifecycle\/schemas\/lifecycle-command-result\.schema\.json/)
+  assert.match(runtimeSchema, /\.\/runtime-schemas\//)
+  assert.match(lifecycleValidator, /runtimeSchemaPath\('lifecycleCommand'\)/)
+  assert.match(lifecycleValidator, /runtimeSchemaPath\('lifecycleResult'\)/)
   assert.match(lifecycleValidator, /function getCommandValidator[\s\S]*compileSchema<LifecycleCommand>\(COMMAND_SCHEMA_PATH\)/)
   assert.match(lifecycleValidator, /function getResultValidator[\s\S]*compileSchema<LifecycleCommandResult>\(RESULT_SCHEMA_PATH\)/)
   assert.match(lifecycleValidator, /function compileSchema[\s\S]*readFileSync\(schemaPath/)

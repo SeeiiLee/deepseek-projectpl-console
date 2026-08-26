@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-project-control",
   "description": "项目控制台：扫描、审阅并只读关联现有项目，保留真实数据库状态与项目列表。",
-  "version": "0.1.0-rc.9",
+  "version": "0.1.0-rc.10",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -25,6 +25,12 @@
     "lib/index.js",
     "lib/client.js",
     "lib/client.js.map",
+    "lib/runtime-schemas/project-manifest.schema.json",
+    "lib/runtime-schemas/lifecycle-command-envelope.schema.json",
+    "lib/runtime-schemas/lifecycle-command-result.schema.json",
+    "lib/runtime-schemas/external-command-envelope.schema.json",
+    "lib/runtime-schemas/project-home.schema.json",
+    "lib/runtime-schemas/template-manifest.schema.json",
     "migrations/*.sql",
     "templates/**/template.json"
   ],
@@ -54,7 +60,7 @@
         "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
       ]
     },
-    "minClient": "0.4.5",
+    "minClient": "0.4.6",
     "seams": [],
     "desktopCapabilities": [
       "projectControl.selectDirectory"
@@ -96,6 +102,12 @@
         "lib/client.js",
         "lib/client.js.map",
         "lib/index.js",
+        "lib/runtime-schemas/external-command-envelope.schema.json",
+        "lib/runtime-schemas/lifecycle-command-envelope.schema.json",
+        "lib/runtime-schemas/lifecycle-command-result.schema.json",
+        "lib/runtime-schemas/project-home.schema.json",
+        "lib/runtime-schemas/project-manifest.schema.json",
+        "lib/runtime-schemas/template-manifest.schema.json",
         "migrations/0001_core_control_plane.sql",
         "migrations/0002_registration_state.sql",
         "migrations/0003_intake_discovery.sql",
@@ -116,7 +128,13 @@
       "sha256": {
         "lib/client.js": "74b064710dc0dcf34b0fbfd6aaaddcb4b296e806680f34243a02decc2a95f3a1",
         "lib/client.js.map": "73dfb9d0376f61a6b21f80edeabe0c28905871591eee1b5172e7e8ff25d98191",
-        "lib/index.js": "7bac4d0ef8e881def6834fc46775595da544307cca5f59fa24c5b912c36ac227",
+        "lib/index.js": "49fa610bb154d90754c3a555863a4e8a5711a802bcd76508b5b7b3c4cf7e85c7",
+        "lib/runtime-schemas/external-command-envelope.schema.json": "1eca3c79b90dbb4c9a313ab8e004eb1c8d87ffa2daeaa1698e06fb33c080f638",
+        "lib/runtime-schemas/lifecycle-command-envelope.schema.json": "7ab0598a141df3337a86a9f23e4eaec906b333012a2999c77fba3a9c1b77d954",
+        "lib/runtime-schemas/lifecycle-command-result.schema.json": "fc812375b2bc5655f02f1a4d699f9ec0b013d243e570ccb953b85a4c1f340b2f",
+        "lib/runtime-schemas/project-home.schema.json": "a12915b0dee0bf3a62465fd81e6fad94892ad315e1dc25ff08c10a0cebcf6a65",
+        "lib/runtime-schemas/project-manifest.schema.json": "09f0e4904eead4c88c2e503a53b6bfbda34e92e687bd7650984b292353d3fea0",
+        "lib/runtime-schemas/template-manifest.schema.json": "f89d69a0edd98bd4ad232b8650dcc963f9bd0fbba5e5b1446ba16b90063a559b",
         "migrations/0001_core_control_plane.sql": "303c5e921c298e0085652dc253f80322ec8e6febea188de00f3b0a12d54fef50",
         "migrations/0002_registration_state.sql": "1d8705ec54ade9ba84e6d7eff46780a639f42d945242a253ab03f435bc2a2d08",
         "migrations/0003_intake_discovery.sql": "8d6d3075cf952d919239ac95792ee0130dbf2e37f47168ca98e23ef5dc415ab3",
@@ -136,7 +154,7 @@
       }
     },
     "release": {
-      "batch": "B-G4-0",
+      "batch": "B-G4-0-schema-hotfix",
       "source": "a-line-generation-channel"
     }
   }

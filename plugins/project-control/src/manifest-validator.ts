@@ -1,13 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import type { AnySchema, ErrorObject, ValidateFunction } from 'ajv'
 import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
+import { runtimeSchemaPath } from './runtime-schema.ts'
 
-const MANIFEST_SCHEMA_PATH = fileURLToPath(new URL(
-  '../../../protocol/project-control/v1alpha1/schemas/project-manifest.schema.json',
-  import.meta.url,
-))
+const MANIFEST_SCHEMA_PATH = runtimeSchemaPath('projectManifest')
 
 export interface ProjectManifestValidationIssue {
   field: string

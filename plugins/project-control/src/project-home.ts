@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
+import { runtimeSchemaPath } from './runtime-schema.ts'
 
 export const PROJECT_HOME_SCHEMA_VERSION = 'project-home/v1' as const
 export const PROJECT_HOME_MARKER_PATH = '.project-home/project-home.json' as const
@@ -16,25 +16,7 @@ export const PROJECT_HOME_ZONES = Object.freeze({
 const PROJECT_ID = /^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 const PROJECT_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,118}[a-z0-9])?$/u
 
-function existingFile(candidates: string[]): string {
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate
-  }
-  const fallback = candidates.at(-1)
-  if (fallback === undefined) throw new Error('Project Home schema path candidates are required.')
-  return fallback
-}
-
-const SCHEMA_PATH = existingFile([
-  fileURLToPath(new URL(
-    '../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json',
-    import.meta.url,
-  )),
-  fileURLToPath(new URL(
-    '../../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json',
-    import.meta.url,
-  )),
-])
+const SCHEMA_PATH = runtimeSchemaPath('projectHome')
 
 export class ProjectHomeContractError extends Error {
   code: string

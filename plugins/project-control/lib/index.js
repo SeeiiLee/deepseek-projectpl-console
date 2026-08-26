@@ -11335,10 +11335,27 @@ var require_dist = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	exports.default = formatsPlugin;
 }));
 //#endregion
-//#region src/manifest-validator.ts
+//#region src/runtime-schema.ts
 var import__2020 = /* @__PURE__ */ __toESM(require__2020(), 1);
 var import_dist = /* @__PURE__ */ __toESM(require_dist(), 1);
-const MANIFEST_SCHEMA_PATH = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/schemas/project-manifest.schema.json", import.meta.url));
+const RUNTIME_SCHEMAS = Object.freeze({
+	projectManifest: ["project-manifest.schema.json", "../../../protocol/project-control/v1alpha1/schemas/project-manifest.schema.json"],
+	lifecycleCommand: ["lifecycle-command-envelope.schema.json", "../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-envelope.schema.json"],
+	lifecycleResult: ["lifecycle-command-result.schema.json", "../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-result.schema.json"],
+	externalCommand: ["external-command-envelope.schema.json", "../../../protocol/project-control/v1alpha1/schemas/command-envelope.schema.json"],
+	projectHome: ["project-home.schema.json", "../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json"],
+	templateManifest: ["template-manifest.schema.json", "../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json"]
+});
+/** Resolve packaged bytes first, retaining a source-tree fallback for direct tests. */
+function runtimeSchemaPath(name) {
+	const [fileName, authorityRelativePath] = RUNTIME_SCHEMAS[name];
+	const found = [fileURLToPath(new URL(`./runtime-schemas/${fileName}`, import.meta.url)), fileURLToPath(new URL(authorityRelativePath, import.meta.url))].find(existsSync);
+	if (found !== void 0) return found;
+	throw new Error(`Project Control runtime Schema is unavailable: ${name}`);
+}
+//#endregion
+//#region src/manifest-validator.ts
+const MANIFEST_SCHEMA_PATH = runtimeSchemaPath("projectManifest");
 let manifestValidator;
 function validateProjectManifest(value) {
 	let validate;
@@ -12462,8 +12479,8 @@ const scanProjectDirectory = scanProjectDirectory$1;
 const scanSourceDirectory = scanSourceDirectory$1;
 //#endregion
 //#region src/lifecycle-validator.ts
-const COMMAND_SCHEMA_PATH$1 = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-envelope.schema.json", import.meta.url));
-const RESULT_SCHEMA_PATH = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-result.schema.json", import.meta.url));
+const COMMAND_SCHEMA_PATH$1 = runtimeSchemaPath("lifecycleCommand");
+const RESULT_SCHEMA_PATH = runtimeSchemaPath("lifecycleResult");
 let commandValidator$1;
 let commandValidatorUnavailable$1 = false;
 let resultValidator;
@@ -12544,7 +12561,7 @@ function publicValidationIssue$1(error) {
 }
 //#endregion
 //#region src/external-update-validator.ts
-const COMMAND_SCHEMA_PATH = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/schemas/command-envelope.schema.json", import.meta.url));
+const COMMAND_SCHEMA_PATH = runtimeSchemaPath("externalCommand");
 let commandValidator;
 let commandValidatorUnavailable = false;
 /** Validate the canonical external update envelope without a second schema copy in runtime code. */
@@ -15262,13 +15279,7 @@ Object.freeze({
 	local: "local"
 });
 const PROJECT_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,118}[a-z0-9])?$/u;
-function existingFile$1(candidates) {
-	for (const candidate of candidates) if (existsSync(candidate)) return candidate;
-	const fallback = candidates.at(-1);
-	if (fallback === void 0) throw new Error("Project Home schema path candidates are required.");
-	return fallback;
-}
-const SCHEMA_PATH = existingFile$1([fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json", import.meta.url)), fileURLToPath(new URL("../../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json", import.meta.url))]);
+const SCHEMA_PATH = runtimeSchemaPath("projectHome");
 var ProjectHomeContractError = class extends Error {
 	code;
 	details;
@@ -15333,13 +15344,9 @@ function hasTemplateFiles(directory) {
 	}
 	return false;
 }
-function existingFile(candidates) {
-	for (const candidate of candidates) if (existsSync(candidate)) return candidate;
-	return candidates[candidates.length - 1];
-}
 const TEMPLATE_DIRECTORY_CANDIDATES = [fileURLToPath(new URL("../templates/", import.meta.url)), fileURLToPath(new URL("../../templates/", import.meta.url))];
 const TEMPLATES_DIRECTORY = TEMPLATE_DIRECTORY_CANDIDATES.find(hasTemplateFiles) ?? TEMPLATE_DIRECTORY_CANDIDATES[TEMPLATE_DIRECTORY_CANDIDATES.length - 1];
-const TEMPLATE_SCHEMA_PATH = existingFile([fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json", import.meta.url)), fileURLToPath(new URL("../../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json", import.meta.url))]);
+const TEMPLATE_SCHEMA_PATH = runtimeSchemaPath("templateManifest");
 const LEGACY_PROJECT_MANIFEST_PATH = ".dsh-project/project.yaml";
 const COMMON_PLACEHOLDERS = Object.freeze([
 	"{{PROJECT_ID}}",
@@ -17769,4 +17776,4 @@ function packageVersion() {
 	return "0.1.0-rc.5";
 }
 //#endregion
-export { PROJECT_CONTROL_API_PREFIX, apply, createProjectControlRequestHandler, disposeProjectControlRegistration, fileSyncJournal, inject, recoverPendingFileSyncPlans, storageConsoleAdapter, storageExternalAdapter, storageLifecycleAdapter, validateLifecycleCommand, validateLifecycleResult };
+export { PROJECT_CONTROL_API_PREFIX, apply, createProjectControlRequestHandler, disposeProjectControlRegistration, fileSyncJournal, inject, recoverPendingFileSyncPlans, storageConsoleAdapter, storageExternalAdapter, storageLifecycleAdapter, validateLifecycleCommand, validateLifecycleResult, validateProjectManifest };

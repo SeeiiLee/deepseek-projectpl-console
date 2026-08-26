@@ -571,3 +571,4 @@ export {
   PROJECT_CONTROL_API_PREFIX,
 } from './http.ts'
 export { validateLifecycleCommand, validateLifecycleResult } from './lifecycle-validator.ts'
+export { validateProjectManifest } from './manifest-validator.ts'

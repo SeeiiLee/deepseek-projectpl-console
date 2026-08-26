@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:project-home",
+  "title": "Project Home Marker v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "slug",
+    "zones",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "project-home/v1"
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,118}[a-z0-9])?$"
+    },
+    "zones": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspace",
+        "worktrees",
+        "local"
+      ],
+      "properties": {
+        "workspace": {
+          "const": "workspace"
+        },
+        "worktrees": {
+          "const": "worktrees"
+        },
+        "local": {
+          "const": "local"
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "canonicalWorkspaceReady",
+        "authorityReceipt",
+        "baselinePromotionReceipt"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "bootstrapping",
+            "canonical-workspace-locally-validated"
+          ]
+        },
+        "canonicalWorkspaceReady": {
+          "type": "boolean"
+        },
+        "authorityReceipt": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "baselinePromotionReceipt": {
+          "$ref": "#/$defs/relativePath"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*[:\\\\])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\/$)[^/]+(?:/[^/]+)*$"
+    }
+  }
+}
