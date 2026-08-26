@@ -5,6 +5,7 @@ import {
   checkCheckoutContract,
   classifyCheckoutPath,
   inspectEolBytes,
+  inspectIndexEol,
 } from '../scripts/check-checkout-contract.js'
 
 const repositoryRoot = resolve(import.meta.dirname, '..')
@@ -24,6 +25,16 @@ test('checkout contract rejects mixed or wrong line endings with stable codes', 
   assert.deepEqual(inspectEolBytes(Buffer.from('a\r\nb\r\n'), 'crlf'), [])
   assert.deepEqual(inspectEolBytes(Buffer.from('a\nb\n'), 'crlf'), ['BARE_LF_IN_CRLF_FILE'])
   assert.deepEqual(inspectEolBytes(Buffer.from('a\rb'), 'crlf'), ['BARE_CR_IN_CRLF_FILE'])
+})
+
+test('checkout contract requires text blobs to be LF-normalized in the index', () => {
+  assert.deepEqual(inspectIndexEol('lf', 'lf'), [])
+  assert.deepEqual(inspectIndexEol('lf', 'crlf'), [])
+  assert.deepEqual(inspectIndexEol('none', 'lf'), [])
+  assert.deepEqual(inspectIndexEol('crlf', 'crlf'), ['INDEX_TEXT_BLOB_NOT_LF_NORMALIZED'])
+  assert.deepEqual(inspectIndexEol('mixed', 'lf'), ['INDEX_TEXT_BLOB_NOT_LF_NORMALIZED'])
+  assert.deepEqual(inspectIndexEol('-text', 'lf'), ['INDEX_TEXT_BLOB_NOT_LF_NORMALIZED'])
+  assert.deepEqual(inspectIndexEol('crlf', 'binary'), [])
 })
 
 test('the current repository satisfies the checkout byte contract', () => {

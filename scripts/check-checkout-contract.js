@@ -48,6 +48,11 @@ export function inspectEolBytes(bytes, expectedEol) {
   return issues
 }
 
+export function inspectIndexEol(indexEol, expectedEol) {
+  if (expectedEol === 'binary' || indexEol === 'lf' || indexEol === 'none') return []
+  return ['INDEX_TEXT_BLOB_NOT_LF_NORMALIZED']
+}
+
 function listCandidatePaths(repositoryRoot) {
   const output = execFileSync('git', [
     '-C', repositoryRoot, 'ls-files', '-z', '--cached', '--others', '--exclude-standard',
@@ -64,9 +69,29 @@ function checkAttributesFile(repositoryRoot) {
     .map(line => ({ code: 'ATTRIBUTE_RULE_MISSING', path: '.gitattributes', detail: line }))
 }
 
+function checkIndexEol(repositoryRoot) {
+  const output = execFileSync('git', ['-C', repositoryRoot, 'ls-files', '--eol', '-z'])
+  const failures = []
+  for (const record of output.toString('utf8').split('\0').filter(Boolean)) {
+    const separator = record.indexOf('\t')
+    const metadata = separator === -1 ? '' : record.slice(0, separator)
+    const relativePath = separator === -1 ? record : record.slice(separator + 1)
+    const match = /^i\/([^\s]+)\s/u.exec(metadata)
+    if (match === null) {
+      failures.push({ code: 'INDEX_EOL_RECORD_INVALID', path: relativePath })
+      continue
+    }
+    const expectedEol = classifyCheckoutPath(relativePath)
+    for (const code of inspectIndexEol(match[1], expectedEol)) {
+      failures.push({ code, path: relativePath, detail: `i/${match[1]}` })
+    }
+  }
+  return failures
+}
+
 export function checkCheckoutContract(repositoryRoot = REPOSITORY_ROOT) {
   const root = resolve(repositoryRoot)
-  const failures = checkAttributesFile(root)
+  const failures = [...checkAttributesFile(root), ...checkIndexEol(root)]
   const counts = { scanned: 0, lf: 0, crlf: 0, binary: 0 }
   for (const relativePath of listCandidatePaths(root)) {
     const absolutePath = resolve(root, relativePath)
