@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一开发 workspace 位于 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。Amazon 正式身份是 `prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd`，canonical workspace 是 `F:\Projects\amazon-store\workspace`；旧 Kimi 目录仍在 Amazon Project Home 归档区。B-G4-0 `0.1.0-rc.9` 候选与 G2-P2 logical task/package-set 机器闭环已通过并形成产品提交 `2400410ca10e4a8e792d276bcde89faeb778e1e6`，正式全量 826/826；packed 复用现有 `f515424f...`，没有新增第四套。治理 release-gate 提交 `4658a6e337deaa5b4529f2fdc4066aabd487d787` 及其祖先已推送到 `codex/governance-alignment`，同名 tag `plugins-v2026.08.25.1` 精确指向该提交；现有 Release `376569643` 已公开，四项资产的 Project Control 包 SHA-256 为 `01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca`。真实 Stable 数据库、安装和 binding 均未改；下一步是单独授权 Stable 插件安装，安装验收后再重新只读核对候选并预览 rebind。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 原审批中心任务继续暂停。真实 Stable 客户端是 `0.4.6`、Project Control 是 `0.1.0-rc.10`；Amazon 已稳定换绑到 `F:\Projects\amazon-store\workspace`，K3 canonical 上下文已验收。Candidate Center 第一批已由本地产品提交 `7337bb36624672983e51f4229d3f96a43d4fe63e` 完成并通过 Project Control `191/191`、安全仓库套件 `831/831`，但尚未进入 Stable。当前唯一下一门是把产品与治理分支合成一条本地历史并制作/隔离验收 Project Control `0.1.0-rc.11` 单插件候选；push、Release、Stable 安装和项目换绑仍需分别授权。完整后续任务可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
 
 ## 权威链
 

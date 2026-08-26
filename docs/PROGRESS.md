@@ -1,5 +1,34 @@
 # Progress
 
+## 2026-08-26：Candidate Center 第一批已提交，进入 canonical 历史合并与 rc.11 本地候选
+
+- Candidate Center 第一批已在隔离 worktree 精确提交为 `7337bb36624672983e51f4229d3f96a43d4fe63e`，父提交为 Project Control rc.10 源码 `ef41ea4624347116a183294c1904c28cfa261b31`；提交主题为 `feat(project-control): close candidate center first batch`。
+- 实现范围严格保持第一批：服务端过滤后分页、状态计数与已登记/待审阅/已忽略/历史四类视图、批量软忽略/恢复与指纹继承、同路径同身份陈旧 relocation duplicate 原子关闭、至少 120 条混合候选验收。未进入 migration/DB schema、B1b 审批数据库/收件箱、第二套 rebind 事务或其他项目迁移。
+- 复核修复后的机器验收：Project Control `191/191`；安全仓库套件 `831/831`；插件检查、Project Control build/tsc、checkout、launch、governance 与 `git diff --check` 均通过，skipped/todo=0。为避免本治理/单插件任务再制造大型测试包，没有重复触发 packed E2E。
+- 第一批验收 receipt=`../local/receipts/op_b_g4_candidate_center_review_fix_20260826_01.json`，SHA-256=`fca3960b560899d1d149604d87767a5102213ab2f88c7a3a4fcad29b30bd0635`；commit receipt=`../local/receipts/op_b_g4_candidate_center_first_batch_20260826_01-commit.json`，SHA-256=`9e2ad39fd003e52ab155ff106edfc723d748b5bff7c8215dafebc23a2d1496fc`；提交文件聚合 SHA-256=`71a2475832b859dc0a51753eb8badcba04292aab3061f0a2342b4af4f1a9274b`。
+- Cyrus 已授权：把上述事实和完整后续队列写回 canonical 权威链、精确 docs-only 提交、以普通本地 merge 合成产品与治理历史、随后制作并隔离验收 Project Control `0.1.0-rc.11` 本地单插件候选。context receipt=`../local/receipts/op_b_g4_candidate_center_post_commit_alignment_rc11_20260826_01-context.json`。
+- 当前明确未授权：push、GitHub Release、Stable 安装/写入、项目换绑/迁移、B1b、删除或覆盖现有 `release-staging/`。因此 `7337bb3` 是已验收本地产品事实，不是生产已上线事实。
+
+## 2026-08-26：K3 canonical Workspace 只读验收完成
+
+- Cyrus 已在 K3 侧新建对应 `F:\Projects\deepseek-harness-personal\workspace` 的 Workspace；没有继续使用旧路径做新工作。
+- K3 完整读取 AGENTS、governance-index、current-state、NEXT、BLOCKED，并运行 canonical toolbox context-status；结果 `ready`，projectId=`prj_01a0082e-fea8-7d6f-b6c2-08a259fba389`、canonicalWorkspace、governancePhase、nextTask 与本项目机器状态一致，6 份权威文件 hash 全部 matched。
+- K3 观察到 branch=`codex/governance-alignment`、HEAD=`e6308706b015c905c5114f50da33891ba5a5ebef`；dirty 仅来自本轮 docs-only 治理对齐与既有 `release-staging/`，未修改任何文件。
+- 旧 K3/Kimi Workspace 处置固定为 history-only：不建 junction、不继续写、不删除。K3 后续代码只能进入任务专属 worktree。
+- `G4-K3-CANONICAL-CONTEXT-ALIGNMENT` 已关闭；唯一 nextTask 推进为 `B-G4-CANDIDATE-CENTER-FIRST-BATCH-AUTHORIZATION`。候选中心产品代码尚未获授权、尚未开始。
+- 验收 receipt：`../local/receipts/op_k3_canonical_context_alignment_20260826_01.json`。
+
+## 2026-08-26：生产事实与跨 Harness 指针完成治理对齐
+
+- canonical 身份保持 `prj_01a0082e-fea8-7d6f-b6c2-08a259fba389` / `F:\Projects\deepseek-harness-personal\workspace`；治理 HEAD `e630870` 已验证为 rc.10/候选中心基线 `ef41ea4` 的祖先，没有新的 A/B 基线分叉。
+- 依据安装收据对齐生产事实：Stable 客户端为 0.4.6；Project Control 0.1.0-rc.10 已安装并 active，Release tag=`plugins-v2026.08.26.1`、commit=`ef41ea4`、包 SHA-256=`a6496244...0008`。rc.9 继续作为历史 Release 保留，不再是当前安装门。
+- 依据 Amazon 换绑后收据和 Stable SQLite `readOnly + PRAGMA query_only=ON` 复核：Amazon 正式项目 revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`；旧 Kimi 路径 inactive，path history=`pth_01a03cf6-feaf-7abd-9c9e-686d14931b61`。
+- Stable 当前四个正式项目仍为 Amazon、DeepSeek Harness Personal、Cyrus Quant Trading、mealtracker。除 Amazon 外，其余三项继续保留原绑定；候选中心上线前不批量扫描或换绑。
+- 当前候选分布为 conflict 1、discovered 3、ignored 4、imported 5、relocation_candidate 1。注册项目不会因此消失，但现有“先 LIMIT 100、后客户端过滤”会让历史/终态候选淹没真正待办，已登记为 Candidate Center 第一批阻断。
+- 该治理对齐时间点 K3 尚未完成 canonical 上下文验收；随后已按本页上方 `K3 canonical Workspace 只读验收完成` 记录关闭。K3 做控制台开发必须从本项目 canonical workspace 读取权威链；做 Amazon 时使用独立 Amazon workspace；旧 Workspace 只作历史，不建 junction、不删除。
+- 本轮只改治理索引/current-state/NEXT/BLOCKED/PROGRESS/绑定盘点并写本地收据；`release-staging/` 原样保留，未改产品代码、Stable 数据库、项目 binding 或 Amazon/量化/食溯文件，未 commit、push、发布或安装。
+- 治理对齐收据：`../local/receipts/op_dsh_governance_alignment_20260826_01.json`。
+
 ## 2026-08-26：B-G4-0 source push 与 Project Control `0.1.0-rc.9` Release 已公开
 
 - Cyrus 精确授权后，`codex/governance-alignment` 与 tag `plugins-v2026.08.25.1` 已无 force、无覆盖地指向 `4658a6e337deaa5b4529f2fdc4066aabd487d787`；产品提交 `2400410ca10e4a8e792d276bcde89faeb778e1e6` 是其父提交。现有祖先提交因此可从该远端 branch 追溯；Toolbox/Memory 各自仓库仍无 remote、没有被一并发布。

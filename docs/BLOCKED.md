@@ -1,6 +1,17 @@
 # Blocked
 
-## 当前阻断（2026-08-26，B-G4-0 rc.9 已发布、Stable 安装与 rebind 待授权）
+## 当前阻断（2026-08-26，Candidate Center 第一批已本地提交，rc.11 尚未进入 Stable）
+
+已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
+
+- **K3 canonical 上下文阻断已关闭**：K3 已新建对应 `F:\Projects\deepseek-harness-personal\workspace` 的 Workspace，只读核验 project_id、canonicalWorkspace、phase、nextTask 与 6 份权威 hash 一致，`context-status=ready`；未修改文件。旧 Workspace 只作历史，不建 junction、不继续写、不删除。
+- **Candidate Center 第一批代码阻断已本地关闭，生产阻断尚未关闭**：服务端过滤后分页、状态计数/四类视图、批量软忽略/恢复与指纹继承、陈旧 relocation duplicate 原子关闭已提交为 `7337bb3`，Project Control `191/191`、安全仓库套件 `831/831`。但它尚未打成 rc.11、push、发布或安装 Stable；Stable 中 conflict/discovered/ignored/imported/relocation_candidate 混杂的现象仍会继续出现。
+- **陈旧 relocation candidate 只能由 rc.11 安装后的同一事务收口**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 当前仍在 Stable。禁止重复 rebind、直接改库、人工删除候选或把本地代码通过误写 Stable 方式“提前生效”。
+- **DSH 自身及其他项目换绑暂停**：DSH 正式项目仍指向 `D:\Deepseek Harness Personal`；量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。三者都必须等待候选中心和位置生命周期通过 Stable 验收后再逐项处理。
+- **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
+- **本轮授权只到本地 rc.11 候选**：允许当前 7 份治理文件的精确 docs-only commit、本地非 force 历史合并和 rc.11 单插件候选/隔离验收；不允许 push、GitHub Release、Stable 安装/写入、项目换绑/迁移或 B1b。既有 `release-staging/` 必须保留；新候选只能写新的 task-owned 目录。
+
+## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 
 - **G2-P2 发布前阻断已关闭并形成可远端追溯的 Git 事实**：packed E2E 已改用权威 `current-state.nextTask.id`，append-only claim 跨进程限制每 logical task 一次物理构建且来源变化失败关闭。唯一一次正式 826/826 复用 `f515424f...`、`physicalCreated=false`；Cyrus 精确授权的 superseded `496b3357...` 已经 plan → journal → verify → receipt 删除，当前只剩两套受管包，unknown/missing=0；实现随 `2400410` 提交并作为当前远端 branch/tag 的祖先。该发布前阻断已关闭，但不构成 Stable 安装或 rebind 授权。
 - **Host/UI 产品缺陷已在本地提交关闭，不再是代码阻断**：`linked_legacy` 使用确定性 `legacy_fingerprint` + 已登记文档 hash 交集，缺证据失败关闭；CandidateDetails 可滚动且 action sticky。最终 `0.1.0-rc.9` 单插件夹具完成隔离生成、加载、激活与回滚，Project Control 185/185、正式全量 826/826；精确提交为 `2400410`。
