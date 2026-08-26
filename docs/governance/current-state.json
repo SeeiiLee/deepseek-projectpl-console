@@ -1,23 +1,24 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-26T14:40:41.000Z",
+  "recordedAt": "2026-08-26T15:51:46.000Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-history-merged-rc11-committed-pushed-published-stable-install-acceptance-next",
+    "status": "canonical-candidate-center-rc11-stable-accepted-project-lifecycle-second-batch-next",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "b2ca19a7893055227a4c66e4d2d5439446aa1442",
-    "headAtRecord": "b2ca19a7893055227a4c66e4d2d5439446aa1442",
-    "workingTreeState": "tracked-clean-release-staging-preserved-untracked",
+    "approvedParentCommit": "9d8c1a7803de2e3a1a91970f4dfef78f2bd30bce",
+    "headAtRecord": "9d8c1a7803de2e3a1a91970f4dfef78f2bd30bce",
+    "workingTreeState": "single-authorized-docs-only-acceptance-record-on-clean-parent-release-staging-preserved-untracked",
     "commitAuthorized": false,
-    "lastAuthorizedCommit": "b2ca19a7893055227a4c66e4d2d5439446aa1442",
+    "lastAuthorizedCommit": "9d8c1a7803de2e3a1a91970f4dfef78f2bd30bce",
     "lastCommitAuthorizationConsumed": true,
+    "selfCommitRecordPolicy": "the exact commit containing this state is recorded in ../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01-commit.json to avoid a self-referential hash",
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
   "releaseBaseline": {
@@ -28,7 +29,7 @@
     "developmentParent": "ef41ea4624347116a183294c1904c28cfa261b31"
   },
   "governanceConvergence": {
-    "phase": "stable-v046-rc10-amazon-rebind-k3-aligned-candidate-center-rc11-committed-pushed-published-stable-install-acceptance-next",
+    "phase": "stable-v046-rc11-candidate-center-accepted-project-lifecycle-second-batch-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -72,18 +73,19 @@
     "latestProductionState": {
       "clientVersion": "0.4.6",
       "clientTagCommit": "96f883efbaafee0febf57baed9b47c164417fd6a",
-      "projectControlVersion": "0.1.0-rc.10",
-      "projectControlCommit": "ef41ea4624347116a183294c1904c28cfa261b31",
-      "projectControlReleaseTag": "plugins-v2026.08.26.1",
-      "projectControlReleaseId": 376934599,
-      "projectControlAssetSha256": "a6496244a9d0089c91d2ddda1c939cd27ea4d8ee40077d87428cfcbf51ac0008",
-      "stableInstallReceipt": "../local/receipts/op_project_control_rc10_stable_install_20260826_01.json",
+      "projectControlVersion": "0.1.0-rc.11",
+      "projectControlCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+      "projectControlReleaseTag": "plugins-v2026.08.26.3",
+      "projectControlReleaseId": 377215143,
+      "projectControlAssetSha256": "80476bafe305c6885dbd2d14b6348dfce829f85bb918d26b791206f26eb84963",
+      "stableInstallReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json",
+      "stableInstallReceiptSha256": "9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e",
       "amazonPostRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
       "governanceAlignmentReceipt": "../local/receipts/op_dsh_governance_alignment_20260826_01.json",
-      "candidateClosureStatus": "history-merged-rc11-committed-pushed-published-not-installed"
+      "candidateClosureStatus": "stable-installed-restarted-and-accepted"
     },
     "candidateCenterFirstBatch": {
-      "status": "history-merged-rc11-build-reproducibility-closed-committed-pushed-published-awaiting-stable-install-acceptance",
+      "status": "history-merged-rc11-build-reproducibility-closed-committed-pushed-published-stable-installed-and-accepted",
       "branch": "codex/project-control-candidate-closure",
       "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_project_control_candidate_closure_20260826",
       "baseCommit": "ef41ea4624347116a183294c1904c28cfa261b31",
@@ -98,10 +100,13 @@
       "projectControlTests": "193/193; fail=0; skipped=0; todo=0",
       "safeRepositoryTests": "833/833 across 117 test files excluding packed Stable E2E; fail=0; skipped=0; todo=0",
       "machineGates": "dual-path three-artifact same-SHA check-plugins build tsc checkout launch governance lock diff passed",
-      "productionInstalled": false,
+      "productionInstalled": true,
+      "stableAcceptanceReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json",
+      "stableAcceptanceReceiptSha256": "9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e",
+      "stableAcceptance": "four views and counts manually accepted; one docs candidate bulk ignored and restored; stale Amazon relocation history-only; Amazon revision and paths unchanged",
       "rc11LocalCandidate": {
         "version": "0.1.0-rc.11",
-        "status": "passed-reproducible-committed-pushed-published-not-installed",
+        "status": "passed-reproducible-committed-pushed-published-stable-installed-and-accepted",
         "staging": "release-staging/plugins-v2026.08.26.3",
         "assetName": "cyrus-dsh-project-control-0.1.0-rc.11.tgz",
         "assetBytes": 288537,
@@ -125,7 +130,7 @@
         "releaseReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_commit_push_release_20260826_01.json",
         "releaseReceiptSha256": "08fa56024c4a7f3189a63119224eca5b00b3d3d012afaddf33e3ea04a77e7c4e",
         "remoteAssetsVerified": true,
-        "stableInstalled": false
+        "stableInstalled": true
       }
     },
     "g0_5Commit": {
@@ -183,7 +188,7 @@
       ]
     },
     "candidateCenterFirstBatch": {
-      "status": "history-merged-rc11-committed-pushed-published-not-yet-in-stable",
+      "status": "history-merged-rc11-committed-pushed-published-stable-installed-and-accepted",
       "commit": "7337bb36624672983e51f4229d3f96a43d4fe63e",
       "scope": [
         "server-filter-before-pagination",
@@ -192,7 +197,7 @@
         "stale-relocation-duplicate-atomic-closure",
         "at-least-120-mixed-candidate-acceptance"
       ],
-      "next": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE"
+      "next": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"
     },
     "g1": {
       "status": "committed-and-pushed-as-ancestor-not-separately-published",
@@ -394,12 +399,12 @@
     "scopeEnd": "pause-after-amazon-migration-pilot-verification"
   },
   "currentAuthorization": {
-    "scope": "rc11-exact-commit-push-release-and-docs-alignment-completed-paused-before-stable-install",
-    "allowed": ["read-only review", "governance status and local receipts created under this operation"],
-    "forbidden": ["additional product edits", "additional commit or push without new authorization", "additional GitHub Release", "Stable database or userData write", "Stable install", "project rebind", "project file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
+    "scope": "rc11-stable-acceptance-and-single-docs-only-governance-commit-consumed",
+    "allowed": ["read-only review after this closure"],
+    "forbidden": ["product edits without new authorization", "additional commit or push", "additional GitHub Release", "Stable database or userData write", "project rebind", "project file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
   },
   "g4MigrationGate": {
-    "mode": "amazon-stable-and-k3-aligned-other-projects-paused-until-candidate-center-rc11-and-location-lifecycle-stable-acceptance",
+    "mode": "amazon-stable-k3-and-candidate-center-aligned-other-projects-paused-until-location-lifecycle-stable-acceptance",
     "amazonStore": "stable-rebind-complete-k3-canonical-context-verified",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -414,8 +419,8 @@
     "amazonCanonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
     "amazonKimiCompatibility": "new-workspace-required-old-workspace-history-only-no-junction",
     "pauseAfterAmazonVerification": true,
-    "cyrusQuantTrading": "paused-until-candidate-center-and-location-lifecycle-accepted",
-    "mealTracker": "paused-until-candidate-center-and-location-lifecycle-accepted"
+    "cyrusQuantTrading": "paused-until-location-lifecycle-accepted",
+    "mealTracker": "paused-until-location-lifecycle-accepted"
   },
   "crossHarnessContext": {
     "codex": {
@@ -445,13 +450,12 @@
     "deepseekHarnessPersonal": "D:\\Deepseek Harness Personal",
     "cyrusQuantTrading": "F:\\documents\\Kimi\\Workspaces\\Cyrus Quant Trading‌",
     "mealTracker": "F:\\QClawData\\workspace\\meal_tracker",
-    "candidateCounts": {"conflict": 1, "discovered": 3, "ignored": 4, "imported": 5, "relocation_candidate": 1}
+    "candidateCounts": {"conflict": 1, "discovered": 3, "ignored": 4, "imported": 5, "relocation_candidate": 1},
+    "candidateViewCounts": {"review": 1, "ignored": 3, "history": 10},
+    "candidateCenterStableAcceptanceReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json"
   },
   "blockingConditions": [
     "project_control_binding_still_points_to_legacy_d_path",
-    "stale_same_path_relocation_candidate",
-    "terminal_imported_candidates_visible_in_default_review_queue",
-    "candidate_center_first_batch_not_installed_in_stable",
     "project_location_lifecycle_second_batch_not_product_complete"
   ],
   "knownLimitations": [
@@ -469,7 +473,7 @@
     {"order": 1, "id": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["7337bb3-and-governance-history-merged"], "authorizationGate": "completed-local-only"},
     {"order": 2, "id": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE", "status": "completed", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"], "authorizationGate": "completed-local-only"},
     {"order": 3, "id": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION", "status": "completed", "dependsOn": ["B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"], "authorizationGate": "completed-e67e501-plugins-v2026.08.26.3-release-377215143"},
-    {"order": 4, "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 4, "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION"], "authorizationGate": "completed-stable-installed-restarted-and-accepted", "receipt": "../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json", "receiptSha256": "9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e"},
     {"order": 5, "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH", "status": "pending", "dependsOn": ["candidate-center-stable-acceptance"], "authorizationGate": "separate-product-authorization", "scope": ["project-archive-unarchive", "user-initiated-rebind-reusing-one-transaction"], "excluded": ["physical-delete", "instance-detach"]},
     {"order": 6, "id": "G4-DSH-CANONICAL-REBIND", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "single-project-rebind-authorization"},
     {"order": 7, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-DSH-CANONICAL-REBIND"], "authorizationGate": "migration-and-rebind-authorization"},
@@ -481,7 +485,7 @@
     {"order": 13, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
   ],
   "nextTask": {
-    "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE",
-    "goal": "After new explicit Cyrus authorization, use the existing plugin update channel to install only Project Control 0.1.0-rc.11 from plugins-v2026.08.26.3 into Stable. Before installation verify the offered version, source tag, package SHA-256, and pending-generation state. After restart, manually accept the four candidate views, server-side filter-before-pagination and counts, bulk ignore/restore, and stale relocation duplicate closure while confirming Amazon project identity, path, and revision do not change. Stop on any drift and do not retry automatically. Do not rebind or migrate projects, build a client package-set, start the second lifecycle batch, or enter B1b under this task."
+    "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH",
+    "goal": "After separate Cyrus product authorization, implement project archive/unarchive and a user-initiated change-workspace entry that constructs the same validated relocation candidate as scanning and reuses the one existing project.rebindLocation transaction. Preserve project_id, path history, audit evidence, revision preconditions and fail-closed behavior. Exclude physical project deletion, instance detach, a second rebind transaction, direct Stable writes, real project rebind or migration, publishing, installation and B1b. Complete local code and isolated acceptance, then pause for separate release authorization."
   }
 }

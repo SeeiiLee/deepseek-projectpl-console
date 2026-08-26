@@ -1,16 +1,16 @@
 # Blocked
 
-## 当前阻断（2026-08-26，rc.11 已精确提交、push、发布，尚未安装 Stable）
+## 当前阻断（2026-08-26，rc.11 已安装并通过 Candidate Center Stable 验收）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
 - **K3 canonical 上下文阻断已关闭**：K3 已新建对应 `F:\Projects\deepseek-harness-personal\workspace` 的 Workspace，只读核验 project_id、canonicalWorkspace、phase、nextTask 与 6 份权威 hash 一致，`context-status=ready`；未修改文件。旧 Workspace 只作历史，不建 junction、不继续写、不删除。
-- **Candidate Center 第一批代码、构建与发布阻断已关闭，生产安装阻断尚未关闭**：服务端过滤后分页、状态计数/四类视图、批量软忽略/恢复与指纹继承、陈旧 relocation duplicate 原子关闭已提交为 `7337bb3`；rc.11 绝对路径构建依赖也已修复并随 `e67e501` 精确提交、普通 push。Project Control `193/193`、安全仓库套件 `833/833`，canonical/任务 worktree 三份构建产物同 SHA；`plugins-v2026.08.26.3` 已公开且四项远端资产 digest 全部复核通过。但 Stable 仍运行 rc.10，现有 conflict/discovered/ignored/imported/relocation_candidate 混杂仍会继续出现，不能把“已发布”写成“已上线”。
+- **Candidate Center 第一批代码、构建、发布与生产验收阻断已关闭**：Stable 已激活 Project Control `0.1.0-rc.11`；25 个安装文件 hash 一致，四类视图和计数经 Cyrus 人工确认，唯一 `docs` 候选完成一次受控忽略/恢复，其他 13 条候选未变。验收 receipt=`../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json`，SHA-256=`93903384...a555e`。
 - **rc.11 构建可复现性阻断已关闭**：物理路径现在只用于 CSS 文件读取和 watch，lightningcss/Rolldown 使用稳定包内相对身份；`index.js`、`client.js`、`client.js.map` 在 canonical 与 task-owned worktree 逐字节一致。旧 `.2` staging 经 Cyrus 授权和精确哈希复核后已由新 `.3` 替代并删除，不再保留“只发布冻结 canonical bundle”的例外债务。
-- **陈旧 relocation candidate 只能由 rc.11 安装后的同一事务收口**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 当前仍在 Stable。禁止重复 rebind、直接改库、人工删除候选或把本地代码通过误写 Stable 方式“提前生效”。
-- **DSH 自身及其他项目换绑暂停**：DSH 正式项目仍指向 `D:\Deepseek Harness Personal`；量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。三者都必须等待候选中心和位置生命周期通过 Stable 验收后再逐项处理。
+- **陈旧 relocation 默认队列阻断已关闭，历史证据继续保留**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 的原始状态行未物理删除，但已以 `historyReason=superseded` 只进入历史视图；禁止重复 rebind 或直接改库。
+- **DSH 自身及其他项目换绑继续暂停**：DSH 正式项目仍指向 `D:\Deepseek Harness Personal`；量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。候选中心门已通过，但三者还必须等待位置生命周期第二批通过本地开发、发布与 Stable 验收后再逐项处理。
 - **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
-- **本轮 rc.11 提交/push/Release 授权已用完**：候选提交=`e67e50150ff42e1dab504898b86301b2bcc8ad44`，tag=`plugins-v2026.08.26.3`，Release ID=`377215143`，资产 SHA-256=`80476baf...4963`；未使用 force、未覆盖旧 Release、未安装或写 Stable。下一步必须由 Cyrus 单独授权 rc.11 Stable 安装与 Candidate Center 人工验收；项目换绑/迁移、第二批位置生命周期与 B1b 仍不在当前授权内。
+- **本轮 rc.11 Stable 验收与治理收口授权已用完**：只对 `docs` 候选执行一次可恢复 Host API 操作并恢复原可见状态；未直接改库、未 rebind、未迁移、未 push/发布。下一步 `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` 必须由 Cyrus 单独产品授权；真实项目换绑/迁移、物理删除、instance detach 与 B1b 仍不在当前授权内。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 

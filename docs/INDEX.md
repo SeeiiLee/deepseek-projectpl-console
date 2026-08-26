@@ -53,9 +53,9 @@
 | governance/LLM项目治理说明书.md | 权威（v1.1，ADR-009 联动） | LLM 治理操作手册；Project Home 三分区；§0 速查卡进 workspace/AGENTS.md；含三层执行保障 |
 | governance/统一项目目录与三分区治理合同.md | 权威 v1.0（ADR-009） | Project Home、workspace/worktrees/local、Project ID、跨 Harness AGENTS/Skill/记忆、retention、存量迁移和 Console 机器验收 |
 | governance/项目路径绑定盘点表.md | 权威（v2，2026-08-25 联动） | 项目统一迁移第 0 步；目标改为 `F:\Projects\<slug>\workspace`；旧物理分类目录建议被 ADR-009 取代 |
-| GOVERNANCE_INDEX.md | 权威入口 | 治理总索引的人类可读入口；当前记录 B-G4-0/G2-P2 source 已 push、Project Control rc.9 Release 已公开与 Stable 安装执行指针，机器入口见下两行 |
-| governance/governance-index.json | 权威机器索引 | 权威优先级、固定合同 hash、实时状态入口、G2-P2 提交事实、local 生命周期合同和 fail-closed 规则 |
-| governance/current-state.json | 活跃机器状态 | 当前项目身份、A/B 基线、`2400410` 产品提交、`4658a6e` 远端 branch/tag、Release `376569643`、阻断、保护路径与 Stable 安装授权任务；每次交接必须刷新 |
+| GOVERNANCE_INDEX.md | 权威入口 | 治理总索引的人类可读入口；当前记录 Candidate Center rc.11 已在 Stable 验收，下一门为项目位置生命周期第二批，机器入口见下两行 |
+| governance/governance-index.json | 权威机器索引 | 权威优先级、固定合同 hash、实时状态入口、Candidate Center rc.11 生产验收、后续任务队列和 fail-closed 规则 |
+| governance/current-state.json | 活跃机器状态 | 当前项目身份、A/B 基线、Stable `0.4.6` + Project Control `0.1.0-rc.11`、Amazon 不变量、阻断、保护路径与下一任务；每次交接必须刷新 |
 
 ## 设计（目标目录 design/）
 
@@ -104,10 +104,10 @@
 
 | 文档 | 状态 | 说明 |
 |---|---|---|
-| NEXT.md | 活跃（暂留根部） | B-G4-0 push/Release 已完成；当前只执行 Stable 安装授权门，rebind、量化、食溯均保持暂停 |
+| NEXT.md | 活跃（暂留根部） | Candidate Center rc.11 Stable 验收已完成；当前只进入项目位置生命周期第二批授权门，真实 rebind、量化、食溯均保持暂停 |
 | HANDOVER_TO_DEEPSEEK_HARNESS.md | 活跃 | 总交接入口（compat.json handoverEntry） |
 | HANDOFF_WORKBENCH_LOCAL_FILE_IMAGE.md | 留档 | 工作台本地文件识图交接 |
-| PROGRESS.md | 活跃 | 进度与机器验收记录；当前记录 B-G4-0/G2-P2 826/826、精确清理、source push 与 Project Control rc.9 Release 公开事实 |
+| PROGRESS.md | 活跃 | 进度与机器验收记录；当前追加 Project Control rc.11 Stable generation、四类视图、受控忽略/恢复和 Amazon 不变量证据 |
 | handoff/项目统合-迁移-工具架构-整合材料包-2026-08-25.md | 输入材料，非权威 | K3 讨论包；只作溯源与对照，任何状态须经 governance index/current-state 重新确认 |
 | HANDOVER_*（食溯侧在 meal_tracker 项目内） | — | 各项目自己的 docs 治理按 D3 同构执行 |
 
@@ -134,7 +134,7 @@
 |---|---|---|
 | DEVLOG.md | 活跃 | 开发日志（190K，追加式） |
 | 经验.md | 活跃 | 经验沉淀 |
-| BLOCKED.md | 活跃 | 活跃阻断与已关闭项；代码、G2-P2、push/Release 阻断已关闭，Stable 安装与真实 rebind 仍分门授权 |
+| BLOCKED.md | 活跃 | 活跃阻断与已关闭项；Candidate Center Stable 安装验收已关闭，位置生命周期第二批与真实 rebind 仍分门授权 |
 
 ## 附件（attachments/）与既有子目录
 

@@ -275,3 +275,11 @@
 - 先执行 public publish dry-run 验证同一 tgz SHA，再通过既有插件发布通道创建、验资并公开 Release。task-owned 临时凭据和 staging 已精确清理，未新增 package-set。
 - 主 receipt：`../local/receipts/op_b_g4_candidate_center_rc11_commit_push_release_20260826_01.json`，SHA-256=`08fa56024c4a7f3189a63119224eca5b00b3d3d012afaddf33e3ea04a77e7c4e`。
 - 未安装/写 Stable，未执行项目 rebind/迁移，未进入第二批位置生命周期或 B1b。Stable 仍为客户端 `0.4.6` + Project Control `0.1.0-rc.10`；下一门是另行授权的 rc.11 Stable 安装与人工验收。
+
+## 2026-08-26 Candidate Center rc.11 Stable 安装与人工验收
+
+- Cyrus 已通过更新中心完成 Project Control `0.1.0-rc.11` 安装并重启 Stable；当前 generation=`pending-1787755854103`，source tag=`plugins-v2026.08.26.3`，tgz SHA-256=`80476bafe305c6885dbd2d14b6348dfce829f85bb918d26b791206f26eb84963`，25 个安装文件逐一复算无缺失/不符，pending/activating 均不存在。
+- Live Host storage=`ready`、schemaVersion=9、项目数=4；四类视图计数为项目 4、待审阅 1、已忽略 3、历史 10。Cyrus 人工确认页签、计数、唯一 `docs` 待审阅项和 Amazon 陈旧候选只在历史中出现，均与机器结果一致。
+- 经明确授权，仅对 `can_01a00149-75d0-71be-95c4-b0ffa7762d7c` 调用 Host 批量接口：`discovered r1 → ignored r2 → discovered r3`，计数 `1/3/10 → 0/4/10 → 1/3/10`；另外 13 条候选的状态、revision 与路径未变化。
+- Amazon 正式项目继续是 `prj_01a01cb7-b3f5-7dd3-932f-1adc4d16a1dd`、revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`，旧路径 inactive，path history=1；未重复 rebind、未直接改库、未 migration、未改 Amazon 文件。
+- 验收 receipt：`../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json`，SHA-256=`9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e`。当前下一任务晋升为 `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH`。
