@@ -51,7 +51,22 @@ window.__ModuleLoader__.load({
 			};
 			return {
 				getStatus: async (signal) => normalizeStatus(await request("GET", "/status", void 0, signal)),
-				listProjects: async (signal) => normalizeProjectList(await request("GET", "/projects", void 0, signal)),
+				listProjects: async (optionsOrSignal = {}, signal) => {
+					let options;
+					let requestSignal = signal;
+					if (isAbortSignal(optionsOrSignal)) {
+						options = {};
+						requestSignal = optionsOrSignal;
+					} else options = optionsOrSignal;
+					const view = options.view ?? "active";
+					if (view !== "active" && view !== "archived") throw apiError("项目列表视图无效。", "INVALID_PROJECT_VIEW");
+					const query = new URLSearchParams({ view });
+					if (options.search !== void 0) query.set("search", validateProjectSearch(options.search));
+					if (options.limit !== void 0) query.set("limit", String(validateProjectLimit(options.limit)));
+					if (options.afterProjectId !== void 0) query.set("afterProjectId", validateProjectId(options.afterProjectId));
+					return normalizeProjectList(await request("GET", `/projects?${query.toString()}`, void 0, requestSignal));
+				},
+				setProjectArchived: async (projectId, archived, expectedRevision, signal) => normalizeProjectListItem(await request("POST", `/projects/${encodeURIComponent(validateProjectId(projectId))}/${archived ? "archive" : "unarchive"}`, { expectedRevision: validateRevision(expectedRevision) }, signal)),
 				workspaceStatus: async (projectId, signal) => normalizeProjectWorkspaceStatus(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/status`, void 0, signal)),
 				workspaceTree: async (projectId, path, signal) => normalizeProjectWorkspaceTree(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/tree?path=${encodeURIComponent(path)}`, void 0, signal)),
 				workspaceFile: async (projectId, path, signal) => normalizeProjectWorkspaceFile(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/file?path=${encodeURIComponent(path)}`, void 0, signal)),
@@ -246,21 +261,37 @@ window.__ModuleLoader__.load({
 		}
 		function normalizeProjectList(value) {
 			const object = requiredRecord(value, "项目列表");
-			const projects = requiredArray(object.projects, "项目列表").map((item) => {
-				const project = requiredRecord(item, "登记项目");
-				const mode = optionalBoundedText(project.registrationMode, 40);
-				return {
-					projectId: requiredText(project.projectId, "项目 ID", 200),
-					name: requiredText(project.name, "项目名称", 240),
-					registrationMode: mode === "managed" || mode === "linked_legacy" ? mode : "unknown",
-					lifecycle: requiredText(project.lifecycle, "项目生命周期", 80),
-					updatedAt: requiredText(project.updatedAt, "项目更新时间", 80)
-				};
-			});
+			const projects = requiredArray(object.projects, "项目列表").map(normalizeProjectListItem);
+			const nextCursor = object.nextCursor === void 0 || object.nextCursor === null ? null : validateProjectId(requiredText(object.nextCursor, "项目分页游标", 200));
 			return {
 				projects,
-				total: requiredInteger(object.total, "项目总数", projects.length)
+				total: requiredInteger(object.total, "项目总数", projects.length),
+				nextCursor
 			};
+		}
+		function normalizeProjectListItem(item) {
+			const project = requiredRecord(item, "登记项目");
+			const mode = optionalBoundedText(project.registrationMode, 40);
+			return {
+				projectId: requiredText(project.projectId, "项目 ID", 200),
+				name: requiredText(project.name, "项目名称", 240),
+				registrationMode: mode === "managed" || mode === "linked_legacy" ? mode : "unknown",
+				lifecycle: requiredText(project.lifecycle, "项目生命周期", 80),
+				revision: requiredInteger(project.revision, "项目修订", 1),
+				archivedAt: project.archivedAt === null ? null : requiredText(project.archivedAt, "项目归档时间", 80),
+				updatedAt: requiredText(project.updatedAt, "项目更新时间", 80)
+			};
+		}
+		function selectUserInitiatedRelocationCandidate(projectId, selectedPath, scan) {
+			const expectedProjectId = validateProjectId(projectId);
+			const selectedPathKey = clientPathKey(requiredText(selectedPath, "目标工作区", 32767));
+			const matches = scan.candidates.filter((candidate) => candidate.status === "relocation_candidate" && candidate.detectedMode === "managed" && candidate.manifestProjectId === expectedProjectId && clientPathKey(candidate.rootPath) === selectedPathKey);
+			if (matches.length > 1 || scan.candidates.length > 1) throw apiError("目标目录产生了多个候选，已停止；请到候选中心人工核对。", "RELOCATION_CANDIDATE_AMBIGUOUS");
+			if (matches.length !== 1) throw apiError("目标目录没有形成与当前项目身份一致的位置候选，已停止；请到候选中心查看冲突。", "RELOCATION_CANDIDATE_MISMATCH");
+			return matches[0];
+		}
+		function clientPathKey(value) {
+			return value.replaceAll("/", "\\").replace(/[\\]+$/u, "").toLowerCase();
 		}
 		function normalizeProjectWorkspaceStatus(value) {
 			const object = requiredRecord(value, "项目工作区状态");
@@ -736,6 +767,14 @@ window.__ModuleLoader__.load({
 			if (!/^prj_[A-Za-z0-9-]{8,180}$/.test(value)) throw apiError("项目标识无效。", "INVALID_PROJECT_ID");
 			return value;
 		}
+		function validateProjectSearch(value) {
+			if (typeof value !== "string" || value.length > 200 || /[\u0000-\u001f\u007f]/u.test(value)) throw apiError("项目搜索条件无效。", "INVALID_PROJECT_SEARCH");
+			return value;
+		}
+		function validateProjectLimit(value) {
+			if (!Number.isSafeInteger(value) || value < 1 || value > 100) throw apiError("项目分页大小无效。", "INVALID_PROJECT_LIMIT");
+			return value;
+		}
 		function validateProposalId(value) {
 			if (!/^rbd_[A-Za-z0-9-]{8,180}$/.test(value)) throw apiError("重绑提案标识无效。", "INVALID_PROPOSAL_ID");
 			return value;
@@ -914,6 +953,11 @@ window.__ModuleLoader__.load({
 		}
 		function isRecord$1(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value);
+		}
+		function isAbortSignal(value) {
+			if (typeof value !== "object" || value === null) return false;
+			const candidate = value;
+			return typeof candidate.aborted === "boolean" && typeof candidate.addEventListener === "function" && typeof candidate.removeEventListener === "function";
 		}
 		//#endregion
 		//#region src/client/projectControlEvents.ts
@@ -2784,6 +2828,13 @@ window.__ModuleLoader__.load({
 			const [candidateCursor, setCandidateCursor] = (0, react.useState)();
 			const [candidateCursorHistory, setCandidateCursorHistory] = (0, react.useState)([]);
 			const [selectedCandidates, setSelectedCandidates] = (0, react.useState)({});
+			const [projectListView, setProjectListView] = (0, react.useState)("active");
+			const [projectSearchInput, setProjectSearchInput] = (0, react.useState)("");
+			const [projectSearch, setProjectSearch] = (0, react.useState)("");
+			const [projectCursor, setProjectCursor] = (0, react.useState)();
+			const [projectCursorHistory, setProjectCursorHistory] = (0, react.useState)([]);
+			const [projectMutation, setProjectMutation] = (0, react.useState)();
+			const [projectNotice, setProjectNotice] = (0, react.useState)();
 			const [documentPanel, setDocumentPanel] = (0, react.useState)({ kind: "idle" });
 			const [documentMutation, setDocumentMutation] = (0, react.useState)();
 			const [rebindChoices, setRebindChoices] = (0, react.useState)({});
@@ -2800,17 +2851,35 @@ window.__ModuleLoader__.load({
 				const controller = new AbortController();
 				setLoadState({ kind: "loading" });
 				api$1.getStatus(controller.signal).then(async (status) => {
-					const [listResult, candidateResult] = await Promise.allSettled([api$1.listProjects(controller.signal), api$1.listCandidates({
-						view: candidateView === "projects" ? "review" : candidateView,
-						limit: 25,
-						...candidateView === "projects" || candidateSearch === "" ? {} : { search: candidateSearch },
-						...candidateCursor === void 0 ? {} : { afterCandidateId: candidateCursor }
-					}, controller.signal)]);
+					const projectOptions = (view) => ({
+						view,
+						limit: view === projectListView ? 25 : 1,
+						...projectSearch === "" ? {} : { search: projectSearch },
+						...view !== projectListView || projectCursor === void 0 ? {} : { afterProjectId: projectCursor }
+					});
+					const consoleProjectRequest = consoleProjectId === void 0 ? Promise.resolve(void 0) : api$1.listProjects({
+						view: "active",
+						search: consoleProjectId,
+						limit: 1
+					}, controller.signal).then((list) => list.projects.find((project) => project.projectId === consoleProjectId));
+					const [activeListResult, archivedListResult, candidateResult, consoleProjectResult] = await Promise.allSettled([
+						api$1.listProjects(projectOptions("active"), controller.signal),
+						api$1.listProjects(projectOptions("archived"), controller.signal),
+						api$1.listCandidates({
+							view: candidateView === "projects" ? "review" : candidateView,
+							limit: 25,
+							...candidateView === "projects" || candidateSearch === "" ? {} : { search: candidateSearch },
+							...candidateCursor === void 0 ? {} : { afterCandidateId: candidateCursor }
+						}, controller.signal),
+						consoleProjectRequest
+					]);
 					if (controller.signal.aborted) return;
 					setLoadState({
 						kind: "ready",
 						status,
-						...listResult.status === "fulfilled" ? { list: listResult.value } : { listError: errorMessage(listResult.reason, "项目列表暂时无法读取。") },
+						...activeListResult.status === "fulfilled" ? { activeList: activeListResult.value } : { activeListError: errorMessage(activeListResult.reason, "使用中的项目暂时无法读取。") },
+						...archivedListResult.status === "fulfilled" ? { archivedList: archivedListResult.value } : { archivedListError: errorMessage(archivedListResult.reason, "已归档项目暂时无法读取。") },
+						...consoleProjectResult.status === "fulfilled" && consoleProjectResult.value !== void 0 ? { consoleProject: consoleProjectResult.value } : {},
 						candidatePage: candidateResult.status === "fulfilled" ? candidateResult.value : {
 							candidates: [],
 							total: 0,
@@ -2837,6 +2906,9 @@ window.__ModuleLoader__.load({
 				candidateCursor,
 				candidateSearch,
 				candidateView,
+				projectCursor,
+				projectListView,
+				projectSearch,
 				reloadKey
 			]);
 			const reload = (0, react.useCallback)(() => {
@@ -2910,6 +2982,29 @@ window.__ModuleLoader__.load({
 				setCandidateCursorHistory([]);
 				setSelectedCandidates({});
 			};
+			const chooseProjectListView = (view) => {
+				setProjectListView(view);
+				setProjectCursor(void 0);
+				setProjectCursorHistory([]);
+			};
+			const applyProjectSearch = () => {
+				setProjectSearch(projectSearchInput.trim());
+				setProjectCursor(void 0);
+				setProjectCursorHistory([]);
+			};
+			const nextProjectPage = () => {
+				if (loadState.kind !== "ready") return;
+				const list = projectListView === "active" ? loadState.activeList : loadState.archivedList;
+				if (list?.nextCursor === null || list?.nextCursor === void 0) return;
+				setProjectCursorHistory((current) => [...current, projectCursor]);
+				setProjectCursor(list.nextCursor);
+			};
+			const previousProjectPage = () => {
+				if (projectCursorHistory.length === 0) return;
+				const previous = projectCursorHistory[projectCursorHistory.length - 1];
+				setProjectCursorHistory((current) => current.slice(0, -1));
+				setProjectCursor(previous);
+			};
 			const selectCandidate = (candidate, selected) => {
 				setSelectedCandidates((current) => {
 					const next = { ...current };
@@ -2973,6 +3068,68 @@ window.__ModuleLoader__.load({
 					resourceKey: candidate.candidateId,
 					title: candidate.suggestedName
 				});
+			};
+			const setProjectArchived = async (project, archived) => {
+				if (projectMutation !== void 0) return;
+				const action = archived ? "归档" : "恢复";
+				if (archived && !globalThis.confirm(`即将归档“${project.name}”。\n\n归档后项目会从使用中列表隐藏，并禁止新会话绑定；项目身份、位置历史和审计记录都会保留，之后可恢复。是否继续？`)) return;
+				setProjectMutation({
+					projectId: project.projectId,
+					action: archived ? "archive" : "unarchive"
+				});
+				setProjectNotice(void 0);
+				try {
+					await api$1.setProjectArchived(project.projectId, archived, project.revision);
+					setProjectNotice({
+						kind: "success",
+						message: archived ? `“${project.name}”已归档，可在“已归档”中恢复。` : `“${project.name}”已恢复到使用中项目。`
+					});
+					setProjectListView(archived ? "archived" : "active");
+					setProjectCursor(void 0);
+					setProjectCursorHistory([]);
+					reload();
+				} catch (error) {
+					setProjectNotice({
+						kind: "error",
+						message: errorMessage(error, `${action}项目没有完成。`)
+					});
+				} finally {
+					setProjectMutation(void 0);
+				}
+			};
+			const beginWorkspaceChange = async (project) => {
+				if (projectMutation !== void 0) return;
+				setProjectMutation({
+					projectId: project.projectId,
+					action: "relocate"
+				});
+				setProjectNotice(void 0);
+				try {
+					const outcome = await selectProjectDirectory("project-root");
+					if (outcome.kind === "cancelled") return;
+					if (outcome.kind === "error") throw new Error(outcome.message);
+					const result = await api$1.scan("project-root", outcome.selection);
+					const candidate = selectUserInitiatedRelocationCandidate(project.projectId, outcome.selection.path, result);
+					setCandidateView("review");
+					setCandidateSearchInput("");
+					setCandidateSearch("");
+					setCandidateCursor(void 0);
+					setCandidateCursorHistory([]);
+					setSelectedCandidates({});
+					setProjectNotice({
+						kind: "success",
+						message: `已生成“${project.name}”的位置变更候选；请在详情中核对后确认重新绑定。`
+					});
+					reload();
+					openCandidate(candidate);
+				} catch (error) {
+					setProjectNotice({
+						kind: "error",
+						message: errorMessage(error, "目标目录未形成可安全确认的位置变更候选，已停止。")
+					});
+				} finally {
+					setProjectMutation(void 0);
+				}
 			};
 			const beginCreate = async () => {
 				if (createState.kind === "picking") return;
@@ -3153,7 +3310,7 @@ window.__ModuleLoader__.load({
 			};
 			const storageState = loadState.kind === "ready" ? loadState.status.storage.state : void 0;
 			const projectCount = loadState.kind === "ready" ? loadState.status.counts.projects ?? void 0 : void 0;
-			const consoleProject = loadState.kind === "ready" && consoleProjectId !== void 0 ? loadState.list?.projects.find((project) => project.projectId === consoleProjectId) : void 0;
+			const consoleProject = loadState.kind === "ready" && consoleProjectId !== void 0 ? loadState.consoleProject ?? loadState.activeList?.projects.find((project) => project.projectId === consoleProjectId) : void 0;
 			const togglePin = (projectId) => {
 				setPreferences((current) => {
 					const next = current.pinnedProjectIds.includes(projectId) ? {
@@ -3218,10 +3375,18 @@ window.__ModuleLoader__.load({
 							bridgeAvailable: hasProjectControlDirectoryBridge(),
 							candidateMutation,
 							candidateView,
+							projectListView,
+							projectSearchInput,
+							projectMutation,
+							projectNotice,
 							candidateSearchInput,
 							selectedCandidates,
 							hasPreviousCandidatePage: candidateCursorHistory.length > 0,
+							hasPreviousProjectPage: projectCursorHistory.length > 0,
 							onChooseCandidateView: chooseCandidateView,
+							onChooseProjectListView: chooseProjectListView,
+							onProjectSearchInput: setProjectSearchInput,
+							onApplyProjectSearch: applyProjectSearch,
 							onCandidateSearchInput: setCandidateSearchInput,
 							onApplyCandidateSearch: applyCandidateSearch,
 							onSelectCandidate: selectCandidate,
@@ -3231,6 +3396,8 @@ window.__ModuleLoader__.load({
 							},
 							onNextCandidatePage: nextCandidatePage,
 							onPreviousCandidatePage: previousCandidatePage,
+							onNextProjectPage: nextProjectPage,
+							onPreviousProjectPage: previousProjectPage,
 							onScan: (mode) => {
 								beginScan(mode);
 							},
@@ -3288,7 +3455,13 @@ window.__ModuleLoader__.load({
 									workbench.clearProjectWorkspace();
 								});
 							},
-							onTogglePin: togglePin
+							onTogglePin: togglePin,
+							onSetProjectArchived: (project, archived) => {
+								setProjectArchived(project, archived);
+							},
+							onChangeWorkspace: (project) => {
+								beginWorkspaceChange(project);
+							}
 						}),
 						consoleProject !== void 0 && loadState.kind === "ready" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProjectConsole, {
 							project: consoleProject,
@@ -3346,7 +3519,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function ReadyState({ state, scanState, createState, bridgeAvailable, candidateMutation, candidateView, candidateSearchInput, selectedCandidates, hasPreviousCandidatePage, onChooseCandidateView, onCandidateSearchInput, onApplyCandidateSearch, onSelectCandidate, onSelectCandidatePage, onMutateSelectedCandidates, onNextCandidatePage, onPreviousCandidatePage, onScan, onOpenCandidate, onToggleIgnored, onBeginCreate, onUpdateCreateForm, onPrepareCreate, onSubmitCreate, onEditCreate, onCancelCreate, documentPanel, documentMutation, rebindChoices, onOpenDocuments, onRefreshDocuments, onResolveRebind, onChooseRebindCandidate, onCloseDocuments, pinnedProjectIds, onOpenConsole, onTogglePin }) {
+		function ReadyState({ state, scanState, createState, bridgeAvailable, candidateMutation, candidateView, projectListView, projectSearchInput, projectMutation, projectNotice, candidateSearchInput, selectedCandidates, hasPreviousCandidatePage, hasPreviousProjectPage, onChooseCandidateView, onChooseProjectListView, onProjectSearchInput, onApplyProjectSearch, onCandidateSearchInput, onApplyCandidateSearch, onSelectCandidate, onSelectCandidatePage, onMutateSelectedCandidates, onNextCandidatePage, onPreviousCandidatePage, onNextProjectPage, onPreviousProjectPage, onScan, onOpenCandidate, onToggleIgnored, onBeginCreate, onUpdateCreateForm, onPrepareCreate, onSubmitCreate, onEditCreate, onCancelCreate, documentPanel, documentMutation, rebindChoices, onOpenDocuments, onRefreshDocuments, onResolveRebind, onChooseRebindCandidate, onCloseDocuments, pinnedProjectIds, onOpenConsole, onTogglePin, onSetProjectArchived, onChangeWorkspace }) {
 			const descriptor = storageDescriptor(state.status.storage.state);
 			const scanning = scanState.kind === "selecting" || scanState.kind === "scanning";
 			const activeDocumentsProjectId = documentPanel.kind === "loading" || documentPanel.kind === "ready" ? documentPanel.kind === "loading" ? documentPanel.projectId : documentPanel.index.projectId : void 0;
@@ -3441,7 +3614,7 @@ window.__ModuleLoader__.load({
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(CandidateCenterNavigation, {
 						activeView: candidateView,
-						projectCount: state.list?.total ?? 0,
+						projectCount: state.status.counts.projects ?? state.activeList?.total ?? 0,
 						counts: state.candidatePage.counts,
 						...state.candidateError === void 0 ? {} : { candidateError: state.candidateError },
 						searchInput: candidateSearchInput,
@@ -3450,13 +3623,28 @@ window.__ModuleLoader__.load({
 						onApplySearch: onApplyCandidateSearch
 					}),
 					candidateView === "projects" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProjectSection, {
-						...state.list === void 0 ? {} : { list: state.list },
-						...state.listError === void 0 ? {} : { error: state.listError },
+						view: projectListView,
+						activeTotal: state.activeList?.total ?? 0,
+						archivedTotal: state.archivedList?.total ?? 0,
+						...projectListView === "active" ? state.activeList === void 0 ? {} : { list: state.activeList } : state.archivedList === void 0 ? {} : { list: state.archivedList },
+						...projectListView === "active" ? state.activeListError === void 0 ? {} : { error: state.activeListError } : state.archivedListError === void 0 ? {} : { error: state.archivedListError },
 						...activeDocumentsProjectId === void 0 ? {} : { documentsProjectId: activeDocumentsProjectId },
+						bridgeAvailable,
+						mutation: projectMutation,
+						notice: projectNotice,
+						searchInput: projectSearchInput,
+						hasPreviousPage: hasPreviousProjectPage,
+						onChooseView: onChooseProjectListView,
+						onSearchInput: onProjectSearchInput,
+						onApplySearch: onApplyProjectSearch,
+						onNextPage: onNextProjectPage,
+						onPreviousPage: onPreviousProjectPage,
 						onOpenDocuments,
 						pinnedProjectIds,
 						onOpenConsole,
-						onTogglePin
+						onTogglePin,
+						onSetArchived: onSetProjectArchived,
+						onChangeWorkspace
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CandidateSection, {
 						view: candidateView,
 						candidates: state.candidatePage.candidates,
@@ -4017,7 +4205,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function ProjectSection({ list, error, documentsProjectId, onOpenDocuments, pinnedProjectIds, onOpenConsole, onTogglePin }) {
+		function ProjectSection({ view, activeTotal, archivedTotal, list, error, documentsProjectId, bridgeAvailable, mutation, notice, searchInput, hasPreviousPage, onChooseView, onSearchInput, onApplySearch, onNextPage, onPreviousPage, onOpenDocuments, pinnedProjectIds, onOpenConsole, onTogglePin, onSetArchived, onChangeWorkspace }) {
 			const ordered = list === void 0 ? void 0 : [...list.projects].sort((left, right) => {
 				const leftPinned = pinnedProjectIds.includes(left.projectId) ? 1 : 0;
 				const rightPinned = pinnedProjectIds.includes(right.projectId) ? 1 : 0;
@@ -4027,62 +4215,170 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 				className: ProjectControlPlaceholder_module_css_default.projectSection,
 				"aria-labelledby": "project-control-list-heading",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: ProjectControlPlaceholder_module_css_default.sectionHeading,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-						id: "project-control-list-heading",
-						children: "已登记项目"
-					}) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: list === void 0 ? "不可用" : String(list.total) + " 项" })]
-				}), ordered === void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: ProjectControlPlaceholder_module_css_default.emptyCopy,
-					children: error ?? "项目列表暂时无法读取。"
-				}) : ordered.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: ProjectControlPlaceholder_module_css_default.emptyCopy,
-					children: "数据库当前没有登记项目。"
-				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-					className: ProjectControlPlaceholder_module_css_default.projectList,
-					children: ordered.map((project) => {
-						const pinned = pinnedProjectIds.includes(project.projectId);
-						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-							className: ProjectControlPlaceholder_module_css_default.projectItem,
-							"data-project-pinned": pinned || void 0,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: project.name }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: project.projectId })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: ProjectControlPlaceholder_module_css_default.projectItemActions,
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: registrationLabel(project.registrationMode) }),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-										className: ProjectControlPlaceholder_module_css_default.smallButton,
-										type: "button",
-										"data-documents-open": documentsProjectId === project.projectId || void 0,
-										onClick: () => {
-											onOpenDocuments(project);
-										},
-										children: documentsProjectId === project.projectId ? "收起文档" : "文档索引"
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-										className: ProjectControlPlaceholder_module_css_default.smallButton,
-										type: "button",
-										"aria-pressed": pinned,
-										"aria-label": pinned ? "取消置顶 " + project.name : "置顶 " + project.name,
-										onClick: () => {
-											onTogglePin(project.projectId);
-										},
-										children: pinned ? "📌" : "置顶"
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: ProjectControlPlaceholder_module_css_default.sectionHeading,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+							id: "project-control-list-heading",
+							children: "已登记项目"
+						}) }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: list === void 0 ? "不可用" : String(list.total) + " 项" })]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: ProjectControlPlaceholder_module_css_default.candidatePagination,
+						"aria-label": "项目归档视图",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "button",
+							"aria-pressed": view === "active",
+							"data-project-list-view": "active",
+							onClick: () => {
+								onChooseView("active");
+							},
+							children: [
+								"使用中（",
+								String(activeTotal),
+								"）"
+							]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "button",
+							"aria-pressed": view === "archived",
+							"data-project-list-view": "archived",
+							onClick: () => {
+								onChooseView("archived");
+							},
+							children: [
+								"已归档（",
+								String(archivedTotal),
+								"）"
+							]
+						})]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+						className: ProjectControlPlaceholder_module_css_default.candidateSearch,
+						"data-project-search": true,
+						onSubmit: (event) => {
+							event.preventDefault();
+							onApplySearch();
+						},
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							type: "search",
+							value: searchInput,
+							maxLength: 200,
+							"aria-label": "搜索已登记项目",
+							placeholder: "按项目名称或项目 ID 搜索",
+							onChange: (event) => {
+								onSearchInput(event.currentTarget.value);
+							}
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "submit",
+							children: "搜索"
+						})]
+					}),
+					notice !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectControlPlaceholder_module_css_default.bridgeNotice,
+						role: notice.kind === "error" ? "alert" : "status",
+						children: notice.message
+					}),
+					ordered === void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectControlPlaceholder_module_css_default.emptyCopy,
+						children: error ?? "项目列表暂时无法读取。"
+					}) : ordered.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectControlPlaceholder_module_css_default.emptyCopy,
+						children: view === "active" ? "当前没有使用中的项目。" : "当前没有已归档项目。"
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+						className: ProjectControlPlaceholder_module_css_default.projectList,
+						children: ordered.map((project) => {
+							const pinned = pinnedProjectIds.includes(project.projectId);
+							return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+								className: ProjectControlPlaceholder_module_css_default.projectItem,
+								"data-project-pinned": pinned || void 0,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: project.name }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: project.projectId })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: ProjectControlPlaceholder_module_css_default.projectItemActions,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: view === "archived" ? "已归档" : registrationLabel(project.registrationMode) }), view === "archived" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 										className: ProjectControlPlaceholder_module_css_default.confirmButton,
 										type: "button",
-										"data-open-console": true,
+										"data-project-unarchive": true,
+										disabled: mutation !== void 0,
 										onClick: () => {
-											onOpenConsole(project);
+											onSetArchived(project, false);
 										},
-										children: "打开控制台"
-									})
-								]
-							})]
-						}, project.projectId);
+										children: mutation?.projectId === project.projectId && mutation.action === "unarchive" ? "恢复中…" : "恢复项目"
+									}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectControlPlaceholder_module_css_default.smallButton,
+											type: "button",
+											"data-project-workspace-change": true,
+											disabled: !bridgeAvailable || mutation !== void 0,
+											onClick: () => {
+												onChangeWorkspace(project);
+											},
+											children: mutation?.projectId === project.projectId && mutation.action === "relocate" ? "核对中…" : "更换工作区"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectControlPlaceholder_module_css_default.smallButton,
+											type: "button",
+											"data-project-archive": true,
+											disabled: mutation !== void 0,
+											onClick: () => {
+												onSetArchived(project, true);
+											},
+											children: mutation?.projectId === project.projectId && mutation.action === "archive" ? "归档中…" : "归档项目"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectControlPlaceholder_module_css_default.smallButton,
+											type: "button",
+											"data-documents-open": documentsProjectId === project.projectId || void 0,
+											onClick: () => {
+												onOpenDocuments(project);
+											},
+											children: documentsProjectId === project.projectId ? "收起文档" : "文档索引"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectControlPlaceholder_module_css_default.smallButton,
+											type: "button",
+											"aria-pressed": pinned,
+											"aria-label": pinned ? "取消置顶 " + project.name : "置顶 " + project.name,
+											onClick: () => {
+												onTogglePin(project.projectId);
+											},
+											children: pinned ? "📌" : "置顶"
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectControlPlaceholder_module_css_default.confirmButton,
+											type: "button",
+											"data-open-console": true,
+											onClick: () => {
+												onOpenConsole(project);
+											},
+											children: "打开控制台"
+										})
+									] })]
+								})]
+							}, project.projectId);
+						})
+					}),
+					list !== void 0 && (hasPreviousPage || list.nextCursor !== null) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: ProjectControlPlaceholder_module_css_default.candidatePagination,
+						"aria-label": "项目分页",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "button",
+							"data-project-page-previous": true,
+							disabled: !hasPreviousPage,
+							onClick: onPreviousPage,
+							children: "上一页"
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "button",
+							"data-project-page-next": true,
+							disabled: list.nextCursor === null,
+							onClick: onNextPage,
+							children: "下一页"
+						})]
 					})
-				})]
+				]
 			});
 		}
 		function DocumentIndexPanel({ panel, mutation, choices, onRefresh, onResolve, onChoose, onClose }) {

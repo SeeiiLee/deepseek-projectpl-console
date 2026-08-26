@@ -1799,3 +1799,131 @@ test('close releases the database and writer lock even when its final status que
   assert.equal(reopened.status().state, 'ready')
   reopened.close()
 })
+
+test('project archive and restore preserve identity and locations, audit revisions, and block new thread bindings', async (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'dsh-project-control-archive-'))
+  const storage = await openStorage(root)
+  t.after(() => {
+    storage.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+  const command = legacyCommand(91)
+  const registered = storage.registerProject(command, trustedRegistration(root, command, 91))
+  assert.equal(registered.status, 'accepted')
+  const before = storage.getProject(command.target.projectId)
+  const activeBefore = before.workspaceLocations.find(location => location.isActive)
+  assert.ok(activeBefore)
+
+  storage.handshakeHostInstance({
+    instanceId: 'archive-test-host',
+    appVersion: '0.1.0-test',
+    protocolVersions: ['project-control.dsh/v1alpha1'],
+    capabilities: ['external.update.submit'],
+  })
+  const workItem = storage.createWorkItem(command.target.projectId, { title: 'Archive boundary fixture' })
+  const run = storage.createRun(command.target.projectId, workItem.workItemId)
+
+  const archived = storage.setProjectArchived(command.target.projectId, {
+    expectedRevision: 1,
+    archived: true,
+  })
+  assert.equal(archived.projectId, before.projectId)
+  assert.equal(archived.revision, 2)
+  assert.equal(typeof archived.archivedAt, 'string')
+  assert.equal(archived.lifecycle, before.lifecycle)
+  assert.equal(storage.status().projectCount, 0)
+  assert.equal(storage.status().archivedProjectCount, 1)
+  assert.equal(storage.listProjects().length, 0)
+  assert.equal(storage.listProjects({ archiveState: 'archived' })[0].projectId, before.projectId)
+  const activeArchived = archived.workspaceLocations.find(location => location.isActive)
+  assert.deepEqual(activeArchived, activeBefore)
+  assert.throws(
+    () => storage.bindAgentThread(command.target.projectId, run.runId, {
+      harnessInstanceRef: 'archive-test-host',
+      sessionId: 'session-after-archive',
+      threadId: 'thread-after-archive',
+    }),
+    error => error.details?.reason === 'project_archived',
+  )
+  assert.throws(
+    () => storage.setProjectArchived(command.target.projectId, { expectedRevision: 1, archived: false }),
+    error => error.details?.reason === 'revision_conflict',
+  )
+
+  const restored = storage.setProjectArchived(command.target.projectId, {
+    expectedRevision: 2,
+    archived: false,
+  })
+  assert.equal(restored.projectId, before.projectId)
+  assert.equal(restored.revision, 3)
+  assert.equal(restored.archivedAt, null)
+  assert.equal(restored.lifecycle, before.lifecycle)
+  assert.deepEqual(restored.workspaceLocations.find(location => location.isActive), activeBefore)
+  assert.equal(storage.status().projectCount, 1)
+  assert.equal(storage.status().archivedProjectCount, 0)
+  assert.equal(storage.listProjects({ archiveState: 'archived' }).length, 0)
+  assert.equal(storage.listProjects()[0].projectId, before.projectId)
+  const binding = storage.bindAgentThread(command.target.projectId, run.runId, {
+    harnessInstanceRef: 'archive-test-host',
+    sessionId: 'session-after-restore',
+    threadId: 'thread-after-restore',
+  })
+  assert.equal(binding.projectId, before.projectId)
+
+  const lifecycleEvents = storage.listEvents({ projectId: before.projectId, limit: 100 })
+    .filter(event => event.eventType === 'project.archived' || event.eventType === 'project.unarchived')
+  assert.deepEqual(lifecycleEvents.map(event => event.eventType), ['project.archived', 'project.unarchived'])
+  assert.deepEqual(lifecycleEvents.map(event => [event.beforeRevision, event.afterRevision]), [[1, 2], [2, 3]])
+  assert.equal(storage.listOutbox().length, 1)
+})
+
+test('project query filters before pagination and keeps archived projects beyond the first 100 recoverable', async (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'dsh-project-control-project-query-'))
+  let timestamp = Date.parse('2026-08-27T01:00:00.000Z')
+  const storage = await openStorage(root, {
+    now: () => new Date(timestamp++).toISOString(),
+  })
+  t.after(() => {
+    storage.close()
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  const archivedProjectIds = []
+  for (let index = 0; index < 120; index += 1) {
+    const serial = 1000 + index
+    const command = legacyCommand(serial)
+    command.payload.name = index === 119 ? 'Archived Needle 119' : `Archived Project ${String(index).padStart(3, '0')}`
+    storage.registerProject(command, trustedRegistration(root, command, serial))
+    storage.setProjectArchived(command.target.projectId, { expectedRevision: 1, archived: true })
+    archivedProjectIds.push(command.target.projectId)
+  }
+
+  const seen = []
+  let afterProjectId = ''
+  do {
+    const page = storage.queryProjects({
+      archiveState: 'archived',
+      limit: 25,
+      ...(afterProjectId === '' ? {} : { afterProjectId }),
+    })
+    assert.equal(page.total, 120)
+    assert.ok(page.projects.length <= 25)
+    seen.push(...page.projects.map(project => project.projectId))
+    afterProjectId = page.nextCursor ?? ''
+  } while (afterProjectId !== '')
+
+  assert.equal(seen.length, 120)
+  assert.deepEqual(new Set(seen), new Set(archivedProjectIds))
+  const searched = storage.queryProjects({ archiveState: 'archived', search: 'needle 119', limit: 25 })
+  assert.equal(searched.total, 1)
+  assert.equal(searched.projects[0].name, 'Archived Needle 119')
+  assert.equal(searched.nextCursor, null)
+  assert.throws(
+    () => storage.queryProjects({
+      archiveState: 'archived',
+      search: 'needle 119',
+      afterProjectId: archivedProjectIds[0],
+    }),
+    error => error.details?.reason === 'project_cursor_not_found',
+  )
+})

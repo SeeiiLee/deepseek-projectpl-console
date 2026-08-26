@@ -80,6 +80,8 @@ export type {
   ProjectEvent,
   ProjectList,
   ProjectListItem,
+  ProjectListOptions,
+  ProjectListView,
   ProjectProgressUpdate,
   ProjectQuarantineItem,
   ProjectReview,

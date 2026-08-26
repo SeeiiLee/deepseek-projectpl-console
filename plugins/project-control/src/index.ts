@@ -7,6 +7,7 @@ import {
   MigrationChecksumError,
   MigrationError,
   MigrationVersionError,
+  StorageValidationError,
   UntrackedDatabaseError,
   openProjectControlStorage,
   type FileSyncPlanState,
@@ -221,20 +222,34 @@ function storageReadAdapter(storage: Readonly<ProjectControlStorage>): ProjectCo
         projectCount: status.projectCount,
       }
     },
-    listProjects(): ProjectControlProjectList {
+    listProjects(options: {
+      view: 'active' | 'archived'
+      search?: string
+      limit?: number
+      afterProjectId?: string
+    } = { view: 'active' }): ProjectControlProjectList {
       const status = storage.status()
       if (status.state !== 'ready') {
         throw projectControlHttpError('STORAGE_UNAVAILABLE', '项目数据库暂不可用。', 503)
       }
+      const page = storage.queryProjects({
+        archiveState: options.view,
+        ...(options.search === undefined ? {} : { search: options.search }),
+        ...(options.limit === undefined ? {} : { limit: options.limit }),
+        ...(options.afterProjectId === undefined ? {} : { afterProjectId: options.afterProjectId }),
+      })
       return {
-        projects: storage.listProjects({ includeArchived: false, limit: 100 }).map(project => ({
+        projects: page.projects.map(project => ({
           projectId: project.projectId,
           name: project.name,
           registrationMode: project.mode,
           lifecycle: project.lifecycle,
+          revision: project.revision,
+          archivedAt: project.archivedAt,
           updatedAt: project.updatedAt,
         })),
-        total: status.projectCount,
+        total: page.total,
+        nextCursor: page.nextCursor,
       }
     },
     getProjectWorkspace(projectId: string): { projectId: string; root: string } | null {
@@ -251,12 +266,21 @@ function storageReadAdapter(storage: Readonly<ProjectControlStorage>): ProjectCo
         throw projectControlHttpError('STORAGE_UNAVAILABLE', '项目数据库暂不可用。', 503)
       }
       const projects: { projectId: string; root: string; updatedAt: string }[] = []
-      for (const project of storage.listProjects({ includeArchived: false, limit: 100 })) {
-        const location = project.activeLocation
-          ?? project.workspaceLocations?.find(item => item.isActive)
-        if (location === undefined || location === null) continue
-        projects.push({ projectId: project.projectId, root: location.displayPath, updatedAt: project.updatedAt })
-      }
+      let afterProjectId: string | undefined
+      do {
+        const page = storage.queryProjects({
+          archiveState: 'active',
+          limit: 100,
+          ...(afterProjectId === undefined ? {} : { afterProjectId }),
+        })
+        for (const project of page.projects) {
+          const location = project.activeLocation
+            ?? project.workspaceLocations?.find(item => item.isActive)
+          if (location === undefined || location === null) continue
+          projects.push({ projectId: project.projectId, root: location.displayPath, updatedAt: project.updatedAt })
+        }
+        afterProjectId = page.nextCursor ?? undefined
+      } while (afterProjectId !== undefined)
       return projects
     },
   }
@@ -417,6 +441,34 @@ export function storageConsoleAdapter(
   storage: Readonly<ProjectControlStorage>,
 ): ProjectControlConsoleService {
   return {
+    setProjectArchived(projectId, input) {
+      try {
+        const project = storage.setProjectArchived(projectId, input)
+        return {
+          projectId: project.projectId,
+          name: project.name,
+          registrationMode: project.mode,
+          lifecycle: project.lifecycle,
+          revision: project.revision,
+          archivedAt: project.archivedAt,
+          updatedAt: project.updatedAt,
+        }
+      } catch (error) {
+        if (error instanceof StorageValidationError) {
+          const reason = (error.details as { reason?: unknown } | undefined)?.reason
+          if (reason === 'project_not_found') {
+            throw projectControlHttpError('NOT_FOUND', '项目不存在。', 404)
+          }
+          if (reason === 'revision_conflict') {
+            throw projectControlHttpError('REVISION_CONFLICT', '项目已发生变化，请刷新后重试。', 409)
+          }
+          if (reason === 'transition_not_allowed') {
+            throw projectControlHttpError('PROJECT_LIFECYCLE_CONFLICT', '项目归档状态已发生变化，请刷新后重试。', 409)
+          }
+        }
+        throw error
+      }
+    },
     createWorkItem(projectId, input) {
       return storage.createWorkItem(projectId, {
         title: String(input.title),

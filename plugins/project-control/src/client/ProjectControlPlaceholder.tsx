@@ -4,6 +4,7 @@ import type { ProjectControlPlaceholderProps } from './contract.ts'
 import {
   createProjectControlApi,
   documentRoleLabel,
+  selectUserInitiatedRelocationCandidate,
   type CandidateCenterView,
   type IntakeCandidateList,
   type IntakeScanResult,
@@ -16,6 +17,7 @@ import {
   type ProjectDocumentState,
   type ProjectList,
   type ProjectListItem,
+  type ProjectListView,
   type ProjectStorageState,
   type ProjectTemplateSummary,
 } from './projectControlApi.ts'
@@ -52,8 +54,11 @@ function notifyMemoryProjectBinding(projectId: string | undefined, sessionId: st
 interface ReadyLoadState {
   kind: 'ready'
   status: ProjectControlStatus
-  list?: ProjectList
-  listError?: string
+  activeList?: ProjectList
+  activeListError?: string
+  archivedList?: ProjectList
+  archivedListError?: string
+  consoleProject?: ProjectListItem
   candidatePage: IntakeCandidateList
   candidateError?: string
 }
@@ -89,6 +94,14 @@ type CreateState =
   | { kind: 'success'; message: string; projectId: string }
   | { kind: 'error'; message: string; form?: CreateForm; preview?: PrepareCreateResult }
 
+type ProjectMutation =
+  | { projectId: string; action: 'archive' | 'unarchive' | 'relocate' }
+
+interface ProjectNotice {
+  kind: 'success' | 'error'
+  message: string
+}
+
 type Props = ProjectControlPlaceholderProps & { workbench: WorkbenchService }
 
 type DocumentPanelState =
@@ -114,6 +127,13 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
   const [candidateCursor, setCandidateCursor] = useState<string | undefined>()
   const [candidateCursorHistory, setCandidateCursorHistory] = useState<Array<string | undefined>>([])
   const [selectedCandidates, setSelectedCandidates] = useState<Record<string, number>>({})
+  const [projectListView, setProjectListView] = useState<ProjectListView>('active')
+  const [projectSearchInput, setProjectSearchInput] = useState('')
+  const [projectSearch, setProjectSearch] = useState('')
+  const [projectCursor, setProjectCursor] = useState<string | undefined>()
+  const [projectCursorHistory, setProjectCursorHistory] = useState<Array<string | undefined>>([])
+  const [projectMutation, setProjectMutation] = useState<ProjectMutation | undefined>()
+  const [projectNotice, setProjectNotice] = useState<ProjectNotice | undefined>()
   const [documentPanel, setDocumentPanel] = useState<DocumentPanelState>({ kind: 'idle' })
   const [documentMutation, setDocumentMutation] = useState<string | undefined>()
   const [rebindChoices, setRebindChoices] = useState<Record<string, string>>({})
@@ -135,22 +155,40 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
     const controller = new AbortController()
     setLoadState({ kind: 'loading' })
     api.getStatus(controller.signal).then(async status => {
-      const [listResult, candidateResult] = await Promise.allSettled([
-        api.listProjects(controller.signal),
+      const projectOptions = (view: ProjectListView) => ({
+        view,
+        limit: view === projectListView ? 25 : 1,
+        ...(projectSearch === '' ? {} : { search: projectSearch }),
+        ...(view !== projectListView || projectCursor === undefined ? {} : { afterProjectId: projectCursor }),
+      })
+      const consoleProjectRequest = consoleProjectId === undefined
+        ? Promise.resolve(undefined)
+        : api.listProjects({ view: 'active', search: consoleProjectId, limit: 1 }, controller.signal)
+            .then(list => list.projects.find(project => project.projectId === consoleProjectId))
+      const [activeListResult, archivedListResult, candidateResult, consoleProjectResult] = await Promise.allSettled([
+        api.listProjects(projectOptions('active'), controller.signal),
+        api.listProjects(projectOptions('archived'), controller.signal),
         api.listCandidates({
           view: candidateView === 'projects' ? 'review' : candidateView,
           limit: 25,
           ...(candidateView === 'projects' || candidateSearch === '' ? {} : { search: candidateSearch }),
           ...(candidateCursor === undefined ? {} : { afterCandidateId: candidateCursor }),
         }, controller.signal),
+        consoleProjectRequest,
       ])
       if (controller.signal.aborted) return
       setLoadState({
         kind: 'ready',
         status,
-        ...(listResult.status === 'fulfilled'
-          ? { list: listResult.value }
-          : { listError: errorMessage(listResult.reason, '项目列表暂时无法读取。') }),
+        ...(activeListResult.status === 'fulfilled'
+          ? { activeList: activeListResult.value }
+          : { activeListError: errorMessage(activeListResult.reason, '使用中的项目暂时无法读取。') }),
+        ...(archivedListResult.status === 'fulfilled'
+          ? { archivedList: archivedListResult.value }
+          : { archivedListError: errorMessage(archivedListResult.reason, '已归档项目暂时无法读取。') }),
+        ...(consoleProjectResult.status === 'fulfilled' && consoleProjectResult.value !== undefined
+          ? { consoleProject: consoleProjectResult.value }
+          : {}),
         candidatePage: candidateResult.status === 'fulfilled'
           ? candidateResult.value
           : { candidates: [], total: 0, counts: { review: 0, ignored: 0, history: 0 }, nextCursor: null },
@@ -163,7 +201,7 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
       setLoadState({ kind: 'error', message: errorMessage(error, '项目控制台状态读取失败。') })
     })
     return () => { controller.abort() }
-  }, [candidateCursor, candidateSearch, candidateView, reloadKey])
+  }, [candidateCursor, candidateSearch, candidateView, projectCursor, projectListView, projectSearch, reloadKey])
 
   const reload = useCallback(() => { setReloadKey(value => value + 1) }, [])
 
@@ -229,6 +267,33 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
     setCandidateCursor(undefined)
     setCandidateCursorHistory([])
     setSelectedCandidates({})
+  }
+
+  const chooseProjectListView = (view: ProjectListView): void => {
+    setProjectListView(view)
+    setProjectCursor(undefined)
+    setProjectCursorHistory([])
+  }
+
+  const applyProjectSearch = (): void => {
+    setProjectSearch(projectSearchInput.trim())
+    setProjectCursor(undefined)
+    setProjectCursorHistory([])
+  }
+
+  const nextProjectPage = (): void => {
+    if (loadState.kind !== 'ready') return
+    const list = projectListView === 'active' ? loadState.activeList : loadState.archivedList
+    if (list?.nextCursor === null || list?.nextCursor === undefined) return
+    setProjectCursorHistory(current => [...current, projectCursor])
+    setProjectCursor(list.nextCursor)
+  }
+
+  const previousProjectPage = (): void => {
+    if (projectCursorHistory.length === 0) return
+    const previous = projectCursorHistory[projectCursorHistory.length - 1]
+    setProjectCursorHistory(current => current.slice(0, -1))
+    setProjectCursor(previous)
   }
 
   const selectCandidate = (candidate: ProjectCandidate, selected: boolean): void => {
@@ -303,6 +368,65 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
       resourceKey: candidate.candidateId,
       title: candidate.suggestedName,
     })
+  }
+
+  const setProjectArchived = async (project: ProjectListItem, archived: boolean): Promise<void> => {
+    if (projectMutation !== undefined) return
+    const action = archived ? '归档' : '恢复'
+    if (archived && !globalThis.confirm(
+      `即将归档“${project.name}”。\n\n归档后项目会从使用中列表隐藏，并禁止新会话绑定；项目身份、位置历史和审计记录都会保留，之后可恢复。是否继续？`,
+    )) return
+    setProjectMutation({ projectId: project.projectId, action: archived ? 'archive' : 'unarchive' })
+    setProjectNotice(undefined)
+    try {
+      await api.setProjectArchived(project.projectId, archived, project.revision)
+      setProjectNotice({
+        kind: 'success',
+        message: archived
+          ? `“${project.name}”已归档，可在“已归档”中恢复。`
+          : `“${project.name}”已恢复到使用中项目。`,
+      })
+      setProjectListView(archived ? 'archived' : 'active')
+      setProjectCursor(undefined)
+      setProjectCursorHistory([])
+      reload()
+    } catch (error) {
+      setProjectNotice({ kind: 'error', message: errorMessage(error, `${action}项目没有完成。`) })
+    } finally {
+      setProjectMutation(undefined)
+    }
+  }
+
+  const beginWorkspaceChange = async (project: ProjectListItem): Promise<void> => {
+    if (projectMutation !== undefined) return
+    setProjectMutation({ projectId: project.projectId, action: 'relocate' })
+    setProjectNotice(undefined)
+    try {
+      const outcome = await selectProjectDirectory('project-root')
+      if (outcome.kind === 'cancelled') return
+      if (outcome.kind === 'error') throw new Error(outcome.message)
+      const result = await api.scan('project-root', outcome.selection)
+      const candidate = selectUserInitiatedRelocationCandidate(project.projectId, outcome.selection.path, result)
+      setCandidateView('review')
+      setCandidateSearchInput('')
+      setCandidateSearch('')
+      setCandidateCursor(undefined)
+      setCandidateCursorHistory([])
+      setSelectedCandidates({})
+      setProjectNotice({
+        kind: 'success',
+        message: `已生成“${project.name}”的位置变更候选；请在详情中核对后确认重新绑定。`,
+      })
+      reload()
+      openCandidate(candidate)
+    } catch (error) {
+      setProjectNotice({
+        kind: 'error',
+        message: errorMessage(error, '目标目录未形成可安全确认的位置变更候选，已停止。'),
+      })
+    } finally {
+      setProjectMutation(undefined)
+    }
   }
 
   const beginCreate = async (): Promise<void> => {
@@ -447,7 +571,8 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
   const projectCount = loadState.kind === 'ready' ? loadState.status.counts.projects ?? undefined : undefined
 
   const consoleProject = loadState.kind === 'ready' && consoleProjectId !== undefined
-    ? loadState.list?.projects.find(project => project.projectId === consoleProjectId)
+    ? loadState.consoleProject
+      ?? loadState.activeList?.projects.find(project => project.projectId === consoleProjectId)
     : undefined
 
   const togglePin = (projectId: string): void => {
@@ -501,10 +626,18 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
             bridgeAvailable={hasProjectControlDirectoryBridge()}
             candidateMutation={candidateMutation}
             candidateView={candidateView}
+            projectListView={projectListView}
+            projectSearchInput={projectSearchInput}
+            projectMutation={projectMutation}
+            projectNotice={projectNotice}
             candidateSearchInput={candidateSearchInput}
             selectedCandidates={selectedCandidates}
             hasPreviousCandidatePage={candidateCursorHistory.length > 0}
+            hasPreviousProjectPage={projectCursorHistory.length > 0}
             onChooseCandidateView={chooseCandidateView}
+            onChooseProjectListView={chooseProjectListView}
+            onProjectSearchInput={setProjectSearchInput}
+            onApplyProjectSearch={applyProjectSearch}
             onCandidateSearchInput={setCandidateSearchInput}
             onApplyCandidateSearch={applyCandidateSearch}
             onSelectCandidate={selectCandidate}
@@ -512,6 +645,8 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
             onMutateSelectedCandidates={() => { void mutateSelectedCandidates() }}
             onNextCandidatePage={nextCandidatePage}
             onPreviousCandidatePage={previousCandidatePage}
+            onNextProjectPage={nextProjectPage}
+            onPreviousProjectPage={previousProjectPage}
             onScan={mode => { void beginScan(mode) }}
             onOpenCandidate={openCandidate}
             onToggleIgnored={candidate => { void toggleIgnored(candidate) }}
@@ -543,6 +678,8 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
               })
             }}
             onTogglePin={togglePin}
+            onSetProjectArchived={(project, archived) => { void setProjectArchived(project, archived) }}
+            onChangeWorkspace={project => { void beginWorkspaceChange(project) }}
           />
         )}
         {consoleProject !== undefined && loadState.kind === 'ready' && (
@@ -593,10 +730,18 @@ function ReadyState({
   bridgeAvailable,
   candidateMutation,
   candidateView,
+  projectListView,
+  projectSearchInput,
+  projectMutation,
+  projectNotice,
   candidateSearchInput,
   selectedCandidates,
   hasPreviousCandidatePage,
+  hasPreviousProjectPage,
   onChooseCandidateView,
+  onChooseProjectListView,
+  onProjectSearchInput,
+  onApplyProjectSearch,
   onCandidateSearchInput,
   onApplyCandidateSearch,
   onSelectCandidate,
@@ -604,6 +749,8 @@ function ReadyState({
   onMutateSelectedCandidates,
   onNextCandidatePage,
   onPreviousCandidatePage,
+  onNextProjectPage,
+  onPreviousProjectPage,
   onScan,
   onOpenCandidate,
   onToggleIgnored,
@@ -624,6 +771,8 @@ function ReadyState({
   pinnedProjectIds,
   onOpenConsole,
   onTogglePin,
+  onSetProjectArchived,
+  onChangeWorkspace,
 }: {
   state: ReadyLoadState
   scanState: ScanState
@@ -631,10 +780,18 @@ function ReadyState({
   bridgeAvailable: boolean
   candidateMutation: string | undefined
   candidateView: CandidateCenterView | 'projects'
+  projectListView: ProjectListView
+  projectSearchInput: string
+  projectMutation: ProjectMutation | undefined
+  projectNotice: ProjectNotice | undefined
   candidateSearchInput: string
   selectedCandidates: Readonly<Record<string, number>>
   hasPreviousCandidatePage: boolean
+  hasPreviousProjectPage: boolean
   onChooseCandidateView(view: CandidateCenterView | 'projects'): void
+  onChooseProjectListView(view: ProjectListView): void
+  onProjectSearchInput(value: string): void
+  onApplyProjectSearch(): void
   onCandidateSearchInput(value: string): void
   onApplyCandidateSearch(): void
   onSelectCandidate(candidate: ProjectCandidate, selected: boolean): void
@@ -642,6 +799,8 @@ function ReadyState({
   onMutateSelectedCandidates(): void
   onNextCandidatePage(): void
   onPreviousCandidatePage(): void
+  onNextProjectPage(): void
+  onPreviousProjectPage(): void
   onScan(mode: IntakeScanMode): void
   onOpenCandidate(candidate: ProjectCandidate): void
   onToggleIgnored(candidate: ProjectCandidate): void
@@ -662,6 +821,8 @@ function ReadyState({
   pinnedProjectIds: readonly string[]
   onOpenConsole(project: ProjectListItem): void
   onTogglePin(projectId: string): void
+  onSetProjectArchived(project: ProjectListItem, archived: boolean): void
+  onChangeWorkspace(project: ProjectListItem): void
 }): ReactNode {
   const descriptor = storageDescriptor(state.status.storage.state)
   const scanning = scanState.kind === 'selecting' || scanState.kind === 'scanning'
@@ -738,7 +899,7 @@ function ReadyState({
 
       <CandidateCenterNavigation
         activeView={candidateView}
-        projectCount={state.list?.total ?? 0}
+        projectCount={state.status.counts.projects ?? state.activeList?.total ?? 0}
         counts={state.candidatePage.counts}
         {...(state.candidateError === undefined ? {} : { candidateError: state.candidateError })}
         searchInput={candidateSearchInput}
@@ -749,13 +910,32 @@ function ReadyState({
 
       {candidateView === 'projects' ? (
         <ProjectSection
-          {...(state.list === undefined ? {} : { list: state.list })}
-          {...(state.listError === undefined ? {} : { error: state.listError })}
+          view={projectListView}
+          activeTotal={state.activeList?.total ?? 0}
+          archivedTotal={state.archivedList?.total ?? 0}
+          {...(projectListView === 'active'
+            ? state.activeList === undefined ? {} : { list: state.activeList }
+            : state.archivedList === undefined ? {} : { list: state.archivedList })}
+          {...(projectListView === 'active'
+            ? state.activeListError === undefined ? {} : { error: state.activeListError }
+            : state.archivedListError === undefined ? {} : { error: state.archivedListError })}
           {...(activeDocumentsProjectId === undefined ? {} : { documentsProjectId: activeDocumentsProjectId })}
+          bridgeAvailable={bridgeAvailable}
+          mutation={projectMutation}
+          notice={projectNotice}
+          searchInput={projectSearchInput}
+          hasPreviousPage={hasPreviousProjectPage}
+          onChooseView={onChooseProjectListView}
+          onSearchInput={onProjectSearchInput}
+          onApplySearch={onApplyProjectSearch}
+          onNextPage={onNextProjectPage}
+          onPreviousPage={onPreviousProjectPage}
           onOpenDocuments={onOpenDocuments}
           pinnedProjectIds={pinnedProjectIds}
           onOpenConsole={onOpenConsole}
           onTogglePin={onTogglePin}
+          onSetArchived={onSetProjectArchived}
+          onChangeWorkspace={onChangeWorkspace}
         />
       ) : (
         <CandidateSection
@@ -1251,21 +1431,51 @@ function CandidateSection({
 }
 
 function ProjectSection({
+  view,
+  activeTotal,
+  archivedTotal,
   list,
   error,
   documentsProjectId,
+  bridgeAvailable,
+  mutation,
+  notice,
+  searchInput,
+  hasPreviousPage,
+  onChooseView,
+  onSearchInput,
+  onApplySearch,
+  onNextPage,
+  onPreviousPage,
   onOpenDocuments,
   pinnedProjectIds,
   onOpenConsole,
   onTogglePin,
+  onSetArchived,
+  onChangeWorkspace,
 }: {
+  view: ProjectListView
+  activeTotal: number
+  archivedTotal: number
   list?: ProjectList
   error?: string
   documentsProjectId?: string
+  bridgeAvailable: boolean
+  mutation: ProjectMutation | undefined
+  notice: ProjectNotice | undefined
+  searchInput: string
+  hasPreviousPage: boolean
+  onChooseView(view: ProjectListView): void
+  onSearchInput(value: string): void
+  onApplySearch(): void
+  onNextPage(): void
+  onPreviousPage(): void
   onOpenDocuments(project: ProjectListItem): void
   pinnedProjectIds: readonly string[]
   onOpenConsole(project: ProjectListItem): void
   onTogglePin(projectId: string): void
+  onSetArchived(project: ProjectListItem, archived: boolean): void
+  onChangeWorkspace(project: ProjectListItem): void
 }): ReactNode {
   const ordered = list === undefined
     ? undefined
@@ -1281,10 +1491,50 @@ function ProjectSection({
         <div><h2 id="project-control-list-heading">已登记项目</h2></div>
         <span>{list === undefined ? '不可用' : String(list.total) + ' 项'}</span>
       </div>
+      <div className={css.candidatePagination} aria-label="项目归档视图">
+        <button
+          className={css.smallButton}
+          type="button"
+          aria-pressed={view === 'active'}
+          data-project-list-view="active"
+          onClick={() => { onChooseView('active') }}
+        >
+          使用中（{String(activeTotal)}）
+        </button>
+        <button
+          className={css.smallButton}
+          type="button"
+          aria-pressed={view === 'archived'}
+          data-project-list-view="archived"
+          onClick={() => { onChooseView('archived') }}
+        >
+          已归档（{String(archivedTotal)}）
+        </button>
+      </div>
+      <form
+        className={css.candidateSearch}
+        data-project-search
+        onSubmit={event => { event.preventDefault(); onApplySearch() }}
+      >
+        <input
+          type="search"
+          value={searchInput}
+          maxLength={200}
+          aria-label="搜索已登记项目"
+          placeholder="按项目名称或项目 ID 搜索"
+          onChange={event => { onSearchInput(event.currentTarget.value) }}
+        />
+        <button className={css.smallButton} type="submit">搜索</button>
+      </form>
+      {notice !== undefined && (
+        <p className={css.bridgeNotice} role={notice.kind === 'error' ? 'alert' : 'status'}>
+          {notice.message}
+        </p>
+      )}
       {ordered === undefined ? (
         <p className={css.emptyCopy}>{error ?? '项目列表暂时无法读取。'}</p>
       ) : ordered.length === 0 ? (
-        <p className={css.emptyCopy}>数据库当前没有登记项目。</p>
+        <p className={css.emptyCopy}>{view === 'active' ? '当前没有使用中的项目。' : '当前没有已归档项目。'}</p>
       ) : (
         <ul className={css.projectList}>
           {ordered.map(project => {
@@ -1293,37 +1543,91 @@ function ProjectSection({
               <li className={css.projectItem} key={project.projectId} data-project-pinned={pinned || undefined}>
                 <div><strong>{project.name}</strong><small>{project.projectId}</small></div>
                 <div className={css.projectItemActions}>
-                  <span>{registrationLabel(project.registrationMode)}</span>
-                  <button
-                    className={css.smallButton}
-                    type="button"
-                    data-documents-open={documentsProjectId === project.projectId || undefined}
-                    onClick={() => { onOpenDocuments(project) }}
-                  >
-                    {documentsProjectId === project.projectId ? '收起文档' : '文档索引'}
-                  </button>
-                  <button
-                    className={css.smallButton}
-                    type="button"
-                    aria-pressed={pinned}
-                    aria-label={pinned ? '取消置顶 ' + project.name : '置顶 ' + project.name}
-                    onClick={() => { onTogglePin(project.projectId) }}
-                  >
-                    {pinned ? '📌' : '置顶'}
-                  </button>
-                  <button
-                    className={css.confirmButton}
-                    type="button"
-                    data-open-console
-                    onClick={() => { onOpenConsole(project) }}
-                  >
-                    打开控制台
-                  </button>
+                  <span>{view === 'archived' ? '已归档' : registrationLabel(project.registrationMode)}</span>
+                  {view === 'archived' ? (
+                    <button
+                      className={css.confirmButton}
+                      type="button"
+                      data-project-unarchive
+                      disabled={mutation !== undefined}
+                      onClick={() => { onSetArchived(project, false) }}
+                    >
+                      {mutation?.projectId === project.projectId && mutation.action === 'unarchive' ? '恢复中…' : '恢复项目'}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        className={css.smallButton}
+                        type="button"
+                        data-project-workspace-change
+                        disabled={!bridgeAvailable || mutation !== undefined}
+                        onClick={() => { onChangeWorkspace(project) }}
+                      >
+                        {mutation?.projectId === project.projectId && mutation.action === 'relocate' ? '核对中…' : '更换工作区'}
+                      </button>
+                      <button
+                        className={css.smallButton}
+                        type="button"
+                        data-project-archive
+                        disabled={mutation !== undefined}
+                        onClick={() => { onSetArchived(project, true) }}
+                      >
+                        {mutation?.projectId === project.projectId && mutation.action === 'archive' ? '归档中…' : '归档项目'}
+                      </button>
+                      <button
+                        className={css.smallButton}
+                        type="button"
+                        data-documents-open={documentsProjectId === project.projectId || undefined}
+                        onClick={() => { onOpenDocuments(project) }}
+                      >
+                        {documentsProjectId === project.projectId ? '收起文档' : '文档索引'}
+                      </button>
+                      <button
+                        className={css.smallButton}
+                        type="button"
+                        aria-pressed={pinned}
+                        aria-label={pinned ? '取消置顶 ' + project.name : '置顶 ' + project.name}
+                        onClick={() => { onTogglePin(project.projectId) }}
+                      >
+                        {pinned ? '📌' : '置顶'}
+                      </button>
+                      <button
+                        className={css.confirmButton}
+                        type="button"
+                        data-open-console
+                        onClick={() => { onOpenConsole(project) }}
+                      >
+                        打开控制台
+                      </button>
+                    </>
+                  )}
                 </div>
               </li>
             )
           })}
         </ul>
+      )}
+      {list !== undefined && (hasPreviousPage || list.nextCursor !== null) && (
+        <div className={css.candidatePagination} aria-label="项目分页">
+          <button
+            className={css.smallButton}
+            type="button"
+            data-project-page-previous
+            disabled={!hasPreviousPage}
+            onClick={onPreviousPage}
+          >
+            上一页
+          </button>
+          <button
+            className={css.smallButton}
+            type="button"
+            data-project-page-next
+            disabled={list.nextCursor === null}
+            onClick={onNextPage}
+          >
+            下一页
+          </button>
+        </div>
       )}
     </section>
   )

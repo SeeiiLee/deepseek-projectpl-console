@@ -620,9 +620,24 @@ export interface ProjectControlStorage {
   getProject(projectId: string): Readonly<ProjectView> | null
   listProjects(options?: {
     includeArchived?: boolean
+    archiveState?: 'active' | 'archived' | 'all'
     limit?: number
     afterProjectId?: string
   }): Readonly<ProjectView>[]
+  queryProjects(options?: {
+    archiveState?: 'active' | 'archived' | 'all'
+    search?: string
+    limit?: number
+    afterProjectId?: string
+  }): Readonly<{
+    projects: readonly Readonly<ProjectView>[]
+    total: number
+    nextCursor: string | null
+  }>
+  setProjectArchived(
+    projectId: string,
+    input: { expectedRevision: number; archived: boolean },
+  ): Readonly<ProjectView>
   getCommandReceipt(commandId: string): Readonly<Record<string, unknown>> | null
   replayCommandReceipt(
     command: LifecycleCommand,

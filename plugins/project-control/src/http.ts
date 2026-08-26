@@ -32,18 +32,27 @@ export interface ProjectControlProjectItem {
   name: string
   registrationMode: 'linked_legacy' | 'managed' | 'unknown'
   lifecycle: string
+  revision: number
+  archivedAt: string | null
   updatedAt: string
 }
 
 export interface ProjectControlProjectList {
   projects: readonly ProjectControlProjectItem[]
   total: number
+  /** Older read-service implementations may omit this; HTTP normalizes omission to null. */
+  nextCursor?: string | null
 }
 
 /** Narrow boundary implemented by the Host adapter in index.ts. HTTP never imports storage directly. */
 export interface ProjectControlReadService {
   getStatus(): ProjectControlStorageStatus | Promise<ProjectControlStorageStatus>
-  listProjects(): ProjectControlProjectList | Promise<ProjectControlProjectList>
+  listProjects(options?: {
+    view: 'active' | 'archived'
+    search?: string
+    limit?: number
+    afterProjectId?: string
+  }): ProjectControlProjectList | Promise<ProjectControlProjectList>
   /** 已登记项目的活动工作区根（null = 项目不存在或无活动位置）。 */
   getProjectWorkspace(projectId: string): { projectId: string; root: string } | null | Promise<{ projectId: string; root: string } | null>
   /** W1 Task D：一次返回全部已登记项目的工作区索引（消除 Client N+1）。 */
@@ -187,6 +196,10 @@ export interface ProjectControlExternalService {
 
 /** P7 console commands issued by the trusted local desktop UI. */
 export interface ProjectControlConsoleService {
+  setProjectArchived(
+    projectId: string,
+    input: { expectedRevision: number; archived: boolean },
+  ): unknown | Promise<unknown>
   createWorkItem(projectId: string, input: Record<string, unknown>): unknown | Promise<unknown>
   setWorkItemStatus(
     projectId: string,
@@ -480,6 +493,8 @@ export function createProjectControlRequestHandler(
                 'events.read',
               ]),
               ...(options.console === undefined ? [] : [
+                'projects.archive',
+                'projects.unarchive',
                 'workitems.write',
                 'workitems.status.write',
                 'reviews.request',
@@ -495,11 +510,44 @@ export function createProjectControlRequestHandler(
 
       if (resource === '/projects') {
         requireGetWithoutBody(request)
-        const list = normalizeProjectList(await service.listProjects())
+        const view = optionalSingleQuery(parsed, 'view', /^(?:active|archived)$/u) ?? 'active'
+        const search = optionalBoundedQuery(parsed, 'search', 200)
+        const limit = optionalIntegerQuery(parsed, 'limit', 1, 100)
+        const afterProjectId = optionalSingleQuery(parsed, 'afterProjectId', PROJECT_ID)
+        rejectUnexpectedQuery(parsed, new Set(['view', 'search', 'limit', 'afterProjectId']))
+        const list = normalizeProjectList(await service.listProjects({
+          view: view as 'active' | 'archived',
+          ...(search === undefined ? {} : { search }),
+          ...(limit === undefined ? {} : { limit }),
+          ...(afterProjectId === undefined ? {} : { afterProjectId }),
+        }))
         sendJson(response, 200, {
           ok: true,
           data: list,
         })
+        return
+      }
+
+      const projectArchiveRoute = /^\/projects\/(prj_[0-9a-f-]+)\/(archive|unarchive)$/u.exec(resource)
+      if (projectArchiveRoute !== null) {
+        requireMethod(request, 'POST')
+        const consoleService = requireConsole(options)
+        const projectId = projectArchiveRoute[1]
+        const action = projectArchiveRoute[2]
+        if (projectId === undefined || !PROJECT_ID.test(projectId)) {
+          throw projectControlHttpError('NOT_FOUND', '项目不存在。', 404)
+        }
+        rejectUnexpectedQuery(parsed, new Set())
+        const input = normalizeProjectLifecycleRequest(await readJsonBody(request))
+        const result = normalizeProjectList({
+          projects: [await consoleService.setProjectArchived(projectId, {
+            expectedRevision: input.expectedRevision,
+            archived: action === 'archive',
+          }) as ProjectControlProjectItem],
+          total: 1,
+          nextCursor: null,
+        }).projects[0]
+        sendJson(response, 200, { ok: true, data: result })
         return
       }
 
@@ -1792,6 +1840,12 @@ function normalizeRunStartRequest(value: unknown): { expectedRevision: number } 
   return { expectedRevision: requestRevision(candidate.expectedRevision, '运行修订', 1) }
 }
 
+function normalizeProjectLifecycleRequest(value: unknown): { expectedRevision: number } {
+  const input = requestObject(value, '项目归档请求')
+  requireExactKeys(input, new Set(['expectedRevision']), '项目归档请求')
+  return { expectedRevision: requestRevision(input.expectedRevision, '项目修订', 1) }
+}
+
 function normalizeReviewAction(value: unknown): Record<string, unknown> {
   const action = responseObject(value, 'review action')
   const kind = boundedText(action.action, 'action', 40)
@@ -2887,6 +2941,10 @@ function normalizeProjectList(value: ProjectControlProjectList): ProjectControlP
   if (!Array.isArray(value.projects) || !Number.isSafeInteger(value.total) || value.total < value.projects.length) {
     throw new TypeError('storage returned an invalid project list')
   }
+  const nextCursor = value.nextCursor
+  if (nextCursor !== undefined && nextCursor !== null && !PROJECT_ID.test(nextCursor)) {
+    throw new TypeError('storage returned an invalid project pagination cursor')
+  }
   return {
     projects: value.projects.map(item => ({
       projectId: boundedText(item.projectId, 'projectId', 200),
@@ -2895,9 +2953,12 @@ function normalizeProjectList(value: ProjectControlProjectList): ProjectControlP
         ? item.registrationMode
         : 'unknown',
       lifecycle: boundedText(item.lifecycle, 'lifecycle', 80),
+      revision: requiredRevision(item.revision, 'revision', 1),
+      archivedAt: item.archivedAt === null ? null : responseTimestamp(item.archivedAt, 'archivedAt'),
       updatedAt: boundedText(item.updatedAt, 'updatedAt', 80),
     })),
     total: value.total,
+    nextCursor: nextCursor ?? null,
   }
 }
 

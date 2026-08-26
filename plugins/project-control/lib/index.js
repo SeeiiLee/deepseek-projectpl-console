@@ -2624,10 +2624,15 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 			} : null;
 			return Object.freeze(project);
 		},
-		listProjects({ includeArchived = false, limit = 100, afterProjectId = "" } = {}) {
+		listProjects({ includeArchived = false, archiveState = includeArchived ? "all" : "active", limit = 100, afterProjectId = "" } = {}) {
 			ensureOpen();
 			requireInteger(limit, "limit", 1);
 			if (limit > 500) throw new StorageValidationError("limit cannot exceed 500.");
+			if (![
+				"active",
+				"archived",
+				"all"
+			].includes(archiveState)) throw new StorageValidationError("archiveState is not supported.");
 			return database.prepare(`
         SELECT
           p.project_id AS projectId, p.mode, p.name, p.origin_kind AS originKind,
@@ -2640,10 +2645,15 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         FROM projects p
         LEFT JOIN workspace_locations l
           ON l.project_id = p.project_id AND l.kind = 'primary' AND l.is_active = 1
-        WHERE p.project_id > ? AND (? = 1 OR p.archived_at IS NULL)
+        WHERE p.project_id > ?
+          AND (
+            ? = 'all'
+            OR (? = 'active' AND p.archived_at IS NULL)
+            OR (? = 'archived' AND p.archived_at IS NOT NULL)
+          )
         ORDER BY p.project_id
         LIMIT ?
-      `).all(afterProjectId, includeArchived ? 1 : 0, limit).map((row) => Object.freeze({
+      `).all(afterProjectId, archiveState, archiveState, archiveState, limit).map((row) => Object.freeze({
 				...mapProject(row),
 				activeLocation: row.activeLocationId ? {
 					locationId: row.activeLocationId,
@@ -2651,6 +2661,130 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 					normalizedPath: row.activeNormalizedPath
 				} : null
 			}));
+		},
+		queryProjects({ archiveState = "active", search = "", limit = 25, afterProjectId = "" } = {}) {
+			ensureOpen();
+			if (![
+				"active",
+				"archived",
+				"all"
+			].includes(archiveState)) throw new StorageValidationError("archiveState is not supported.");
+			if (typeof search !== "string") throw new StorageValidationError("Project search must be a string.");
+			const normalizedSearch = search.trim();
+			if (normalizedSearch.length > 200) throw new StorageValidationError("Project search cannot exceed 200 characters.");
+			requireInteger(limit, "limit", 1);
+			if (limit > 100) throw new StorageValidationError("Project page limit cannot exceed 100.");
+			if (afterProjectId !== "") {
+				requireString(afterProjectId, "afterProjectId");
+				if (!BUSINESS_IDS.prj.test(afterProjectId)) throw new StorageValidationError("afterProjectId must be a prj_ UUIDv7.");
+			}
+			const archivePredicate = {
+				active: "p.archived_at IS NULL",
+				archived: "p.archived_at IS NOT NULL",
+				all: "1 = 1"
+			}[archiveState];
+			const searchPredicate = normalizedSearch === "" ? "1 = 1" : `(
+          instr(lower(p.project_id), lower(?)) > 0
+          OR instr(lower(p.name), lower(?)) > 0
+        )`;
+			const searchParams = normalizedSearch === "" ? [] : [normalizedSearch, normalizedSearch];
+			if (afterProjectId !== "") {
+				if (!database.prepare(`
+          SELECT p.project_id AS projectId
+          FROM projects p
+          WHERE p.project_id = ?
+            AND ${archivePredicate}
+            AND ${searchPredicate}
+        `).get(afterProjectId, ...searchParams)) throw new StorageValidationError("Project pagination cursor was not found in this view.", { reason: "project_cursor_not_found" });
+			}
+			const total = Number(database.prepare(`
+        SELECT count(*) AS total
+        FROM projects p
+        WHERE ${archivePredicate}
+          AND ${searchPredicate}
+      `).get(...searchParams).total);
+			const rows = database.prepare(`
+        SELECT
+          p.project_id AS projectId, p.mode, p.name, p.origin_kind AS originKind,
+          p.template_id AS templateId, p.template_version AS templateVersion,
+          p.forked_from_project_id AS forkedFromProjectId, p.lifecycle, p.health,
+          p.revision, p.created_at AS createdAt, p.updated_at AS updatedAt,
+          p.archived_at AS archivedAt,
+          l.location_id AS activeLocationId, l.display_path AS activeDisplayPath,
+          l.normalized_path AS activeNormalizedPath
+        FROM projects p
+        LEFT JOIN workspace_locations l
+          ON l.project_id = p.project_id AND l.kind = 'primary' AND l.is_active = 1
+        WHERE ${archivePredicate}
+          AND ${searchPredicate}
+          AND p.project_id > ?
+        ORDER BY p.project_id
+        LIMIT ?
+      `).all(...searchParams, afterProjectId, limit + 1);
+			const pageRows = rows.slice(0, limit);
+			const projects = pageRows.map((row) => Object.freeze({
+				...mapProject(row),
+				activeLocation: row.activeLocationId ? {
+					locationId: row.activeLocationId,
+					displayPath: row.activeDisplayPath,
+					normalizedPath: row.activeNormalizedPath
+				} : null
+			}));
+			return Object.freeze({
+				projects: Object.freeze(projects),
+				total,
+				nextCursor: rows.length > limit ? pageRows.at(-1).projectId : null
+			});
+		},
+		setProjectArchived(projectId, input) {
+			ensureOpen();
+			requireString(projectId, "projectId");
+			if (!BUSINESS_IDS.prj.test(projectId)) throw new StorageValidationError("projectId must be a prj_ UUIDv7.");
+			requireObject(input, "input");
+			const expectedRevision = requireInteger(input.expectedRevision, "input.expectedRevision", 1);
+			if (typeof input.archived !== "boolean") throw new StorageValidationError("input.archived must be a boolean.");
+			const recordedAt = requireTimestamp(now(), "now()");
+			return executeWrite(database, () => {
+				const project = database.prepare(`
+          SELECT lifecycle, archived_at AS archivedAt, revision
+          FROM projects WHERE project_id = ?
+        `).get(projectId);
+				if (!project) throw new StorageValidationError("The project does not exist.", { reason: "project_not_found" });
+				const currentRevision = Number(project.revision);
+				if (currentRevision !== expectedRevision) throw new StorageValidationError("The project changed before this lifecycle update.", {
+					reason: "revision_conflict",
+					currentRevision
+				});
+				if (project.archivedAt !== null === input.archived) throw new StorageValidationError("The requested project lifecycle transition is already in effect.", {
+					reason: "transition_not_allowed",
+					currentRevision
+				});
+				const archivedAt = input.archived ? recordedAt : null;
+				const updated = database.prepare(`
+          UPDATE projects
+          SET archived_at = ?, revision = revision + 1, updated_at = ?
+          WHERE project_id = ? AND revision = ?
+          RETURNING revision
+        `).get(archivedAt, recordedAt, projectId, expectedRevision);
+				if (!updated) throw new StorageValidationError("Project revision update unexpectedly affected no rows.");
+				recordConsoleEvent({
+					projectId,
+					aggregateType: "project",
+					aggregateId: projectId,
+					beforeRevision: expectedRevision,
+					afterRevision: Number(updated.revision),
+					eventType: input.archived ? "project.archived" : "project.unarchived",
+					data: input.archived ? {
+						archivedAt,
+						lifecycle: project.lifecycle
+					} : {
+						previousArchivedAt: project.archivedAt,
+						lifecycle: project.lifecycle
+					},
+					recordedAt
+				});
+				return this.getProject(projectId);
+			});
 		},
 		getCommandReceipt(commandId) {
 			ensureOpen();
@@ -3950,7 +4084,14 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 			const recordedAt = requireTimestamp(now(), "now()");
 			const bindingId = createBusinessId(idFactory, "atb", "bindingId");
 			executeWrite(database, () => {
-				if (!database.prepare("SELECT 1 AS present FROM runs WHERE run_id = ? AND project_id = ?").get(runId, projectId)) throw new StorageValidationError("The run does not exist in this project.", { reason: "run_not_found" });
+				const run = database.prepare(`
+          SELECT p.archived_at AS projectArchivedAt
+          FROM runs r
+          JOIN projects p ON p.project_id = r.project_id
+          WHERE r.run_id = ? AND r.project_id = ?
+        `).get(runId, projectId);
+				if (!run) throw new StorageValidationError("The run does not exist in this project.", { reason: "run_not_found" });
+				if (run.projectArchivedAt !== null) throw new StorageValidationError("Archived projects cannot accept new thread bindings.", { reason: "project_archived" });
 				if (!database.prepare("SELECT 1 AS present FROM host_instances WHERE instance_id = ?").get(harnessInstanceRef)) throw new StorageValidationError("The Harness instance has not completed a capability handshake.", { reason: "instance_not_handshaken" });
 				if (database.prepare("SELECT 1 AS present FROM agent_thread_bindings WHERE run_id = ? AND thread_id = ?").get(runId, threadId)) throw new StorageValidationError("The thread is already bound to this run.", { reason: "thread_binding_conflict" });
 				database.prepare(`
@@ -13080,6 +13221,8 @@ function createProjectControlRequestHandler(service, options = {}) {
 								"events.read"
 							],
 							...options.console === void 0 ? [] : [
+								"projects.archive",
+								"projects.unarchive",
 								"workitems.write",
 								"workitems.status.write",
 								"reviews.request",
@@ -13094,9 +13237,47 @@ function createProjectControlRequestHandler(service, options = {}) {
 			}
 			if (resource === "/projects") {
 				requireGetWithoutBody(request);
+				const view = optionalSingleQuery(parsed, "view", /^(?:active|archived)$/u) ?? "active";
+				const search = optionalBoundedQuery(parsed, "search", 200);
+				const limit = optionalIntegerQuery(parsed, "limit", 1, 100);
+				const afterProjectId = optionalSingleQuery(parsed, "afterProjectId", PROJECT_ID);
+				rejectUnexpectedQuery(parsed, new Set([
+					"view",
+					"search",
+					"limit",
+					"afterProjectId"
+				]));
 				sendJson(response, 200, {
 					ok: true,
-					data: normalizeProjectList(await service.listProjects())
+					data: normalizeProjectList(await service.listProjects({
+						view,
+						...search === void 0 ? {} : { search },
+						...limit === void 0 ? {} : { limit },
+						...afterProjectId === void 0 ? {} : { afterProjectId }
+					}))
+				});
+				return;
+			}
+			const projectArchiveRoute = /^\/projects\/(prj_[0-9a-f-]+)\/(archive|unarchive)$/u.exec(resource);
+			if (projectArchiveRoute !== null) {
+				requireMethod(request, "POST");
+				const consoleService = requireConsole(options);
+				const projectId = projectArchiveRoute[1];
+				const action = projectArchiveRoute[2];
+				if (projectId === void 0 || !PROJECT_ID.test(projectId)) throw projectControlHttpError("NOT_FOUND", "项目不存在。", 404);
+				rejectUnexpectedQuery(parsed, /* @__PURE__ */ new Set());
+				const input = normalizeProjectLifecycleRequest(await readJsonBody(request));
+				const result = normalizeProjectList({
+					projects: [await consoleService.setProjectArchived(projectId, {
+						expectedRevision: input.expectedRevision,
+						archived: action === "archive"
+					})],
+					total: 1,
+					nextCursor: null
+				}).projects[0];
+				sendJson(response, 200, {
+					ok: true,
+					data: result
 				});
 				return;
 			}
@@ -14203,6 +14384,11 @@ function normalizeRunStartRequest(value) {
 	requireExactKeys(candidate, new Set(["expectedRevision"]), "启动运行请求");
 	return { expectedRevision: requestRevision(candidate.expectedRevision, "运行修订", 1) };
 }
+function normalizeProjectLifecycleRequest(value) {
+	const input = requestObject(value, "项目归档请求");
+	requireExactKeys(input, new Set(["expectedRevision"]), "项目归档请求");
+	return { expectedRevision: requestRevision(input.expectedRevision, "项目修订", 1) };
+}
 function normalizeReviewAction(value) {
 	const action = responseObject(value, "review action");
 	const kind = boundedText(action.action, "action", 40);
@@ -15029,15 +15215,20 @@ function normalizeStatus(value) {
 }
 function normalizeProjectList(value) {
 	if (!Array.isArray(value.projects) || !Number.isSafeInteger(value.total) || value.total < value.projects.length) throw new TypeError("storage returned an invalid project list");
+	const nextCursor = value.nextCursor;
+	if (nextCursor !== void 0 && nextCursor !== null && !PROJECT_ID.test(nextCursor)) throw new TypeError("storage returned an invalid project pagination cursor");
 	return {
 		projects: value.projects.map((item) => ({
 			projectId: boundedText(item.projectId, "projectId", 200),
 			name: boundedText(item.name, "name", 240),
 			registrationMode: ["linked_legacy", "managed"].includes(item.registrationMode) ? item.registrationMode : "unknown",
 			lifecycle: boundedText(item.lifecycle, "lifecycle", 80),
+			revision: requiredRevision(item.revision, "revision", 1),
+			archivedAt: item.archivedAt === null ? null : responseTimestamp(item.archivedAt, "archivedAt"),
 			updatedAt: boundedText(item.updatedAt, "updatedAt", 80)
 		})),
-		total: value.total
+		total: value.total,
+		nextCursor: nextCursor ?? null
 	};
 }
 function boundedText(value, field, maxLength) {
@@ -17757,21 +17948,26 @@ function storageReadAdapter(storage) {
 				projectCount: status.projectCount
 			};
 		},
-		listProjects() {
-			const status = storage.status();
-			if (status.state !== "ready") throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
+		listProjects(options = { view: "active" }) {
+			if (storage.status().state !== "ready") throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
+			const page = storage.queryProjects({
+				archiveState: options.view,
+				...options.search === void 0 ? {} : { search: options.search },
+				...options.limit === void 0 ? {} : { limit: options.limit },
+				...options.afterProjectId === void 0 ? {} : { afterProjectId: options.afterProjectId }
+			});
 			return {
-				projects: storage.listProjects({
-					includeArchived: false,
-					limit: 100
-				}).map((project) => ({
+				projects: page.projects.map((project) => ({
 					projectId: project.projectId,
 					name: project.name,
 					registrationMode: project.mode,
 					lifecycle: project.lifecycle,
+					revision: project.revision,
+					archivedAt: project.archivedAt,
 					updatedAt: project.updatedAt
 				})),
-				total: status.projectCount
+				total: page.total,
+				nextCursor: page.nextCursor
 			};
 		},
 		getProjectWorkspace(projectId) {
@@ -17787,18 +17983,24 @@ function storageReadAdapter(storage) {
 		listProjectWorkspaces() {
 			if (storage.status().state !== "ready") throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
 			const projects = [];
-			for (const project of storage.listProjects({
-				includeArchived: false,
-				limit: 100
-			})) {
-				const location = project.activeLocation ?? project.workspaceLocations?.find((item) => item.isActive);
-				if (location === void 0 || location === null) continue;
-				projects.push({
-					projectId: project.projectId,
-					root: location.displayPath,
-					updatedAt: project.updatedAt
+			let afterProjectId;
+			do {
+				const page = storage.queryProjects({
+					archiveState: "active",
+					limit: 100,
+					...afterProjectId === void 0 ? {} : { afterProjectId }
 				});
-			}
+				for (const project of page.projects) {
+					const location = project.activeLocation ?? project.workspaceLocations?.find((item) => item.isActive);
+					if (location === void 0 || location === null) continue;
+					projects.push({
+						projectId: project.projectId,
+						root: location.displayPath,
+						updatedAt: project.updatedAt
+					});
+				}
+				afterProjectId = page.nextCursor ?? void 0;
+			} while (afterProjectId !== void 0);
 			return projects;
 		}
 	};
@@ -17949,6 +18151,28 @@ function storageLifecycleAdapter(storage) {
 /** P7 console commands issued by the trusted local desktop UI. */
 function storageConsoleAdapter(storage) {
 	return {
+		setProjectArchived(projectId, input) {
+			try {
+				const project = storage.setProjectArchived(projectId, input);
+				return {
+					projectId: project.projectId,
+					name: project.name,
+					registrationMode: project.mode,
+					lifecycle: project.lifecycle,
+					revision: project.revision,
+					archivedAt: project.archivedAt,
+					updatedAt: project.updatedAt
+				};
+			} catch (error) {
+				if (error instanceof StorageValidationError) {
+					const reason = error.details?.reason;
+					if (reason === "project_not_found") throw projectControlHttpError("NOT_FOUND", "项目不存在。", 404);
+					if (reason === "revision_conflict") throw projectControlHttpError("REVISION_CONFLICT", "项目已发生变化，请刷新后重试。", 409);
+					if (reason === "transition_not_allowed") throw projectControlHttpError("PROJECT_LIFECYCLE_CONFLICT", "项目归档状态已发生变化，请刷新后重试。", 409);
+				}
+				throw error;
+			}
+		},
 		createWorkItem(projectId, input) {
 			return storage.createWorkItem(projectId, {
 				title: String(input.title),

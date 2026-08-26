@@ -8,7 +8,10 @@ import {
   PROJECT_CONTROL_API_PREFIX,
 } from '../src/http.ts'
 import { validateLifecycleCommand, validateLifecycleResult } from '../src/lifecycle-validator.ts'
-import { createProjectControlApi } from '../src/client/projectControlApi.ts'
+import {
+  createProjectControlApi,
+  selectUserInitiatedRelocationCandidate,
+} from '../src/client/projectControlApi.ts'
 
 const lifecycleExamples = new URL('../../../protocol/project-control/v1alpha1/lifecycle/examples/', import.meta.url)
 
@@ -23,10 +26,13 @@ const readyService = {
         name: '真实项目',
         registrationMode: 'managed',
         lifecycle: 'active',
+        revision: 1,
+        archivedAt: null,
         updatedAt: '2026-08-14T12:00:00.000Z',
         databasePath: 'D:\\secret\\project-control.sqlite3',
       }],
       total: 1,
+      nextCursor: null,
       databasePath: 'D:\\secret\\project-control.sqlite3',
     }
   },
@@ -47,6 +53,145 @@ test('serves only bounded status and project DTOs to the personal client', async
   assert.equal(projects.payload.data.projects[0].name, '真实项目')
   assert.equal(projects.payload.data.projects[0].databasePath, undefined)
   assert.doesNotMatch(JSON.stringify(projects.payload), /secret|sqlite3/iu)
+})
+
+test('serves revision-bound project archive and restore with a server-filtered archived view', async t => {
+  const calls = []
+  const project = {
+    projectId: 'prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711',
+    name: '已归档项目',
+    registrationMode: 'managed',
+    lifecycle: 'active',
+    revision: 4,
+    archivedAt: '2026-08-27T00:00:00.000Z',
+    updatedAt: '2026-08-27T00:00:00.000Z',
+  }
+  const service = {
+    ...readyService,
+    listProjects(options) {
+      calls.push({ kind: 'list', options })
+      return { projects: [project], total: 1, nextCursor: project.projectId }
+    },
+  }
+  const console = {
+    setProjectArchived(projectId, input) {
+      calls.push({ kind: 'mutation', projectId, input })
+      return { ...project, archivedAt: input.archived ? project.archivedAt : null, revision: input.expectedRevision + 1 }
+    },
+  }
+  const origin = await serve(t, service, { console })
+
+  const archived = await api(origin, `/projects?view=archived&search=${encodeURIComponent('归档 项目')}&limit=25&afterProjectId=${project.projectId}`)
+  assert.equal(archived.response.status, 200)
+  assert.equal(archived.payload.data.projects[0].revision, 4)
+  assert.equal(archived.payload.data.projects[0].archivedAt, project.archivedAt)
+  assert.equal(archived.payload.data.nextCursor, project.projectId)
+  assert.deepEqual(calls[0], {
+    kind: 'list',
+    options: { view: 'archived', search: '归档 项目', limit: 25, afterProjectId: project.projectId },
+  })
+
+  const restored = await api(origin, `/projects/${project.projectId}/unarchive`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ expectedRevision: 4 }),
+  })
+  assert.equal(restored.response.status, 200)
+  assert.equal(restored.payload.data.archivedAt, null)
+  assert.deepEqual(calls[1], {
+    kind: 'mutation',
+    projectId: project.projectId,
+    input: { expectedRevision: 4, archived: false },
+  })
+})
+
+test('client lifecycle adapter and user-initiated relocation matcher fail closed before the one rebind flow', async () => {
+  const projectId = 'prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34711'
+  const observed = []
+  const client = createProjectControlApi(async (input, init) => {
+    observed.push({ input: String(input), init })
+    const data = String(input).includes('/archive')
+      ? {
+          projectId,
+          name: '项目 A',
+          registrationMode: 'managed',
+          lifecycle: 'active',
+          revision: 2,
+          archivedAt: '2026-08-27T00:00:00.000Z',
+          updatedAt: '2026-08-27T00:00:00.000Z',
+        }
+      : {
+          projects: [],
+          total: 0,
+        }
+    return new Response(JSON.stringify({ ok: true, data }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  })
+  const legacyController = new AbortController()
+  const legacyList = await client.listProjects(legacyController.signal)
+  assert.equal(legacyList.nextCursor, null)
+  await client.listProjects({
+    view: 'archived',
+    search: '归档 项目',
+    limit: 25,
+    afterProjectId: projectId,
+  })
+  await client.setProjectArchived(projectId, true, 1)
+  assert.match(observed[0].input, /\/projects\?view=active$/)
+  assert.equal(observed[0].init.signal, legacyController.signal)
+  assert.match(observed[1].input, new RegExp(`/projects\\?view=archived&search=.*&limit=25&afterProjectId=${projectId}$`))
+  assert.match(observed[2].input, new RegExp(`/projects/${projectId}/archive$`))
+  assert.deepEqual(JSON.parse(observed[2].init.body), { expectedRevision: 1 })
+
+  const targetPath = 'F:\\Projects\\alpha\\workspace'
+  const base = {
+    candidateId: 'can_12345678',
+    jobId: 'job_12345678',
+    revision: 1,
+    rootPath: 'F:\\Projects\\alpha\\workspace',
+    suggestedName: 'Alpha',
+    nameSource: { relativePath: '.dsh-project/project.yaml' },
+    summary: 'Managed project relocation.',
+    summarySource: { relativePath: '.dsh-project/project.yaml' },
+    evidenceLevel: 'high',
+    evidence: ['managed project manifest'],
+    status: 'discovered',
+    detectedMode: 'managed',
+    ignored: false,
+    documents: [],
+    issues: [],
+  }
+  const relocation = {
+    ...base,
+    rootPath: targetPath,
+    status: 'relocation_candidate',
+    detectedMode: 'managed',
+    manifestProjectId: projectId,
+  }
+  const scan = {
+    sourceRoot: { sourceRootId: 'srt_12345678', kind: 'project-root', path: targetPath, revision: 1, updatedAt: '2026-08-27T00:00:00.000Z' },
+    job: { jobId: 'job_12345678', sourceRootId: 'srt_12345678', mode: 'project-root', status: 'completed', scannerVersion: 'gate2c/v1', startedAt: '2026-08-27T00:00:00.000Z', summary: {}, issues: [] },
+    candidates: [relocation],
+    summary: {},
+    issues: [],
+  }
+  assert.equal(selectUserInitiatedRelocationCandidate(projectId, targetPath, scan).candidateId, relocation.candidateId)
+  assert.throws(
+    () => selectUserInitiatedRelocationCandidate(projectId, targetPath, {
+      ...scan,
+      candidates: [{ ...relocation, manifestProjectId: 'prj_0198f4b2-7c3a-7d11-a5c6-6b6f39e34799' }],
+    }),
+    error => error.code === 'RELOCATION_CANDIDATE_MISMATCH',
+  )
+  assert.throws(
+    () => selectUserInitiatedRelocationCandidate(projectId, targetPath, {
+      ...scan,
+      candidates: [relocation, { ...relocation, candidateId: 'can_87654321' }],
+    }),
+    error => error.code === 'RELOCATION_CANDIDATE_AMBIGUOUS',
+  )
 })
 
 test('W1 Task D：/projects/workspace-index 一次返回紧凑索引并支持 ETag 条件请求', async t => {

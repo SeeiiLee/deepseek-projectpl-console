@@ -37,10 +37,23 @@ export interface ProjectListItem {
   name: string
   registrationMode: 'linked_legacy' | 'managed' | 'unknown'
   lifecycle: string
+  revision: number
+  archivedAt: string | null
   updatedAt: string
 }
 
-export interface ProjectList { projects: readonly ProjectListItem[]; total: number }
+export interface ProjectList {
+  projects: readonly ProjectListItem[]
+  total: number
+  nextCursor: string | null
+}
+export type ProjectListView = 'active' | 'archived'
+export interface ProjectListOptions {
+  view?: ProjectListView
+  search?: string
+  limit?: number
+  afterProjectId?: string
+}
 
 export interface ProjectWorkspaceStatus { projectId: string; root: string }
 
@@ -415,7 +428,14 @@ export interface PagedItems<T> {
 
 export interface ProjectControlApi {
   getStatus(signal?: AbortSignal): Promise<ProjectControlStatus>
-  listProjects(signal?: AbortSignal): Promise<ProjectList>
+  /** Accepts the legacy listProjects(signal) call as well as filtered page options. */
+  listProjects(optionsOrSignal?: ProjectListOptions | AbortSignal, signal?: AbortSignal): Promise<ProjectList>
+  setProjectArchived(
+    projectId: string,
+    archived: boolean,
+    expectedRevision: number,
+    signal?: AbortSignal,
+  ): Promise<ProjectListItem>
   workspaceStatus(projectId: string, signal?: AbortSignal): Promise<ProjectWorkspaceStatus>
   workspaceTree(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectWorkspaceTree>
   workspaceFile(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectWorkspaceFile>
@@ -559,7 +579,36 @@ export function createProjectControlApi(fetchImpl: typeof fetch = fetch): Projec
 
   return {
     getStatus: async signal => normalizeStatus(await request('GET', '/status', undefined, signal)),
-    listProjects: async signal => normalizeProjectList(await request('GET', '/projects', undefined, signal)),
+    listProjects: async (optionsOrSignal = {}, signal) => {
+      let options: ProjectListOptions
+      let requestSignal = signal
+      if (isAbortSignal(optionsOrSignal)) {
+        options = {}
+        requestSignal = optionsOrSignal
+      } else {
+        options = optionsOrSignal
+      }
+      const view = options.view ?? 'active'
+      if (view !== 'active' && view !== 'archived') throw apiError('项目列表视图无效。', 'INVALID_PROJECT_VIEW')
+      const query = new URLSearchParams({ view })
+      if (options.search !== undefined) query.set('search', validateProjectSearch(options.search))
+      if (options.limit !== undefined) query.set('limit', String(validateProjectLimit(options.limit)))
+      if (options.afterProjectId !== undefined) {
+        query.set('afterProjectId', validateProjectId(options.afterProjectId))
+      }
+      return normalizeProjectList(await request(
+        'GET',
+        `/projects?${query.toString()}`,
+        undefined,
+        requestSignal,
+      ))
+    },
+    setProjectArchived: async (projectId, archived, expectedRevision, signal) => normalizeProjectListItem(await request(
+      'POST',
+      `/projects/${encodeURIComponent(validateProjectId(projectId))}/${archived ? 'archive' : 'unarchive'}`,
+      { expectedRevision: validateRevision(expectedRevision) },
+      signal,
+    )),
     workspaceStatus: async (projectId, signal) => normalizeProjectWorkspaceStatus(await request(
       'GET',
       `/projects/${encodeURIComponent(validateIdentifier(projectId, '项目'))}/workspace/status`,
@@ -903,18 +952,50 @@ function normalizeStatus(value: unknown): ProjectControlStatus {
 
 function normalizeProjectList(value: unknown): ProjectList {
   const object = requiredRecord(value, '项目列表')
-  const projects = requiredArray(object.projects, '项目列表').map((item): ProjectListItem => {
-    const project = requiredRecord(item, '登记项目')
-    const mode = optionalBoundedText(project.registrationMode, 40)
-    return {
-      projectId: requiredText(project.projectId, '项目 ID', 200),
-      name: requiredText(project.name, '项目名称', 240),
-      registrationMode: mode === 'managed' || mode === 'linked_legacy' ? mode : 'unknown',
-      lifecycle: requiredText(project.lifecycle, '项目生命周期', 80),
-      updatedAt: requiredText(project.updatedAt, '项目更新时间', 80),
-    }
-  })
-  return { projects, total: requiredInteger(object.total, '项目总数', projects.length) }
+  const projects = requiredArray(object.projects, '项目列表').map(normalizeProjectListItem)
+  const nextCursor = object.nextCursor === undefined || object.nextCursor === null
+    ? null
+    : validateProjectId(requiredText(object.nextCursor, '项目分页游标', 200))
+  return { projects, total: requiredInteger(object.total, '项目总数', projects.length), nextCursor }
+}
+
+function normalizeProjectListItem(item: unknown): ProjectListItem {
+  const project = requiredRecord(item, '登记项目')
+  const mode = optionalBoundedText(project.registrationMode, 40)
+  return {
+    projectId: requiredText(project.projectId, '项目 ID', 200),
+    name: requiredText(project.name, '项目名称', 240),
+    registrationMode: mode === 'managed' || mode === 'linked_legacy' ? mode : 'unknown',
+    lifecycle: requiredText(project.lifecycle, '项目生命周期', 80),
+    revision: requiredInteger(project.revision, '项目修订', 1),
+    archivedAt: project.archivedAt === null ? null : requiredText(project.archivedAt, '项目归档时间', 80),
+    updatedAt: requiredText(project.updatedAt, '项目更新时间', 80),
+  }
+}
+
+export function selectUserInitiatedRelocationCandidate(
+  projectId: string,
+  selectedPath: string,
+  scan: IntakeScanResult,
+): ProjectCandidate {
+  const expectedProjectId = validateProjectId(projectId)
+  const selectedPathKey = clientPathKey(requiredText(selectedPath, '目标工作区', 32_767))
+  const matches = scan.candidates.filter(candidate =>
+    candidate.status === 'relocation_candidate'
+    && candidate.detectedMode === 'managed'
+    && candidate.manifestProjectId === expectedProjectId
+    && clientPathKey(candidate.rootPath) === selectedPathKey)
+  if (matches.length > 1 || scan.candidates.length > 1) {
+    throw apiError('目标目录产生了多个候选，已停止；请到候选中心人工核对。', 'RELOCATION_CANDIDATE_AMBIGUOUS')
+  }
+  if (matches.length !== 1) {
+    throw apiError('目标目录没有形成与当前项目身份一致的位置候选，已停止；请到候选中心查看冲突。', 'RELOCATION_CANDIDATE_MISMATCH')
+  }
+  return matches[0]!
+}
+
+function clientPathKey(value: string): string {
+  return value.replaceAll('/', '\\').replace(/[\\]+$/u, '').toLowerCase()
 }
 
 function normalizeProjectWorkspaceStatus(value: unknown): ProjectWorkspaceStatus {
@@ -1478,6 +1559,20 @@ function validateProjectId(value: string): string {
   return value
 }
 
+function validateProjectSearch(value: string): string {
+  if (typeof value !== 'string' || value.length > 200 || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw apiError('项目搜索条件无效。', 'INVALID_PROJECT_SEARCH')
+  }
+  return value
+}
+
+function validateProjectLimit(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 100) {
+    throw apiError('项目分页大小无效。', 'INVALID_PROJECT_LIMIT')
+  }
+  return value
+}
+
 function validateProposalId(value: string): string {
   if (!/^rbd_[A-Za-z0-9-]{8,180}$/.test(value)) throw apiError('重绑提案标识无效。', 'INVALID_PROPOSAL_ID')
   return value
@@ -1667,4 +1762,12 @@ function utf8Bytes(value: string): number {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isAbortSignal(value: unknown): value is AbortSignal {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<AbortSignal>
+  return typeof candidate.aborted === 'boolean'
+    && typeof candidate.addEventListener === 'function'
+    && typeof candidate.removeEventListener === 'function'
 }

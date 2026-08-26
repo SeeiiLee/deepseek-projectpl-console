@@ -355,6 +355,30 @@ test('W1 Step D：Project Header 提供「在工作台浏览」显式命令', ()
   assert.match(consoleSrc, /workbench\.reveal\(\)/)
 })
 
+test('project rows expose recoverable archive and scanner-backed workspace relocation only', () => {
+  assert.match(component, /data-project-archive/)
+  assert.match(component, /data-project-unarchive/)
+  assert.match(component, /data-project-workspace-change/)
+  assert.match(component, /selectProjectDirectory\('project-root'\)/)
+  assert.match(component, /api\.scan\('project-root', outcome\.selection\)/)
+  assert.match(component, /selectUserInitiatedRelocationCandidate/)
+  assert.match(component, /data-project-search/)
+  assert.match(component, /data-project-page-next/)
+  assert.match(component, /data-project-page-previous/)
+  assert.doesNotMatch(component, /workspace_locations|UPDATE\s+projects/iu)
+})
+
+test('workspace project index consumes every active-project page instead of stopping at 100', () => {
+  const hostEntry = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8')
+  const workspaceIndex = hostEntry.slice(
+    hostEntry.indexOf('listProjectWorkspaces()'),
+    hostEntry.indexOf('\n    },', hostEntry.indexOf('listProjectWorkspaces()')) + 7,
+  )
+  assert.match(workspaceIndex, /storage\.queryProjects\(/)
+  assert.match(workspaceIndex, /page\.nextCursor/)
+  assert.doesNotMatch(workspaceIndex, /storage\.listProjects\(\{ includeArchived: false, limit: 100 \}\)/)
+})
+
 test('ships Host and Client bundle artifacts', async () => {
   for (const file of ['../lib/index.js', '../lib/client.js', '../lib/client.js.map']) {
     assert.equal(existsSync(new URL(file, import.meta.url)), true, `${file} is missing`)

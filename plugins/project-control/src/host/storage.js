@@ -2957,10 +2957,13 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
       return Object.freeze(project)
     },
 
-    listProjects({ includeArchived = false, limit = 100, afterProjectId = '' } = {}) {
+    listProjects({ includeArchived = false, archiveState = includeArchived ? 'all' : 'active', limit = 100, afterProjectId = '' } = {}) {
       ensureOpen()
       requireInteger(limit, 'limit', 1)
       if (limit > 500) throw new StorageValidationError('limit cannot exceed 500.')
+      if (!['active', 'archived', 'all'].includes(archiveState)) {
+        throw new StorageValidationError('archiveState is not supported.')
+      }
       const rows = database.prepare(`
         SELECT
           p.project_id AS projectId, p.mode, p.name, p.origin_kind AS originKind,
@@ -2973,10 +2976,15 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         FROM projects p
         LEFT JOIN workspace_locations l
           ON l.project_id = p.project_id AND l.kind = 'primary' AND l.is_active = 1
-        WHERE p.project_id > ? AND (? = 1 OR p.archived_at IS NULL)
+        WHERE p.project_id > ?
+          AND (
+            ? = 'all'
+            OR (? = 'active' AND p.archived_at IS NULL)
+            OR (? = 'archived' AND p.archived_at IS NOT NULL)
+          )
         ORDER BY p.project_id
         LIMIT ?
-      `).all(afterProjectId, includeArchived ? 1 : 0, limit)
+      `).all(afterProjectId, archiveState, archiveState, archiveState, limit)
       return rows.map((row) => Object.freeze({
         ...mapProject(row),
         activeLocation: row.activeLocationId
@@ -2987,6 +2995,156 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
             }
           : null,
       }))
+    },
+
+    queryProjects({ archiveState = 'active', search = '', limit = 25, afterProjectId = '' } = {}) {
+      ensureOpen()
+      if (!['active', 'archived', 'all'].includes(archiveState)) {
+        throw new StorageValidationError('archiveState is not supported.')
+      }
+      if (typeof search !== 'string') {
+        throw new StorageValidationError('Project search must be a string.')
+      }
+      const normalizedSearch = search.trim()
+      if (normalizedSearch.length > 200) {
+        throw new StorageValidationError('Project search cannot exceed 200 characters.')
+      }
+      requireInteger(limit, 'limit', 1)
+      if (limit > 100) throw new StorageValidationError('Project page limit cannot exceed 100.')
+      if (afterProjectId !== '') {
+        requireString(afterProjectId, 'afterProjectId')
+        if (!BUSINESS_IDS.prj.test(afterProjectId)) {
+          throw new StorageValidationError('afterProjectId must be a prj_ UUIDv7.')
+        }
+      }
+
+      const archivePredicate = {
+        active: 'p.archived_at IS NULL',
+        archived: 'p.archived_at IS NOT NULL',
+        all: '1 = 1',
+      }[archiveState]
+      const searchPredicate = normalizedSearch === ''
+        ? '1 = 1'
+        : `(
+          instr(lower(p.project_id), lower(?)) > 0
+          OR instr(lower(p.name), lower(?)) > 0
+        )`
+      const searchParams = normalizedSearch === '' ? [] : [normalizedSearch, normalizedSearch]
+      if (afterProjectId !== '') {
+        const cursor = database.prepare(`
+          SELECT p.project_id AS projectId
+          FROM projects p
+          WHERE p.project_id = ?
+            AND ${archivePredicate}
+            AND ${searchPredicate}
+        `).get(afterProjectId, ...searchParams)
+        if (!cursor) {
+          throw new StorageValidationError('Project pagination cursor was not found in this view.', {
+            reason: 'project_cursor_not_found',
+          })
+        }
+      }
+
+      const total = Number(database.prepare(`
+        SELECT count(*) AS total
+        FROM projects p
+        WHERE ${archivePredicate}
+          AND ${searchPredicate}
+      `).get(...searchParams).total)
+      const rows = database.prepare(`
+        SELECT
+          p.project_id AS projectId, p.mode, p.name, p.origin_kind AS originKind,
+          p.template_id AS templateId, p.template_version AS templateVersion,
+          p.forked_from_project_id AS forkedFromProjectId, p.lifecycle, p.health,
+          p.revision, p.created_at AS createdAt, p.updated_at AS updatedAt,
+          p.archived_at AS archivedAt,
+          l.location_id AS activeLocationId, l.display_path AS activeDisplayPath,
+          l.normalized_path AS activeNormalizedPath
+        FROM projects p
+        LEFT JOIN workspace_locations l
+          ON l.project_id = p.project_id AND l.kind = 'primary' AND l.is_active = 1
+        WHERE ${archivePredicate}
+          AND ${searchPredicate}
+          AND p.project_id > ?
+        ORDER BY p.project_id
+        LIMIT ?
+      `).all(...searchParams, afterProjectId, limit + 1)
+      const pageRows = rows.slice(0, limit)
+      const projects = pageRows.map((row) => Object.freeze({
+        ...mapProject(row),
+        activeLocation: row.activeLocationId
+          ? {
+              locationId: row.activeLocationId,
+              displayPath: row.activeDisplayPath,
+              normalizedPath: row.activeNormalizedPath,
+            }
+          : null,
+      }))
+      return Object.freeze({
+        projects: Object.freeze(projects),
+        total,
+        nextCursor: rows.length > limit ? pageRows.at(-1).projectId : null,
+      })
+    },
+
+    setProjectArchived(projectId, input) {
+      ensureOpen()
+      requireString(projectId, 'projectId')
+      if (!BUSINESS_IDS.prj.test(projectId)) {
+        throw new StorageValidationError('projectId must be a prj_ UUIDv7.')
+      }
+      requireObject(input, 'input')
+      const expectedRevision = requireInteger(input.expectedRevision, 'input.expectedRevision', 1)
+      if (typeof input.archived !== 'boolean') {
+        throw new StorageValidationError('input.archived must be a boolean.')
+      }
+      const recordedAt = requireTimestamp(now(), 'now()')
+      return executeWrite(database, () => {
+        const project = database.prepare(`
+          SELECT lifecycle, archived_at AS archivedAt, revision
+          FROM projects WHERE project_id = ?
+        `).get(projectId)
+        if (!project) {
+          throw new StorageValidationError('The project does not exist.', { reason: 'project_not_found' })
+        }
+        const currentRevision = Number(project.revision)
+        if (currentRevision !== expectedRevision) {
+          throw new StorageValidationError('The project changed before this lifecycle update.', {
+            reason: 'revision_conflict',
+            currentRevision,
+          })
+        }
+        const currentlyArchived = project.archivedAt !== null
+        if (currentlyArchived === input.archived) {
+          throw new StorageValidationError('The requested project lifecycle transition is already in effect.', {
+            reason: 'transition_not_allowed',
+            currentRevision,
+          })
+        }
+        const archivedAt = input.archived ? recordedAt : null
+        const updated = database.prepare(`
+          UPDATE projects
+          SET archived_at = ?, revision = revision + 1, updated_at = ?
+          WHERE project_id = ? AND revision = ?
+          RETURNING revision
+        `).get(archivedAt, recordedAt, projectId, expectedRevision)
+        if (!updated) {
+          throw new StorageValidationError('Project revision update unexpectedly affected no rows.')
+        }
+        recordConsoleEvent({
+          projectId,
+          aggregateType: 'project',
+          aggregateId: projectId,
+          beforeRevision: expectedRevision,
+          afterRevision: Number(updated.revision),
+          eventType: input.archived ? 'project.archived' : 'project.unarchived',
+          data: input.archived
+            ? { archivedAt, lifecycle: project.lifecycle }
+            : { previousArchivedAt: project.archivedAt, lifecycle: project.lifecycle },
+          recordedAt,
+        })
+        return this.getProject(projectId)
+      })
     },
 
     getCommandReceipt(commandId) {
@@ -4960,8 +5118,16 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
       const recordedAt = requireTimestamp(now(), 'now()')
       const bindingId = createBusinessId(idFactory, 'atb', 'bindingId')
       executeWrite(database, () => {
-        const run = database.prepare('SELECT 1 AS present FROM runs WHERE run_id = ? AND project_id = ?').get(runId, projectId)
+        const run = database.prepare(`
+          SELECT p.archived_at AS projectArchivedAt
+          FROM runs r
+          JOIN projects p ON p.project_id = r.project_id
+          WHERE r.run_id = ? AND r.project_id = ?
+        `).get(runId, projectId)
         if (!run) throw new StorageValidationError('The run does not exist in this project.', { reason: 'run_not_found' })
+        if (run.projectArchivedAt !== null) {
+          throw new StorageValidationError('Archived projects cannot accept new thread bindings.', { reason: 'project_archived' })
+        }
         const instance = database.prepare('SELECT 1 AS present FROM host_instances WHERE instance_id = ?').get(harnessInstanceRef)
         if (!instance) {
           throw new StorageValidationError('The Harness instance has not completed a capability handshake.', { reason: 'instance_not_handshaken' })
