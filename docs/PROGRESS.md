@@ -266,3 +266,12 @@
 - `previous.json` 是上一 generation 的正常回滚目标，保留为可回滚证据，不清理、不视为异常。
 - A 线三条生产 happy path 均完成：客户端升级（v0.4.5）、整批插件更新（.1）、单插件更新（.2）。
 - A 线进入“生产主链路完成并冻结观察”，无当前阻塞；B/C 线和记忆系统可继续开发。本轮不重跑全量/packed E2E，复用已完成的 755/755 与真实发布证据。
+
+## 2026-08-26 Candidate Center rc.11 精确提交、push 与单插件 Release
+
+- 发布前精确冻结 14 个提交文件；`release-staging/` 明确排除。Project Control `193/193`，双路径三产物同 SHA，checkout `1288` 文件、launch、governance `22/22`、plugin lock `18` 包、diff 全部通过。
+- 候选提交：`e67e50150ff42e1dab504898b86301b2bcc8ad44`（`fix(project-control): freeze reproducible rc.11 candidate`）；远端 `codex/governance-alignment` 从 `e630870` 普通 fast-forward 到 `e67e501`，无 force，合并历史完整。
+- 公开 Release：[plugins-v2026.08.26.3](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.26.3)，ID=`377215143`，tag 与远端分支均指向 `e67e501`。仅 4 项 Project Control 资产，tgz 288,537 bytes，SHA-256=`80476bafe305c6885dbd2d14b6348dfce829f85bb918d26b791206f26eb84963`；四项资产逐项下载后与 GitHub API digest 一致。
+- 先执行 public publish dry-run 验证同一 tgz SHA，再通过既有插件发布通道创建、验资并公开 Release。task-owned 临时凭据和 staging 已精确清理，未新增 package-set。
+- 主 receipt：`../local/receipts/op_b_g4_candidate_center_rc11_commit_push_release_20260826_01.json`，SHA-256=`08fa56024c4a7f3189a63119224eca5b00b3d3d012afaddf33e3ea04a77e7c4e`。
+- 未安装/写 Stable，未执行项目 rebind/迁移，未进入第二批位置生命周期或 B1b。Stable 仍为客户端 `0.4.6` + Project Control `0.1.0-rc.10`；下一门是另行授权的 rc.11 Stable 安装与人工验收。

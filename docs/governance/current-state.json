@@ -1,22 +1,22 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-26T14:14:02.000Z",
+  "recordedAt": "2026-08-26T14:40:41.000Z",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-history-merged-rc11-reproducible-local-candidate-passed-commit-release-authorization-next",
+    "status": "canonical-history-merged-rc11-committed-pushed-published-stable-install-acceptance-next",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "6bc73f73a66c4330d14711a9e223fec47e10b696",
-    "headAtRecord": "6bc73f73a66c4330d14711a9e223fec47e10b696",
-    "workingTreeState": "rc11-reproducibility-source-candidate-and-governance-uncommitted-replacement-staging-preserved",
+    "approvedParentCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+    "headAtRecord": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+    "workingTreeState": "docs-only-rc11-release-state-alignment-uncommitted-release-staging-preserved-untracked",
     "commitAuthorized": false,
-    "lastAuthorizedCommit": "6bc73f73a66c4330d14711a9e223fec47e10b696",
+    "lastAuthorizedCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
@@ -28,7 +28,7 @@
     "developmentParent": "ef41ea4624347116a183294c1904c28cfa261b31"
   },
   "governanceConvergence": {
-    "phase": "stable-v046-rc10-amazon-rebind-k3-aligned-candidate-center-history-merged-rc11-reproducible-local-candidate-passed-commit-release-authorization-next",
+    "phase": "stable-v046-rc10-amazon-rebind-k3-aligned-candidate-center-rc11-committed-pushed-published-stable-install-acceptance-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -80,10 +80,10 @@
       "stableInstallReceipt": "../local/receipts/op_project_control_rc10_stable_install_20260826_01.json",
       "amazonPostRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
       "governanceAlignmentReceipt": "../local/receipts/op_dsh_governance_alignment_20260826_01.json",
-      "candidateClosureStatus": "history-merged-rc11-reproducible-local-candidate-passed-not-committed-not-pushed-not-published-not-installed"
+      "candidateClosureStatus": "history-merged-rc11-committed-pushed-published-not-installed"
     },
     "candidateCenterFirstBatch": {
-      "status": "history-merged-rc11-build-reproducibility-closed-local-candidate-passed-awaiting-commit-push-release-authorization",
+      "status": "history-merged-rc11-build-reproducibility-closed-committed-pushed-published-awaiting-stable-install-acceptance",
       "branch": "codex/project-control-candidate-closure",
       "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_project_control_candidate_closure_20260826",
       "baseCommit": "ef41ea4624347116a183294c1904c28cfa261b31",
@@ -101,7 +101,7 @@
       "productionInstalled": false,
       "rc11LocalCandidate": {
         "version": "0.1.0-rc.11",
-        "status": "passed-reproducible-local-not-committed-not-pushed-not-published-not-installed",
+        "status": "passed-reproducible-committed-pushed-published-not-installed",
         "staging": "release-staging/plugins-v2026.08.26.3",
         "assetName": "cyrus-dsh-project-control-0.1.0-rc.11.tgz",
         "assetBytes": 288537,
@@ -113,7 +113,19 @@
         "dualPathReceipt": "../local/receipts/op_b_g4_rc11_build_reproducibility_closure_20260826_01-dual-path.json",
         "buildReproducibility": "closed-canonical-and-task-worktree-index-client-and-map-sha-identical",
         "supersededStaging": "release-staging/plugins-v2026.08.26.2",
-        "supersededStagingDisposition": "hash-verified-and-deleted-under-current-cyrus-authorization"
+        "supersededStagingDisposition": "hash-verified-and-deleted-under-current-cyrus-authorization",
+        "commit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+        "remoteBranch": "codex/governance-alignment",
+        "remoteBranchCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+        "releaseTag": "plugins-v2026.08.26.3",
+        "releaseTagCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+        "releaseId": 377215143,
+        "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.26.3",
+        "releaseAssetCount": 4,
+        "releaseReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_commit_push_release_20260826_01.json",
+        "releaseReceiptSha256": "08fa56024c4a7f3189a63119224eca5b00b3d3d012afaddf33e3ea04a77e7c4e",
+        "remoteAssetsVerified": true,
+        "stableInstalled": false
       }
     },
     "g0_5Commit": {
@@ -171,7 +183,7 @@
       ]
     },
     "candidateCenterFirstBatch": {
-      "status": "history-merged-rc11-reproducible-local-candidate-passed-not-yet-in-stable",
+      "status": "history-merged-rc11-committed-pushed-published-not-yet-in-stable",
       "commit": "7337bb36624672983e51f4229d3f96a43d4fe63e",
       "scope": [
         "server-filter-before-pagination",
@@ -180,7 +192,7 @@
         "stale-relocation-duplicate-atomic-closure",
         "at-least-120-mixed-candidate-acceptance"
       ],
-      "next": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION"
+      "next": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE"
     },
     "g1": {
       "status": "committed-and-pushed-as-ancestor-not-separately-published",
@@ -382,9 +394,9 @@
     "scopeEnd": "pause-after-amazon-migration-pilot-verification"
   },
   "currentAuthorization": {
-    "scope": "completed-through-rc11-build-reproducibility-and-replacement-local-candidate-now-paused-before-commit-push-release",
+    "scope": "rc11-exact-commit-push-release-and-docs-alignment-completed-paused-before-stable-install",
     "allowed": ["read-only review", "governance status and local receipts created under this operation"],
-    "forbidden": ["additional product edits", "rc11 product commit", "push", "GitHub Release", "Stable database or userData write", "Stable install", "project rebind", "project file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
+    "forbidden": ["additional product edits", "additional commit or push without new authorization", "additional GitHub Release", "Stable database or userData write", "Stable install", "project rebind", "project file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
   },
   "g4MigrationGate": {
     "mode": "amazon-stable-and-k3-aligned-other-projects-paused-until-candidate-center-rc11-and-location-lifecycle-stable-acceptance",
@@ -456,7 +468,7 @@
   "futureTasks": [
     {"order": 1, "id": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["7337bb3-and-governance-history-merged"], "authorizationGate": "completed-local-only"},
     {"order": 2, "id": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE", "status": "completed", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"], "authorizationGate": "completed-local-only"},
-    {"order": 3, "id": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION", "status": "pending", "dependsOn": ["B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 3, "id": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION", "status": "completed", "dependsOn": ["B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"], "authorizationGate": "completed-e67e501-plugins-v2026.08.26.3-release-377215143"},
     {"order": 4, "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION"], "authorizationGate": "new-cyrus-authorization"},
     {"order": 5, "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH", "status": "pending", "dependsOn": ["candidate-center-stable-acceptance"], "authorizationGate": "separate-product-authorization", "scope": ["project-archive-unarchive", "user-initiated-rebind-reusing-one-transaction"], "excluded": ["physical-delete", "instance-detach"]},
     {"order": 6, "id": "G4-DSH-CANONICAL-REBIND", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "single-project-rebind-authorization"},
@@ -469,7 +481,7 @@
     {"order": 13, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
   ],
   "nextTask": {
-    "id": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION",
-    "goal": "After new explicit Cyrus authorization, freeze the exact rc.11 reproducibility-closure candidate, commit it without unrelated files, push the governance branch without force, and publish only Project Control 0.1.0-rc.11 through the existing plugin channel. Stop on remote, tag, Release, asset-set, or SHA drift. Do not install or write Stable, create a client package-set, migrate or rebind projects, or start B1b under this task."
+    "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE",
+    "goal": "After new explicit Cyrus authorization, use the existing plugin update channel to install only Project Control 0.1.0-rc.11 from plugins-v2026.08.26.3 into Stable. Before installation verify the offered version, source tag, package SHA-256, and pending-generation state. After restart, manually accept the four candidate views, server-side filter-before-pagination and counts, bulk ignore/restore, and stale relocation duplicate closure while confirming Amazon project identity, path, and revision do not change. Stop on any drift and do not retry automatically. Do not rebind or migrate projects, build a client package-set, start the second lifecycle batch, or enter B1b under this task."
   }
 }

@@ -1,16 +1,16 @@
 # Blocked
 
-## 当前阻断（2026-08-26，rc.11 可复现本地候选已通过，尚未提交/发布/安装）
+## 当前阻断（2026-08-26，rc.11 已精确提交、push、发布，尚未安装 Stable）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
 - **K3 canonical 上下文阻断已关闭**：K3 已新建对应 `F:\Projects\deepseek-harness-personal\workspace` 的 Workspace，只读核验 project_id、canonicalWorkspace、phase、nextTask 与 6 份权威 hash 一致，`context-status=ready`；未修改文件。旧 Workspace 只作历史，不建 junction、不继续写、不删除。
-- **Candidate Center 第一批代码与构建阻断已本地关闭，生产阻断尚未关闭**：服务端过滤后分页、状态计数/四类视图、批量软忽略/恢复与指纹继承、陈旧 relocation duplicate 原子关闭已提交为 `7337bb3`；rc.11 绝对路径构建依赖也已修复。Project Control `193/193`、安全仓库套件 `833/833`，canonical/任务 worktree 三份构建产物同 SHA，新 `.3` 单插件 fixture 与隔离激活/回滚均通过。但本轮新增的 rc.11 源码候选尚未 commit/push/发布或安装 Stable；Stable 中 conflict/discovered/ignored/imported/relocation_candidate 混杂的现象仍会继续出现。
+- **Candidate Center 第一批代码、构建与发布阻断已关闭，生产安装阻断尚未关闭**：服务端过滤后分页、状态计数/四类视图、批量软忽略/恢复与指纹继承、陈旧 relocation duplicate 原子关闭已提交为 `7337bb3`；rc.11 绝对路径构建依赖也已修复并随 `e67e501` 精确提交、普通 push。Project Control `193/193`、安全仓库套件 `833/833`，canonical/任务 worktree 三份构建产物同 SHA；`plugins-v2026.08.26.3` 已公开且四项远端资产 digest 全部复核通过。但 Stable 仍运行 rc.10，现有 conflict/discovered/ignored/imported/relocation_candidate 混杂仍会继续出现，不能把“已发布”写成“已上线”。
 - **rc.11 构建可复现性阻断已关闭**：物理路径现在只用于 CSS 文件读取和 watch，lightningcss/Rolldown 使用稳定包内相对身份；`index.js`、`client.js`、`client.js.map` 在 canonical 与 task-owned worktree 逐字节一致。旧 `.2` staging 经 Cyrus 授权和精确哈希复核后已由新 `.3` 替代并删除，不再保留“只发布冻结 canonical bundle”的例外债务。
 - **陈旧 relocation candidate 只能由 rc.11 安装后的同一事务收口**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 当前仍在 Stable。禁止重复 rebind、直接改库、人工删除候选或把本地代码通过误写 Stable 方式“提前生效”。
 - **DSH 自身及其他项目换绑暂停**：DSH 正式项目仍指向 `D:\Deepseek Harness Personal`；量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。三者都必须等待候选中心和位置生命周期通过 Stable 验收后再逐项处理。
 - **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
-- **本轮授权已在可复现 rc.11 本地候选处用完**：治理提交=`3c918fb`、历史 merge=`c0ababd`、当前 staging=`plugins-v2026.08.26.3`、资产 SHA-256=`80476baf...4963`；不允许继续 commit、push、GitHub Release、Stable 安装/写入、项目换绑/迁移或 B1b。下一步必须由 Cyrus 对 rc.11 精确提交/push/Release 重新授权。
+- **本轮 rc.11 提交/push/Release 授权已用完**：候选提交=`e67e50150ff42e1dab504898b86301b2bcc8ad44`，tag=`plugins-v2026.08.26.3`，Release ID=`377215143`，资产 SHA-256=`80476baf...4963`；未使用 force、未覆盖旧 Release、未安装或写 Stable。下一步必须由 Cyrus 单独授权 rc.11 Stable 安装与 Candidate Center 人工验收；项目换绑/迁移、第二批位置生命周期与 B1b 仍不在当前授权内。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 

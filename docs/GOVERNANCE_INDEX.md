@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。真实 Stable 客户端是 `0.4.6`、Project Control 仍是 `0.1.0-rc.10`；Amazon binding 与 K3 canonical 上下文已对齐。Candidate Center 产品 `7337bb3`、治理 `3c918fb` 已由本地 merge `c0ababd` 合成一条历史；Project Control `0.1.0-rc.11` 的 checkout 绝对路径构建依赖已经关闭，canonical/任务 worktree 三份产物同 SHA。当前本地单插件候选为 `release-staging/plugins-v2026.08.26.3`，资产 SHA-256=`80476baf...4963`，但本轮 rc.11 源码候选未提交、未发布、未安装。当前唯一下一门是另行授权的 rc.11 精确 commit/push/单插件 Release；完整后续任务可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。真实 Stable 客户端是 `0.4.6`、Project Control 仍是 `0.1.0-rc.10`；Amazon binding 与 K3 canonical 上下文已对齐。Candidate Center 产品 `7337bb3`、治理 `3c918fb` 已由 merge `c0ababd` 合成一条历史，rc.11 可复现候选又精确提交为 `e67e501` 并普通 push。单插件 Release `plugins-v2026.08.26.3` 已公开，Release ID=`377215143`，仅含 Project Control `0.1.0-rc.11` 四项资产，tgz SHA-256=`80476baf...4963`；尚未安装 Stable。当前唯一下一门是另行授权的 rc.11 Stable 安装与 Candidate Center 人工验收；完整后续任务可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
 
 ## 权威链
 
