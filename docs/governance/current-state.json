@@ -12,11 +12,11 @@
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
-    "headAtRecord": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
-    "workingTreeState": "docs-only-rc11-release-state-alignment-uncommitted-release-staging-preserved-untracked",
+    "approvedParentCommit": "b2ca19a7893055227a4c66e4d2d5439446aa1442",
+    "headAtRecord": "b2ca19a7893055227a4c66e4d2d5439446aa1442",
+    "workingTreeState": "tracked-clean-release-staging-preserved-untracked",
     "commitAuthorized": false,
-    "lastAuthorizedCommit": "e67e50150ff42e1dab504898b86301b2bcc8ad44",
+    "lastAuthorizedCommit": "b2ca19a7893055227a4c66e4d2d5439446aa1442",
     "lastCommitAuthorizationConsumed": true,
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
