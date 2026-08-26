@@ -1,11 +1,12 @@
 import { spawn } from 'node:child_process'
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createConnection } from 'node:net'
 import { dirname, join, resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, screen, shell, Tray, WebContentsView } from 'electron'
 import { BUILD_FLAVOR, E2E_BUILD } from './build-flavor.js'
+import { appendBootLogLine } from './boot-log.js'
 import { runDevE2EDriver } from './dev-e2e-driver.js'
 import { registerDesktopBridge } from './desktop-bridge.js'
 import { registerBrowserViewBridge } from './browser-view-bridge.js'
@@ -823,10 +824,7 @@ async function handleStartFailure(error) {
 /** @param {unknown} error */
 function appendBootLog(line) {
   try {
-    appendFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '..', 'boot-error.log'),
-      new Date().toISOString() + ' ' + String(line) + '\n',
-    )
+    appendBootLogLine({ userDataPath: app.getPath('userData'), line })
   } catch {}
 }
 

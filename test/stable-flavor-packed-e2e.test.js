@@ -26,8 +26,9 @@ import { UpdateService } from '../src/update-service.js'
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const COMMIT = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
-const PACKAGED_EXE = join(repoRoot, 'artifacts', 'win-unpacked', 'DeepSeek Harness Personal.exe')
-const PACKAGED_APP_DIR = join(repoRoot, 'artifacts', 'win-unpacked', 'resources', 'app')
+const PACKAGED_ROOT = join(repoRoot, 'artifacts', 'win-unpacked')
+const PACKAGED_EXE = join(PACKAGED_ROOT, 'DeepSeek Harness Personal.exe')
+const PACKAGED_APP_DIR = join(PACKAGED_ROOT, 'resources', 'app')
 const PACKAGED_RECEIPT = join(repoRoot, 'artifacts', 'build-receipt.json')
 const owned = []
 afterEach(() => {
@@ -273,6 +274,14 @@ function terminateTree(pid) {
 
 test('stable packed Electron/Harness external plugin closure activates, restarts ACTIVE, rolls back to builtin', async () => {
   const executable = ensureStablePackagedExecutable()
+  const packageHashesBefore = collectHashes(PACKAGED_ROOT)
+  const assertPackageSetUnchanged = label => {
+    assert.deepEqual(
+      collectHashes(PACKAGED_ROOT),
+      packageHashesBefore,
+      `package set changed after ${label}`,
+    )
+  }
 
   // All three launches share one temporary Profile (userData, DSH_HOME,
   // agentsHome, workspace, Project Control home). The external plugin root is
@@ -304,6 +313,9 @@ test('stable packed Electron/Harness external plugin closure activates, restarts
     profile,
     resultPath: join(profileRoot, 'result-1.json'),
   })
+  assertPackageSetUnchanged('activation launch')
+  assert.equal(existsSync(join(profile.userData, 'logs', 'boot-error.log')), true, 'boot log must be written below isolated userData')
+  assert.equal(existsSync(join(PACKAGED_APP_DIR, 'boot-error.log')), false, 'packaged resources/app must not receive boot logs')
   const currentPath = join(externalRoot, 'current.json')
   assert.equal(existsSync(currentPath), true, 'current.json was not committed after first launch')
   const current = JSON.parse(readFileSync(currentPath, 'utf8'))
@@ -327,6 +339,7 @@ test('stable packed Electron/Harness external plugin closure activates, restarts
     profile,
     resultPath: join(profileRoot, 'result-2.json'),
   })
+  assertPackageSetUnchanged('restart launch')
 
   // Rollback through the public UpdateService entry to builtin.
   const service = new UpdateService({
@@ -354,6 +367,7 @@ test('stable packed Electron/Harness external plugin closure activates, restarts
     profile,
     resultPath: join(profileRoot, 'result-3.json'),
   })
+  assertPackageSetUnchanged('rollback launch')
   const rolledBackScopeStat = lstatSync(profileScope)
   assert.equal(rolledBackScopeStat.isSymbolicLink(), false, 'profile @cyrus should no longer be a single external junction after rollback')
 })

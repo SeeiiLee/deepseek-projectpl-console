@@ -14,6 +14,7 @@ export const RECEIPT_SOURCE_FILES = Object.freeze([
   'package.json',
   'plugin-set.lock.json',
   'src/main.js',
+  'src/boot-log.js',
   'src/update-service.js',
   'src/update-core.js',
   'src/dev-e2e-driver.js',
@@ -30,11 +31,7 @@ export const RECEIPT_SOURCE_FILES = Object.freeze([
   'scripts/apply-harness-tsdown-fallback.mjs',
 ])
 
-// Runtime artifacts that are not build inputs and must not make the tree hash
-// non-deterministic.
-const PACKAGED_EXCLUDE_RELATIVE = new Set([
-  'boot-error.log',
-])
+const PACKAGED_EXCLUDE_RELATIVE = new Set()
 
 export function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex')

@@ -12,6 +12,7 @@ import {
   loadCurrentGeneration,
   normalizeExternalState,
   resolveExternalRoot,
+  validateBatch,
   validateGeneration,
   verifyGenerationDoctor,
 } from '../src/personal-plugin-validation.js'
@@ -133,6 +134,28 @@ test('getPluginStatus exposes source/generationId/installedAt', () => {
   assert.equal(anysearch.installedAt !== null, true)
   const trajectory = status.find(item => item.packageName === '@cyrus/dsh-trajectory-island')
   assert.equal(trajectory.source, 'builtin')
+})
+
+test('v0.4.6 client bridge accepts Project Control in an external generation batch', () => {
+  const root = mkdtempSync(join(tmpdir(), 'a1-project-control-'))
+  owned.push(root)
+  const batchPath = join(root, 'batch.json')
+  writeFileSync(batchPath, JSON.stringify({
+    schemaVersion: 1,
+    generationId: 'gen-project-control',
+    harness: { version: '0.1.1-rc.2', commit: COMMIT },
+    packages: {
+      '@cyrus/dsh-project-control': {
+        source: 'external',
+        directoryName: 'project-control',
+        version: '0.1.0-rc.9',
+      },
+    },
+  }, null, 2))
+
+  const result = validateBatch(batchPath)
+  assert.equal(result.ok, true, result.issues.join('\n'))
+  assert.deepEqual(result.issues, [])
 })
 
 test('external generation rejects not-whitelisted external plugin', () => {

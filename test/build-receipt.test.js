@@ -27,6 +27,7 @@ function makeFixture() {
     'package.json': JSON.stringify({ name: 'fixture', version: '0.4.2' }),
     'plugin-set.lock.json': '{}',
     'src/main.js': 'main',
+    'src/boot-log.js': 'bl',
     'src/update-service.js': 'us',
     'src/update-core.js': 'uc',
     'src/personal-plugins.js': 'pp',
@@ -106,6 +107,14 @@ test('build receipt fails when a resources/app protected file is tampered', () =
   const result = verifyBuildReceipt({ projectRoot: root, receipt, exePath, packagedAppDir: appDir, expectedFlavor: 'stable' })
   assert.equal(result.ok, false)
   assert.ok(result.issues.some(issue => /packaged resources\/app tree hash mismatch/u.test(issue)))
+})
+
+test('boot-error.log is not excluded from package immutability checks', () => {
+  const { root, appDir, exePath, receipt } = makeFixture()
+  writeFileSync(join(appDir, 'boot-error.log'), 'runtime mutation')
+  const result = verifyBuildReceipt({ projectRoot: root, receipt, exePath, packagedAppDir: appDir, expectedFlavor: 'stable' })
+  assert.equal(result.ok, false)
+  assert.ok(result.issues.some(issue => /resources\/app tree hash mismatch/u.test(issue)))
 })
 
 test('build receipt fails when a packaged file is missing', () => {
