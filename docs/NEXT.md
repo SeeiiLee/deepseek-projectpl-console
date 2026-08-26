@@ -1,11 +1,11 @@
 # Next Development
 
-状态：**Candidate Center 第一批已随 Project Control rc.11 安装到 Stable 并通过人工/机器验收；下一门为项目位置生命周期第二批**
+状态：**项目位置生命周期第二批已本地提交并进入 canonical 线性历史；下一门为 Project Control rc.12 本地候选**
 当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.11 active；Amazon revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；Candidate Center 产品提交=`7337bb3`、治理提交=`3c918fb`、merge=`c0ababd95ebeaf3951bb5453ac108e02be2dba1f`，rc.11 可复现候选提交=`e67e50150ff42e1dab504898b86301b2bcc8ad44`。远端分支与 tag 均精确指向 `e67e501`，禁止 force 或覆盖旧历史
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；本地 HEAD 已按 `f594627 → 0daac278 → 213e553` ff-only 前进，包含 checkout 前置修复及项目生命周期第二批。远端仍停在既有 rc.11 发布历史，禁止把本地事实误报为已 push/发布/安装，也禁止 force 或覆盖旧历史
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-26 当前唯一执行顺序**：① Candidate Center 产品/治理历史、rc.11 可复现候选和单插件 Release 已闭环；② Stable 已激活 rc.11，四类视图、计数、批量忽略/恢复和陈旧 relocation 历史关闭均通过验收；③ 当前只进入 `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` 的单独产品授权门；DSH、量化、食溯的真实换绑/迁移仍分别保持独立授权门。
+> **2026-08-27 当前唯一执行顺序**：① 项目生命周期第二批已完成本地代码、隔离验收和本地提交，并以 ff-only 进入 canonical；② 另行授权制作 Project Control rc.12 本地单插件候选；③ 候选通过后另行授权精确 commit/push/单插件 Release；④ Release 完成后另行授权 Stable 安装与人工验收；⑤ 三道交付门全部通过后，才单独授权 DSH 正式换绑，再依次处理量化与食溯。
 
 ## 已完成：G4-K3-CANONICAL-CONTEXT-ALIGNMENT
 
@@ -47,9 +47,16 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 - Amazon `project_id`、revision 2、active/inactive location 和一条 path history 均未改变；没有重复 rebind、直接改库、migration 或物理删除。
 - 验收 receipt：`../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json`，SHA-256=`9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e`。
 
-## 当前唯一任务：B-G4-PROJECT-LIFECYCLE-SECOND-BATCH
+## 已完成：B-G4-PROJECT-LIFECYCLE-SECOND-BATCH
 
-经 Cyrus 单独产品授权后，补齐项目归档/恢复，以及“更换工作区”主动入口；主动入口必须构造与扫描器同口径的 relocation candidate，并复用现有唯一 `project.rebindLocation` 校验与事务，保留 project_id、路径历史、审计和失败关闭。不得物理删除项目、实现 instance detach、建立第二套 rebind 逻辑、直接写 Stable 数据库、迁移/换绑任何真实项目或进入 B1b。完成本地代码与隔离验收后暂停，发布和 Stable 安装另行授权。
+- checkout 前置修复提交：`0daac278c0d99866ab24c576efda53fecb4adaf2`；产品提交：`213e553e98bf6c0b2e8256d26f8246974a1a4ba5`。两者已从 `f594627` 以 ff-only 合入 `codex/governance-alignment`，没有 merge commit。
+- 产品范围：可恢复的项目归档/恢复、服务端过滤后搜索与分页、覆盖全部 active 项目的 workspace 索引、由 scanner 同口径构造 relocation candidate 的主动“更换工作区”入口，并复用唯一现有 `project.rebindLocation` 校验和事务。
+- 验收：Project Control `199/199`；正式 `npm test` 为 `840/841`，唯一失败是受保护 packed Stable E2E 在非 canonical 任务 worktree 中于创建 package-set/run 前按合同拒绝；其余安全仓库套件、build、typecheck、插件、双路径 bundle SHA、checkout、launch、governance、diff 门禁通过。
+- 明确未做：物理删除、instance detach、migration/DB schema、第二套 rebind、Stable 写入、真实项目换绑、B1b、push、发布和安装。复核提交 receipt：`../local/receipts/op_b_g4_project_lifecycle_second_batch_review_commit_20260827_01.json`，SHA-256=`2f9e5b22302848ace4a4461de0c07bbe870dc1aef5e0c6789e14a73b5e15759a`。
+
+## 当前唯一任务：B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE
+
+经 Cyrus 单独授权后，从本次治理收口后的 canonical HEAD 创建 task-owned worktree，只把 Project Control 从 rc.11 版本化为 rc.12，更新精确的单插件发布元数据与 lock，证明 canonical/task-worktree bundle 同 SHA，并在隔离 profile 中完成 generation 激活与回滚。不得制作客户端安装包或第二套 packed package-set，不得 commit、push、Release、安装/写 Stable、换绑真实项目或进入 B1b；正式 `npm test` 中受保护 packed E2E 的结果必须如实记录，不能把排除它的安全套件冒充正式全绿。
 
 ## 权威后续任务队列（可随时查阅）
 
@@ -59,15 +66,18 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 2 | `B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE` | 清除 bundle 对 checkout 绝对路径的依赖，并做双路径同 SHA 验收 | 已完成 |
 | 3 | `B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION` | 精确提交 rc.11 候选、push 合并历史并发布单插件 Release | 已完成：`e67e501` / `.3` / Release `377215143` |
 | 4 | `B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE` | 通过现有插件更新通道安装 Stable，人工验收四类视图、批量操作和陈旧候选关闭 | 已完成；receipt `93903384...a555e` |
-| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 当前下一门；需单独产品授权，不含物理删除或 instance detach |
-| 6 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 依赖 4、5；单项目授权 |
-| 7 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 6；需迁移与换绑授权 |
-| 8 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 7；需单独方案与授权 |
-| 9 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
-| 10 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
-| 11 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
-| 12 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
-| 13 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
+| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 已完成本地提交：`0daac278` + `213e553`；未发布/安装 |
+| 6 | `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE` | rc.12 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 当前下一门；需单独本地候选授权 |
+| 7 | `B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE` | 精确提交候选、无 force push、发布单插件 Release | 依赖 6；需单独 commit/push/发布授权 |
+| 8 | `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` | Stable 安装 rc.12，并人工验收归档/恢复和主动换工作区入口 | 依赖 7；需单独 Stable 安装/验收授权 |
+| 9 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 依赖 8；单项目授权 |
+| 10 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 9；需迁移与换绑授权 |
+| 11 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 10；需单独方案与授权 |
+| 12 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
+| 13 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
+| 14 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
+| 15 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
+| 16 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
 
 这张表是当前后续任务的人工总表；同一队列也写入 `docs/governance/current-state.json::futureTasks`，Harness 应以机器指针和本表交叉核对，不以聊天摘要替代。
 
@@ -100,7 +110,7 @@ G0.5、G1、G2、G3 与 B-G4-0/G2-P2 已成为 Git 可重建且可从远端追�
 - **G2 Local 生命周期（P0/P1 已本地全量验收）**：`boot-error.log` 位于各实例 `userData\logs`；完整 `win-unpacked` 受 hash 守护；package set/run 创建即登记；`recommended-v1` policy、20 GiB 登记配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 和中断 journal 已实现。相同包体的不同来源证明写外部 provenance，不复制第二套 0.8 GiB 包。Windows 计划任务仍未创建；逾期时大任务入口失败关闭并要求补跑。
 - **G2-P2 已关闭并提交**：人工/packed E2E 只从 F 盘 canonical 生成；logical task ID 必须与权威 `current-state.nextTask.id` 一致。同任务 append-only claim 最多允许一次物理构建尝试；相同来源只能复用，来源变化或失败后重试均失败关闭并要求先登记新任务。正式测试复用 `f515424f...`，没有新增第四套；当前物理包为 `58adf7b2...` RETIRED + `f515424f...` ACTIVE；实现随 `2400410` 推送为当前远端 branch/tag 祖先，生命周期脚本不作为本次 Project Control 单插件 Release 的独立发布物。
 - **G3 跨 Harness（候选已验证）**：Toolbox 规范源已对 DSH Dev/Codex 完成可回滚 `applied_shadow` 投影；memory-host status/recall 单 host 双端结果一致、显式 `project_id`、leak=0。真实宿主 discovery、真实 Stable/binding 与记忆数据迁移未做，不能声称 active。
-- **G4 存量迁移（Amazon、K3 与 Candidate Center 第一批生产验收均已对齐）**：顺序仍为 Amazon Store → DSH 自身 → 量化 → meal_tracker/食溯。Candidate Center rc.11 已通过 Stable 验收；当前先完成第二批位置生命周期，再逐项目授权迁移/换绑。旧源目录删除不在本任务授权内。
+- **G4 存量迁移（Amazon、K3 与 Candidate Center 第一批生产验收均已对齐）**：顺序仍为 Amazon Store → DSH 自身 → 量化 → meal_tracker/食溯。第二批位置生命周期已本地提交；必须先依次完成 rc.12 本地候选、发布和 Stable 安装验收三道门，再逐项目授权迁移/换绑。旧源目录删除不在这些任务授权内。
 
 ## 历史计划（以下内容不再是当前执行指针）
 

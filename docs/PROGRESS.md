@@ -1,5 +1,13 @@
 # Progress
 
+## 2026-08-27：项目生命周期第二批完成本地提交并进入 canonical 线性历史
+
+- canonical `codex/governance-alignment` 从 `f594627e7d997debefb7356248134683be70f8c2` 以 ff-only 依次前进到 checkout 前置修复 `0daac278c0d99866ab24c576efda53fecb4adaf2` 和产品提交 `213e553e98bf6c0b2e8256d26f8246974a1a4ba5`，没有 merge commit；`release-staging/` 保持未跟踪且未进入提交。
+- 本地产品已包含：可恢复的项目归档/恢复、服务端过滤后搜索与分页、覆盖全部 active 项目的 workspace 索引、由 scanner 同口径构造 relocation candidate 的主动“更换工作区”入口，以及唯一现有 `project.rebindLocation` 校验/事务复用。复核中补齐了超过 100 个 workspace 时仍能找到目标项目及主动候选状态投影两项窄修复。
+- 机器证据：Project Control `199/199`；正式 `npm test` `841 tests / 840 pass / 1 fail`，唯一失败是受保护 packed Stable E2E 在非 canonical 任务 worktree 中于创建 package-set/run 前失败关闭；排除该受保护测试的安全仓库套件、build、typecheck、check-plugins、canonical/task-worktree bundle 同 SHA、checkout、launch、governance 与 diff 均通过。未把安全套件误报为正式全绿。
+- 实现 receipt=`../local/receipts/op_b_g4_project_lifecycle_second_batch_20260827_01.json`（SHA-256=`df0abe2f...ac63`）；复核修复 receipt=`../local/receipts/op_b_g4_project_lifecycle_second_batch_review_fixes_20260827_01.json`（SHA-256=`6c09442a...1708`）；提交复核 receipt=`../local/receipts/op_b_g4_project_lifecycle_second_batch_review_commit_20260827_01.json`（SHA-256=`2f9e5b22...759a`）。
+- Stable 仍是 Project Control rc.11。本轮只闭合本地历史与权威治理指针；下一步必须依次经过 rc.12 本地候选、commit/push/Release、Stable 安装验收三道独立门，之后才可单独授权 DSH 正式换绑。未发布、安装、写 Stable、迁移/换绑真实项目、进入 B1b 或清理现有 staging。
+
 ## 2026-08-26：rc.11 构建可复现性闭环与替代候选完成
 
 - 根因已收口在 Project Control 的 CSS Modules 构建插件：旧共享 fallback 把物理 checkout 绝对路径同时用作 Rolldown virtual id 和 lightningcss `filename`，导致同一源码在不同 worktree 产生不同 class 名、bundle 注释与 SHA。修复只在 Project Control 自己的 tsdown 包装层，把物理路径限制为读取/监听目标，进入编译器与 bundle 的身份统一改为包内相对路径；未修改只读 Harness 上游。
