@@ -1,5 +1,15 @@
 # Progress
 
+## 2026-08-26：rc.11 构建可复现性闭环与替代候选完成
+
+- 根因已收口在 Project Control 的 CSS Modules 构建插件：旧共享 fallback 把物理 checkout 绝对路径同时用作 Rolldown virtual id 和 lightningcss `filename`，导致同一源码在不同 worktree 产生不同 class 名、bundle 注释与 SHA。修复只在 Project Control 自己的 tsdown 包装层，把物理路径限制为读取/监听目标，进入编译器与 bundle 的身份统一改为包内相对路径；未修改只读 Harness 上游。
+- 红证据：修复前 canonical `client.js` SHA-256=`b836232674d0d50b5e943b209d7f7c6013463ebf8383464d2818bdf177eb33f5`，任务 worktree 为 `344cdc9a3b74a6e96aeb1a606423766f6708655315590a00636aa032aad1103a`，两边 bundle 均内嵌各自 `F:\Projects\...` 路径。新增测试先以 `1 fail / 0 pass` 钉住绝对 virtual id，再修复为 `2/2`。
+- 双路径机器验收通过：canonical 与 `wt_project_control_candidate_closure_20260826` 的 task-owned 临时源码根分别重建，`lib/index.js`、`lib/client.js`、`lib/client.js.map` 三份产物逐字节同 SHA；任务临时源码、依赖子集和 junction 已清空。receipt=`../local/receipts/op_b_g4_rc11_build_reproducibility_closure_20260826_01-dual-path.json`。
+- 新 rc.11 单插件候选位于 `release-staging/plugins-v2026.08.26.3`，仍为 `localFixture=true`、`minClient=0.4.6`、仅一个 Project Control 资产。tgz 288,537 bytes，SHA-256=`80476bafe305c6885dbd2d14b6348dfce829f85bb918d26b791206f26eb84963`，与 plugin index 和 `plugin-set.lock.json` 一致；隔离 generation/激活/回滚全过。
+- 机器验收：Project Control `193/193`；安全仓库套件（排除会制造客户端 package-set 的 packed Stable E2E）`833/833`、117 个 test file；Project Control typecheck、18 插件门禁、清理后的 checkout 1,288 文件、launch、governance 22/22、plugin lock 与 `git diff --check` 全过，skipped/todo=0。
+- Cyrus 授权的替代清理已按旧候选 5 文件聚合 SHA-256=`bbb7189e444c3bbc0c30e19b4bb4fb045fc2f0524424757b3c6e293741c11956` 复核后，仅删除 `release-staging/plugins-v2026.08.26.2`；未触碰预存 `.1` 或新 `.3`。旧 staging 不可直接恢复，但其来源提交和历史 receipt 仍可追溯，新 `.3` 是当前唯一 rc.11 本地候选。
+- 本轮未 commit、push、Release、安装或写 Stable，未换绑/迁移任何项目，未创建客户端 package-set，未进入 migration、B1b 审批数据库或收件箱。下一门是另行授权的 `B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION`。
+
 ## 2026-08-26：rc.11 本地候选通过，发现并隔离绝对路径构建可复现性债务
 
 - 权威治理状态已先提交为 `3c918fb57677b9ed99535cde541daa17b2ab666f`；随后以无 force 普通 merge 将 Candidate Center 产品提交 `7337bb3` 合入，merge commit=`c0ababd95ebeaf3951bb5453ac108e02be2dba1f`。两条历史和 rc.10 源码 `ef41ea4` 均已验证为 merge HEAD 祖先；旧 `release-staging/` 未进入提交。
