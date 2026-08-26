@@ -76,6 +76,7 @@
 | design/C线-会话全量提取-首批三任务简报.md | 已盖章（Cyrus 2026-08-20），派发 Flash 执行 | C0 前置（稳定版补注册/out 移出/注册表导出）/ C1 登记 / C2 规范化三流 / C3 语料+盲评；稳定库为注册表权威；远程模型批准带三箍 |
 | design/B线-控制台审批中心与治理视图-设计稿.md | **v4 已生效**（2026-08-22；D-17～D-27 收口） | 单一 WorkItem 事实面；approval/details、impact/effective_class/extensions、卡↔Decision、分诊/裁决投影、云端终局与记忆接缝 |
 | design/B线-控制台审批中心-首批三任务简报.md | v4；B1a 已实现，B1b 被 G0–G3 暂停 | B1a 协议合同已迁入 `c27e989` 候选；migration/DB/HTTP/UI/侧栏/收件箱未开始；恢复前须通过当前治理索引与 context receipt |
+| design/B线-候选中心与项目位置生命周期-收口设计.md | 第一批代码复核阻断已修复并通过本地机器验收，进入本次源码提交；未 push/发布/安装 | 本轮仅 G4.1–G4.3：候选四视图、服务端过滤/分页、完整指纹软忽略继承、历史原因、批量预览与重复 relocation 原子收口；归档、主动换绑、发布安装仍未授权 |
 | design/多线任务排期总表.md | v1.1 历史排期输入 | A/B/C/D5/迁移/记忆/客户端依赖链；当前执行顺序以 NEXT 顶部 G0–G4 为准 |
 | design/D5线-统一工具层-D5-0任务简报.md | 已盖章的历史任务输入 | D5-0a/D5-0b 的 schema、resolver、实例盘点与 identity_conflict 边界 |
 

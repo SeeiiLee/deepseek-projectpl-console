@@ -113,6 +113,7 @@ export interface ProjectCandidate {
   evidenceLevel: EvidenceLevel
   evidence: readonly string[]
   status: string
+  historyReason?: 'completed' | 'superseded'
   detectedMode: 'linked_legacy' | 'managed' | 'unknown'
   manifestProjectId?: string
   ignored: boolean
@@ -122,9 +123,27 @@ export interface ProjectCandidate {
   issues: readonly CandidateIssue[]
 }
 
+export type CandidateCenterView = 'review' | 'ignored' | 'history'
+
+export interface CandidateCenterCounts {
+  review: number
+  ignored: number
+  history: number
+}
+
+export interface CandidateListOptions {
+  jobId?: string
+  view?: CandidateCenterView
+  search?: string
+  limit?: number
+  afterCandidateId?: string
+}
+
 export interface IntakeCandidateList {
   candidates: readonly ProjectCandidate[]
   total: number
+  counts: CandidateCenterCounts
+  nextCursor: string | null
   jobId?: string
 }
 
@@ -405,7 +424,7 @@ export interface ProjectControlApi {
     selection: AuthorizedDirectorySelection,
     options?: { maxDepth?: number; signal?: AbortSignal },
   ): Promise<IntakeScanResult>
-  listCandidates(jobId?: string, signal?: AbortSignal): Promise<IntakeCandidateList>
+  listCandidates(options?: CandidateListOptions, signal?: AbortSignal): Promise<IntakeCandidateList>
   getCandidate(candidateId: string, signal?: AbortSignal): Promise<ProjectCandidate>
   setCandidateIgnored(
     candidateId: string,
@@ -413,6 +432,11 @@ export interface ProjectControlApi {
     expectedRevision: number,
     signal?: AbortSignal,
   ): Promise<ProjectCandidate>
+  setCandidatesIgnored(
+    candidates: readonly { candidateId: string; expectedRevision: number }[],
+    ignored: boolean,
+    signal?: AbortSignal,
+  ): Promise<readonly ProjectCandidate[]>
   prepareCandidate(
     candidateId: string,
     input: CandidatePrepareInput,
@@ -560,12 +584,18 @@ export function createProjectControlApi(fetchImpl: typeof fetch = fetch): Projec
       { mode, selection, ...(options.maxDepth === undefined ? {} : { maxDepth: options.maxDepth }) },
       options.signal,
     )),
-    listCandidates: async (jobId, signal) => normalizeCandidateList(await request(
-      'GET',
-      `/intake/candidates${jobId === undefined ? '' : `?jobId=${encodeURIComponent(validateIdentifier(jobId, '扫描任务'))}`}`,
-      undefined,
-      signal,
-    )),
+    listCandidates: async (options = {}, signal) => {
+      const query = new URLSearchParams()
+      if (options.jobId !== undefined) query.set('jobId', validateIdentifier(options.jobId, '扫描任务'))
+      if (options.view !== undefined) query.set('view', validateCandidateView(options.view))
+      if (options.search !== undefined) query.set('search', validateCandidateSearch(options.search))
+      if (options.limit !== undefined) query.set('limit', String(validateCandidateLimit(options.limit)))
+      if (options.afterCandidateId !== undefined) {
+        query.set('afterCandidateId', validateCandidateId(options.afterCandidateId))
+      }
+      const suffix = query.size === 0 ? '' : `?${query.toString()}`
+      return normalizeCandidateList(await request('GET', `/intake/candidates${suffix}`, undefined, signal))
+    },
     getCandidate: async (candidateId, signal) => normalizeCandidate(await request(
       'GET',
       `/intake/candidates/${encodeURIComponent(validateCandidateId(candidateId))}`,
@@ -576,6 +606,15 @@ export function createProjectControlApi(fetchImpl: typeof fetch = fetch): Projec
       'POST',
       `/intake/candidates/${encodeURIComponent(validateCandidateId(candidateId))}/ignore`,
       { ignored, expectedRevision: validateRevision(expectedRevision) },
+      signal,
+    )),
+    setCandidatesIgnored: async (candidates, ignored, signal) => normalizeCandidateMutationList(await request(
+      'POST',
+      '/intake/candidates/bulk-ignore',
+      {
+        ignored,
+        candidates: validateCandidateBatch(candidates),
+      },
       signal,
     )),
     prepareCandidate: async (candidateId, input, signal) => {
@@ -751,17 +790,41 @@ export function normalizeScanResult(value: unknown): IntakeScanResult {
 export function normalizeCandidateList(value: unknown): IntakeCandidateList {
   const object = requiredRecord(value, '候选列表')
   const candidates = requiredArray(object.candidates, '候选列表').map(normalizeCandidate)
+  const countsObject = object.counts === undefined ? undefined : requiredRecord(object.counts, '候选计数')
   return {
     candidates,
     total: requiredInteger(object.total ?? candidates.length, '候选总数', candidates.length),
+    counts: countsObject === undefined
+      ? {
+          review: candidates.filter(candidate => ['discovered', 'conflict', 'relocation_candidate'].includes(candidate.status)).length,
+          ignored: candidates.filter(candidate => candidate.status === 'ignored').length,
+          history: candidates.filter(candidate => candidate.status === 'imported').length,
+        }
+      : {
+          review: requiredInteger(countsObject.review, '待审阅候选数量', 0),
+          ignored: requiredInteger(countsObject.ignored, '已忽略候选数量', 0),
+          history: requiredInteger(countsObject.history, '历史候选数量', 0),
+        },
+    nextCursor: object.nextCursor === undefined || object.nextCursor === null
+      ? null
+      : validateCandidateId(requiredText(object.nextCursor, '候选分页游标', 200)),
     ...(object.jobId === undefined ? {} : { jobId: requiredText(object.jobId, '扫描任务', 200) }),
   }
+}
+
+function normalizeCandidateMutationList(value: unknown): readonly ProjectCandidate[] {
+  const object = requiredRecord(value, '候选批量操作结果')
+  return requiredArray(object.candidates, '候选批量操作结果').map(normalizeCandidate)
 }
 
 /** Host DTO compatibility is deliberately centralized here instead of leaking into components. */
 export function normalizeCandidate(value: unknown): ProjectCandidate {
   const object = requiredRecord(value, '项目候选')
   const status = requiredText(object.status, '候选状态', 80)
+  const historyReason = object.historyReason
+  if (historyReason !== undefined && historyReason !== 'completed' && historyReason !== 'superseded') {
+    throw apiError('候选历史原因无效。', 'INVALID_CANDIDATE')
+  }
   const confidence = isRecord(object.confidence) ? object.confidence : undefined
   const detectedMode = optionalBoundedText(object.detectedMode, 40)
   const nameSource = normalizeValueSource(object.nameSource, '名称来源')
@@ -783,6 +846,7 @@ export function normalizeCandidate(value: unknown): ProjectCandidate {
     evidenceLevel: normalizeEvidenceLevel(object.evidenceLevel ?? confidence?.level),
     evidence: normalizeStringList(object.evidence ?? confidence?.evidence, '候选证据', 100, 500),
     status,
+    ...(historyReason === undefined ? {} : { historyReason }),
     detectedMode: detectedMode === 'managed' || detectedMode === 'linked_legacy' ? detectedMode : 'unknown',
     ...(manifestProjectId === undefined ? {} : { manifestProjectId }),
     ignored: object.ignored === undefined ? status === 'ignored' : requiredBoolean(object.ignored, '忽略状态'),
@@ -1370,6 +1434,43 @@ export function normalizeSessionBinding(value: unknown): ProjectSessionBinding {
 function validateCandidateId(value: string): string {
   if (!isCandidateResourceKey(value)) throw apiError('候选项目标识无效。', 'INVALID_CANDIDATE_ID')
   return value
+}
+
+function validateCandidateView(value: CandidateCenterView): CandidateCenterView {
+  if (!['review', 'ignored', 'history'].includes(value)) {
+    throw apiError('候选中心视图无效。', 'INVALID_CANDIDATE_VIEW')
+  }
+  return value
+}
+
+function validateCandidateSearch(value: string): string {
+  if (typeof value !== 'string' || value.length > 200 || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw apiError('候选搜索条件无效。', 'INVALID_CANDIDATE_SEARCH')
+  }
+  return value
+}
+
+function validateCandidateLimit(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 100) {
+    throw apiError('候选分页大小无效。', 'INVALID_CANDIDATE_LIMIT')
+  }
+  return value
+}
+
+function validateCandidateBatch(
+  candidates: readonly { candidateId: string; expectedRevision: number }[],
+): Array<{ candidateId: string; expectedRevision: number }> {
+  if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 100) {
+    throw apiError('候选批量操作必须包含 1 至 100 项。', 'INVALID_CANDIDATE_BATCH')
+  }
+  const normalized = candidates.map(candidate => ({
+    candidateId: validateCandidateId(candidate.candidateId),
+    expectedRevision: validateRevision(candidate.expectedRevision),
+  }))
+  if (new Set(normalized.map(candidate => candidate.candidateId)).size !== normalized.length) {
+    throw apiError('候选批量操作不能包含重复项目。', 'INVALID_CANDIDATE_BATCH')
+  }
+  return normalized
 }
 
 function validateProjectId(value: string): string {

@@ -266,12 +266,22 @@ export interface ProjectControlCreatePreparation {
 export interface ProjectControlIntakeService {
   scan(input: ProjectControlIntakeScanRequest): unknown | Promise<unknown>
   listSourceRoots(): unknown | Promise<unknown>
-  listCandidates(filter: { jobId?: string }): unknown | Promise<unknown>
+  listCandidates(filter: {
+    jobId?: string
+    view?: 'review' | 'ignored' | 'history'
+    search?: string
+    limit?: number
+    afterCandidateId?: string
+  }): unknown | Promise<unknown>
   getCandidate(candidateId: string): unknown | Promise<unknown>
   setCandidateIgnored(
     candidateId: string,
     input: { ignored: boolean; expectedRevision: number },
   ): unknown | Promise<unknown>
+  setCandidatesIgnored(input: {
+    ignored: boolean
+    candidates: Array<{ candidateId: string; expectedRevision: number }>
+  }): unknown | Promise<unknown>
   prepareCandidate(candidateId: string, input: ProjectControlCandidatePreparation): unknown | Promise<unknown>
   listTemplates(): unknown | Promise<unknown>
   prepareCreate(input: ProjectControlCreatePreparation): unknown | Promise<unknown>
@@ -333,6 +343,7 @@ interface PublicImportCandidate {
   summarySource: PublicValueSource | null
   evidenceLevel: 'high' | 'medium' | 'low'
   status: 'discovered' | 'conflict' | 'relocation_candidate' | 'ignored' | 'imported'
+  historyReason?: 'completed' | 'superseded'
   detectedMode: 'unknown' | 'linked_legacy' | 'managed'
   manifestProjectId: string | null
   documentCount: number
@@ -448,6 +459,8 @@ export function createProjectControlRequestHandler(
                 'intake.directory.scan',
                 'intake.candidates.read',
                 'intake.candidates.review',
+                'intake.candidates.views',
+                'intake.candidates.bulk-review',
                 'project.documents.read',
                 'project.workspace.read',
                 'project.documents.refresh',
@@ -550,10 +563,32 @@ export function createProjectControlRequestHandler(
         requireGetWithoutBody(request)
         const intake = requireIntake(options)
         const jobId = optionalSingleQuery(parsed, 'jobId', IMPORT_JOB_ID)
-        rejectUnexpectedQuery(parsed, new Set(['jobId']))
-        const candidates = normalizeCandidateList(await intake.listCandidates({
+        const view = optionalSingleQuery(parsed, 'view', /^(?:review|ignored|history)$/u) as
+          | 'review' | 'ignored' | 'history' | undefined
+        const search = optionalBoundedQuery(parsed, 'search', 200)
+        const limit = optionalIntegerQuery(parsed, 'limit', 1, 100)
+        const afterCandidateId = optionalSingleQuery(parsed, 'afterCandidateId', IMPORT_CANDIDATE_ID)
+        rejectUnexpectedQuery(parsed, new Set(['jobId', 'view', 'search', 'limit', 'afterCandidateId']))
+        const page = normalizeCandidatePage(await intake.listCandidates({
           ...(jobId === undefined ? {} : { jobId }),
+          ...(view === undefined ? {} : { view }),
+          ...(search === undefined ? {} : { search }),
+          ...(limit === undefined ? {} : { limit }),
+          ...(afterCandidateId === undefined ? {} : { afterCandidateId }),
         }))
+        sendJson(response, 200, {
+          ok: true,
+          data: page,
+        })
+        return
+      }
+
+      if (resource === '/intake/candidates/bulk-ignore') {
+        requireMethod(request, 'POST')
+        const intake = requireIntake(options)
+        rejectUnexpectedQuery(parsed, new Set())
+        const input = normalizeBulkIgnoreRequest(await readJsonBody(request))
+        const candidates = normalizeCandidateList(await intake.setCandidatesIgnored(input))
         sendJson(response, 200, {
           ok: true,
           data: { candidates, total: candidates.length },
@@ -1138,6 +1173,35 @@ function normalizeIgnoreRequest(value: unknown): { ignored: boolean; expectedRev
     ignored: candidate.ignored,
     expectedRevision: requestRevision(candidate.expectedRevision, '候选修订', 1),
   }
+}
+
+function normalizeBulkIgnoreRequest(value: unknown): {
+  ignored: boolean
+  candidates: Array<{ candidateId: string; expectedRevision: number }>
+} {
+  const candidate = requestObject(value, '候选批量忽略请求')
+  requireExactKeys(candidate, new Set(['ignored', 'candidates']), '候选批量忽略请求')
+  if (typeof candidate.ignored !== 'boolean'
+    || !Array.isArray(candidate.candidates)
+    || candidate.candidates.length < 1
+    || candidate.candidates.length > 100) {
+    throw projectControlHttpError('INVALID_BODY', '候选批量忽略请求无效。')
+  }
+  const seen = new Set<string>()
+  const candidates = candidate.candidates.map((raw, index) => {
+    const entry = requestObject(raw, `候选批量项 ${String(index + 1)}`)
+    requireExactKeys(entry, new Set(['candidateId', 'expectedRevision']), `候选批量项 ${String(index + 1)}`)
+    const candidateId = requestText(entry.candidateId, '候选 ID', 80)
+    if (!IMPORT_CANDIDATE_ID.test(candidateId) || seen.has(candidateId)) {
+      throw projectControlHttpError('INVALID_BODY', '候选批量项包含无效或重复的候选 ID。')
+    }
+    seen.add(candidateId)
+    return {
+      candidateId,
+      expectedRevision: requestRevision(entry.expectedRevision, '候选修订', 1),
+    }
+  })
+  return { ignored: candidate.ignored, candidates }
 }
 
 function normalizeCandidatePreparation(value: unknown): ProjectControlCandidatePreparation {
@@ -2054,6 +2118,43 @@ function normalizeCandidateList(value: unknown): PublicImportCandidate[] {
   return value.map(candidate => normalizeCandidate(candidate, false))
 }
 
+function normalizeCandidatePage(value: unknown): {
+  candidates: PublicImportCandidate[]
+  total: number
+  counts: { review: number; ignored: number; history: number }
+  nextCursor: string | null
+} {
+  if (Array.isArray(value)) {
+    const candidates = normalizeCandidateList(value)
+    return {
+      candidates,
+      total: candidates.length,
+      counts: {
+        review: candidates.filter(candidate => ['discovered', 'conflict', 'relocation_candidate'].includes(candidate.status)).length,
+        ignored: candidates.filter(candidate => candidate.status === 'ignored').length,
+        history: candidates.filter(candidate => candidate.status === 'imported').length,
+      },
+      nextCursor: null,
+    }
+  }
+  const page = responseObject(value, 'candidate page')
+  const candidates = normalizeCandidateList(page.candidates)
+  const counts = responseObject(page.counts, 'candidate counts')
+  const nextCursor = page.nextCursor === null
+    ? null
+    : responseId(page.nextCursor, IMPORT_CANDIDATE_ID, 'candidate cursor')
+  return {
+    candidates,
+    total: requiredRevision(page.total, 'candidate total', 0),
+    counts: {
+      review: requiredRevision(counts.review, 'review candidate count', 0),
+      ignored: requiredRevision(counts.ignored, 'ignored candidate count', 0),
+      history: requiredRevision(counts.history, 'history candidate count', 0),
+    },
+    nextCursor,
+  }
+}
+
 function normalizeCandidate(value: unknown, includeDetails = true): PublicImportCandidate {
   const candidate = responseObject(value, 'candidate')
   const root = candidate.root === undefined ? undefined : responseObject(candidate.root, 'candidate root')
@@ -2062,9 +2163,11 @@ function normalizeCandidate(value: unknown, includeDetails = true): PublicImport
     : responseObject(candidate.confidence, 'candidate confidence')
   const detectedMode = boundedText(candidate.detectedMode, 'detectedMode', 40)
   const status = boundedText(candidate.status, 'candidate status', 40)
+  const historyReason = candidate.historyReason
   const evidenceLevel = String(candidate.evidenceLevel ?? confidence.level ?? 'low')
   if (!['unknown', 'linked_legacy', 'managed'].includes(detectedMode)
     || !['discovered', 'conflict', 'relocation_candidate', 'ignored', 'imported'].includes(status)
+    || (historyReason !== undefined && !['completed', 'superseded'].includes(String(historyReason)))
     || !['high', 'medium', 'low'].includes(evidenceLevel)) {
     throw new TypeError('intake service returned an invalid candidate state')
   }
@@ -2085,6 +2188,9 @@ function normalizeCandidate(value: unknown, includeDetails = true): PublicImport
     summarySource: normalizeValueSource(candidate.summarySource, 'summarySource'),
     evidenceLevel: evidenceLevel as PublicImportCandidate['evidenceLevel'],
     status: status as PublicImportCandidate['status'],
+    ...(historyReason === undefined
+      ? {}
+      : { historyReason: historyReason as 'completed' | 'superseded' }),
     detectedMode: detectedMode as PublicImportCandidate['detectedMode'],
     manifestProjectId: boundedNullableText(candidate.manifestProjectId, 'manifestProjectId', 80),
     documentCount: documents.length,
@@ -2194,6 +2300,35 @@ function optionalSingleQuery(parsed: URL, key: string, pattern: RegExp): string 
     throw projectControlHttpError('INVALID_QUERY', '项目候选筛选条件无效。')
   }
   return values[0]
+}
+
+function optionalBoundedQuery(parsed: URL, key: string, maxLength: number): string | undefined {
+  const values = parsed.searchParams.getAll(key)
+  if (values.length === 0) return undefined
+  const value = values[0] ?? ''
+  if (values.length !== 1 || value.length > maxLength || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw projectControlHttpError('INVALID_QUERY', '项目候选筛选条件无效。')
+  }
+  return value
+}
+
+function optionalIntegerQuery(
+  parsed: URL,
+  key: string,
+  minimum: number,
+  maximum: number,
+): number | undefined {
+  const values = parsed.searchParams.getAll(key)
+  if (values.length === 0) return undefined
+  const value = values[0] ?? ''
+  if (values.length !== 1 || !/^[0-9]+$/u.test(value)) {
+    throw projectControlHttpError('INVALID_QUERY', '项目候选筛选条件无效。')
+  }
+  const number = Number(value)
+  if (!Number.isSafeInteger(number) || number < minimum || number > maximum) {
+    throw projectControlHttpError('INVALID_QUERY', '项目候选筛选条件无效。')
+  }
+  return number
 }
 
 function rejectUnexpectedQuery(parsed: URL, allowed: ReadonlySet<string>): void {

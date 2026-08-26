@@ -140,9 +140,96 @@
 }
 
 .intakeSection,
+.candidateCenter,
 .candidateSection,
 .projectSection {
   min-width: 0;
+}
+
+.candidateTabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.candidateTab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary);
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.candidateTab[aria-selected='true'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-border-l2));
+  color: var(--dsw-alias-label-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 9%, var(--dsw-alias-bg-layer-2));
+}
+
+.candidateTab span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidateTab strong {
+  flex: none;
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  font-size: 12px;
+  text-align: center;
+}
+
+.candidateSearch {
+  display: flex;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.candidateSearch input {
+  min-width: 0;
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  font: inherit;
+}
+
+.candidateBatchBar,
+.candidatePagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+}
+
+.candidateBatchBar label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.candidateBatchBar button {
+  margin-left: auto;
+}
+
+.candidatePagination {
+  justify-content: flex-end;
+  margin-top: 7px;
+  margin-bottom: 0;
 }
 
 .sectionHeading {
@@ -292,6 +379,16 @@
   border-radius: 10px;
   background: color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);
   transition: border-color 120ms ease;
+}
+
+.candidateCard[data-selectable='true'] {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.candidateSelect {
+  display: grid;
+  place-items: center;
+  padding-left: 9px;
 }
 
 .candidateCard[data-ignored='true'] {
@@ -925,6 +1022,10 @@
   .actionGrid,
   .statusFacts {
     grid-template-columns: 1fr;
+  }
+
+  .candidateTabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

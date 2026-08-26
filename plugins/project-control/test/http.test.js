@@ -143,6 +143,67 @@ test('client adapter always sends the fixed same-origin header', async () => {
   assert.equal(observed.init.headers['x-dsh-personal-client'], '1')
 })
 
+test('client candidate adapter sends view cursors and revision-bound bulk mutations', async () => {
+  const candidate = intakeCandidate()
+  const publicCandidate = {
+    candidateId: candidate.candidateId,
+    jobId: candidate.importJobId,
+    revision: candidate.revision,
+    rootPath: candidate.root.displayPath,
+    suggestedName: candidate.suggestedName,
+    evidenceLevel: 'high',
+    evidence: [],
+    status: candidate.status,
+    detectedMode: candidate.detectedMode,
+    ignored: false,
+    documentCount: candidate.documents.length,
+    issueCount: candidate.issues.length,
+    documents: [],
+    issues: [],
+  }
+  const observed = []
+  const client = createProjectControlApi(async (input, init) => {
+    observed.push({ input: String(input), init })
+    const data = String(input).includes('/bulk-ignore')
+      ? { candidates: [{ ...publicCandidate, status: 'ignored', ignored: true, revision: 2 }], total: 1 }
+      : {
+          candidates: [{ ...publicCandidate, status: 'imported', historyReason: 'superseded' }],
+          total: 5,
+          counts: { review: 5, ignored: 50, history: 65 },
+          nextCursor: candidate.candidateId,
+        }
+    return new Response(JSON.stringify({ ok: true, data }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  })
+
+  const page = await client.listCandidates({
+    view: 'history',
+    search: 'Alpha',
+    limit: 25,
+    afterCandidateId: candidate.candidateId,
+  })
+  assert.equal(page.total, 5)
+  assert.deepEqual(page.counts, { review: 5, ignored: 50, history: 65 })
+  assert.equal(page.nextCursor, candidate.candidateId)
+  assert.equal(page.candidates[0].historyReason, 'superseded')
+  assert.match(observed[0].input, /view=history/)
+  assert.match(observed[0].input, /search=Alpha/)
+  assert.match(observed[0].input, /limit=25/)
+  assert.match(observed[0].input, new RegExp(`afterCandidateId=${candidate.candidateId}`))
+
+  const changed = await client.setCandidatesIgnored([{
+    candidateId: candidate.candidateId,
+    expectedRevision: 1,
+  }], true)
+  assert.equal(changed[0].status, 'ignored')
+  assert.deepEqual(JSON.parse(observed[1].init.body), {
+    ignored: true,
+    candidates: [{ candidateId: candidate.candidateId, expectedRevision: 1 }],
+  })
+})
+
 test('uses the packaged v1alpha1 schema for all lifecycle commands and rejects raw paths', () => {
   for (const file of [
     'command-register-legacy.valid.json',
@@ -525,6 +586,81 @@ test('lists, ignores, and prepares candidates while preserving revision and life
   })
   assert.equal(traversal.response.status, 400)
   assert.equal(traversal.payload.error.code, 'INVALID_BODY')
+})
+
+test('candidate center forwards view filters before pagination and applies bounded bulk mutations', async t => {
+  const candidate = intakeCandidate()
+  const calls = []
+  const intake = {
+    scan() { assert.fail('unexpected scan') },
+    listSourceRoots() { return [] },
+    listCandidates(filter) {
+      calls.push({ kind: 'list', filter })
+      return {
+        candidates: [candidate],
+        total: 5,
+        counts: { review: 5, ignored: 50, history: 65 },
+        nextCursor: candidate.candidateId,
+      }
+    },
+    getCandidate() { return candidate },
+    setCandidateIgnored() { assert.fail('unexpected single ignore') },
+    setCandidatesIgnored(input) {
+      calls.push({ kind: 'bulk', input })
+      return [{ ...candidate, status: 'ignored', revision: 2 }]
+    },
+    prepareCandidate() { assert.fail('unexpected prepare') },
+  }
+  const origin = await serve(t, readyService, { intake })
+  const list = await api(origin,
+    `/intake/candidates?view=review&search=Alpha&limit=25&afterCandidateId=${candidate.candidateId}`)
+  assert.equal(list.response.status, 200)
+  assert.equal(list.payload.data.total, 5)
+  assert.deepEqual(list.payload.data.counts, { review: 5, ignored: 50, history: 65 })
+  assert.equal(list.payload.data.nextCursor, candidate.candidateId)
+  assert.deepEqual(calls[0], {
+    kind: 'list',
+    filter: {
+      view: 'review',
+      search: 'Alpha',
+      limit: 25,
+      afterCandidateId: candidate.candidateId,
+    },
+  })
+
+  const bulk = await api(origin, '/intake/candidates/bulk-ignore', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      ignored: true,
+      candidates: [{ candidateId: candidate.candidateId, expectedRevision: 1 }],
+    }),
+  })
+  assert.equal(bulk.response.status, 200)
+  assert.equal(bulk.payload.data.total, 1)
+  assert.equal(bulk.payload.data.candidates[0].status, 'ignored')
+  assert.deepEqual(calls[1], {
+    kind: 'bulk',
+    input: {
+      ignored: true,
+      candidates: [{ candidateId: candidate.candidateId, expectedRevision: 1 }],
+    },
+  })
+
+  const duplicate = await api(origin, '/intake/candidates/bulk-ignore', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      ignored: true,
+      candidates: [
+        { candidateId: candidate.candidateId, expectedRevision: 1 },
+        { candidateId: candidate.candidateId, expectedRevision: 1 },
+      ],
+    }),
+  })
+  assert.equal(duplicate.response.status, 400)
+  assert.equal(duplicate.payload.error.code, 'INVALID_BODY')
+  assert.equal(calls.length, 2)
 })
 
 test('returns the full agreed 200-document candidate boundary', async t => {

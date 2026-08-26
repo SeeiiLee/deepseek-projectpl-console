@@ -272,6 +272,17 @@ function parseJson(value) {
   return value === null || value === undefined ? null : JSON.parse(value)
 }
 
+function candidateManifestHash(confidenceJson) {
+  const confidence = parseJson(confidenceJson)
+  const manifest = confidence !== null && typeof confidence === 'object' && !Array.isArray(confidence)
+    ? confidence.manifest
+    : null
+  return manifest !== null && typeof manifest === 'object' && !Array.isArray(manifest)
+    && typeof manifest.hash === 'string'
+    ? manifest.hash
+    : null
+}
+
 function mapLocation(row) {
   if (!row) return null
   return {
@@ -2189,13 +2200,22 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
             status = 'imported'
             matchedProjectId = activeProject.projectId
           } else {
+            const manifestHash = candidateManifestHash(candidate.confidenceJson)
             const prior = database.prepare(`
               SELECT status, status_before_ignored AS statusBeforeIgnored
               FROM import_candidates
               WHERE root_path_key = ?
+                AND detected_mode = ?
+                AND manifest_project_id IS ?
+                AND json_extract(confidence_json, '$.manifest.hash') IS ?
               ORDER BY rowid DESC
               LIMIT 1
-            `).get(candidate.root.pathKey)
+            `).get(
+              candidate.root.pathKey,
+              candidate.detectedMode,
+              candidate.manifestProjectId,
+              manifestHash,
+            )
             if (prior?.status === 'ignored') {
               status = 'ignored'
               statusBeforeIgnored = candidate.status
@@ -2406,6 +2426,233 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         limit,
       )
       return rows.map((row) => selectImportCandidate(database, row.candidateId))
+    },
+
+    queryImportCandidates({
+      importJobId = null,
+      view = 'review',
+      search = '',
+      limit = 25,
+      afterCandidateId = '',
+    } = {}) {
+      ensureOpen()
+      if (importJobId !== null) requireString(importJobId, 'importJobId')
+      if (!['all', 'review', 'ignored', 'history'].includes(view)) {
+        throw new StorageValidationError('Candidate center view is not supported.')
+      }
+      if (typeof search !== 'string') {
+        throw new StorageValidationError('Candidate center search must be a string.')
+      }
+      const normalizedSearch = search.trim()
+      if (normalizedSearch.length > 200) {
+        throw new StorageValidationError('Candidate center search cannot exceed 200 characters.')
+      }
+      requireInteger(limit, 'limit', 1)
+      if (limit > 100) throw new StorageValidationError('Candidate center page limit cannot exceed 100.')
+      if (afterCandidateId !== '') requireString(afterCandidateId, 'afterCandidateId')
+
+      const latestForPath = `NOT EXISTS (
+        SELECT 1 FROM import_candidates newer
+        WHERE newer.root_path_key = c.root_path_key AND newer.rowid > c.rowid
+      )`
+      const supersededForPath = `EXISTS (
+        SELECT 1 FROM import_candidates newer
+        WHERE newer.root_path_key = c.root_path_key AND newer.rowid > c.rowid
+      )`
+      const viewPredicates = {
+        all: '1 = 1',
+        review: `c.status IN ('discovered', 'conflict', 'relocation_candidate') AND ${latestForPath}`,
+        ignored: `c.status = 'ignored' AND ${latestForPath}`,
+        history: `(c.status = 'imported' OR ${supersededForPath})`,
+      }
+      const searchPredicate = normalizedSearch === ''
+        ? '1 = 1'
+        : `(
+          instr(lower(c.candidate_id), lower(?)) > 0
+          OR instr(lower(c.root_display_path), lower(?)) > 0
+          OR instr(lower(coalesce(c.suggested_name, '')), lower(?)) > 0
+          OR instr(lower(coalesce(c.manifest_project_id, '')), lower(?)) > 0
+        )`
+      const baseParams = normalizedSearch === ''
+        ? [importJobId, importJobId]
+        : [importJobId, importJobId, normalizedSearch, normalizedSearch, normalizedSearch, normalizedSearch]
+      const blockingRank = `CASE
+        WHEN c.status = 'conflict' OR EXISTS (
+          SELECT 1 FROM import_issues blocking_issue
+          WHERE blocking_issue.candidate_id = c.candidate_id
+            AND blocking_issue.status = 'open'
+            AND blocking_issue.severity = 'blocking'
+        ) THEN 0 ELSE 1 END`
+      const typeRank = `CASE c.status
+        WHEN 'conflict' THEN 0
+        WHEN 'relocation_candidate' THEN 1
+        WHEN 'discovered' THEN 2
+        ELSE 3 END`
+      let cursor = null
+      if (afterCandidateId !== '') {
+        cursor = database.prepare(`
+          SELECT c.rowid AS rowId, c.updated_at AS updatedAt,
+            ${blockingRank} AS blockingRank, ${typeRank} AS typeRank
+          FROM import_candidates c
+          WHERE c.candidate_id = ?
+            AND (? IS NULL OR c.import_job_id = ?)
+            AND ${searchPredicate}
+            AND ${viewPredicates[view]}
+        `).get(afterCandidateId, ...baseParams)
+        if (!cursor) {
+          throw new StorageValidationError('Import candidate pagination cursor was not found in this view.', {
+            reason: 'candidate_cursor_not_found',
+          })
+        }
+      }
+      const countsRow = database.prepare(`
+        SELECT
+          sum(CASE WHEN ${viewPredicates.review} THEN 1 ELSE 0 END) AS review,
+          sum(CASE WHEN ${viewPredicates.ignored} THEN 1 ELSE 0 END) AS ignored,
+          sum(CASE WHEN ${viewPredicates.history} THEN 1 ELSE 0 END) AS history,
+          count(*) AS allCount
+        FROM import_candidates c
+        WHERE (? IS NULL OR c.import_job_id = ?)
+          AND ${searchPredicate}
+      `).get(...baseParams)
+      const counts = Object.freeze({
+        review: Number(countsRow.review ?? 0),
+        ignored: Number(countsRow.ignored ?? 0),
+        history: Number(countsRow.history ?? 0),
+      })
+      const total = view === 'all' ? Number(countsRow.allCount ?? 0) : counts[view]
+      const paginationPredicate = cursor === null
+        ? '1 = 1'
+        : view === 'review'
+          ? `(
+            ${blockingRank} > ?
+            OR (${blockingRank} = ? AND ${typeRank} > ?)
+            OR (${blockingRank} = ? AND ${typeRank} = ? AND c.updated_at < ?)
+            OR (${blockingRank} = ? AND ${typeRank} = ? AND c.updated_at = ? AND c.rowid < ?)
+          )`
+          : 'c.rowid < ?'
+      const paginationParams = cursor === null
+        ? []
+        : view === 'review'
+          ? [
+              Number(cursor.blockingRank),
+              Number(cursor.blockingRank),
+              Number(cursor.typeRank),
+              Number(cursor.blockingRank),
+              Number(cursor.typeRank),
+              cursor.updatedAt,
+              Number(cursor.blockingRank),
+              Number(cursor.typeRank),
+              cursor.updatedAt,
+              Number(cursor.rowId),
+            ]
+          : [Number(cursor.rowId)]
+      const orderBy = view === 'review'
+        ? `${blockingRank}, ${typeRank}, c.updated_at DESC, c.rowid DESC`
+        : 'c.rowid DESC'
+      const historyReason = `CASE
+        WHEN c.status = 'imported' THEN 'completed'
+        WHEN ${supersededForPath} THEN 'superseded'
+        ELSE NULL END`
+
+      const rows = database.prepare(`
+        SELECT c.candidate_id AS candidateId, ${historyReason} AS historyReason
+        FROM import_candidates c
+        WHERE (? IS NULL OR c.import_job_id = ?)
+          AND ${searchPredicate}
+          AND ${viewPredicates[view]}
+          AND ${paginationPredicate}
+        ORDER BY ${orderBy}
+        LIMIT ?
+      `).all(...baseParams, ...paginationParams, limit + 1)
+      const pageRows = rows.slice(0, limit)
+      const candidates = pageRows.map((row) => {
+        const candidate = selectImportCandidate(database, row.candidateId)
+        return view === 'history' && row.historyReason !== null
+          ? Object.freeze({ ...candidate, historyReason: row.historyReason })
+          : candidate
+      })
+      return Object.freeze({
+        candidates: Object.freeze(candidates),
+        total,
+        counts,
+        nextCursor: rows.length > limit
+          ? candidates[candidates.length - 1]?.candidateId ?? null
+          : null,
+      })
+    },
+
+    setImportCandidatesIgnored(entries, ignored) {
+      ensureOpen()
+      if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) {
+        throw new StorageValidationError('Candidate batch must contain between 1 and 100 items.')
+      }
+      if (typeof ignored !== 'boolean') {
+        throw new StorageValidationError('ignored must be boolean.')
+      }
+      const normalized = entries.map((raw, index) => {
+        const entry = requireObject(raw, `entries[${index}]`)
+        requireString(entry.candidateId, `entries[${index}].candidateId`)
+        requireInteger(entry.expectedRevision, `entries[${index}].expectedRevision`, 1)
+        return {
+          candidateId: entry.candidateId,
+          expectedRevision: entry.expectedRevision,
+        }
+      })
+      if (new Set(normalized.map(entry => entry.candidateId)).size !== normalized.length) {
+        throw new StorageValidationError('Candidate batch contains duplicate candidate IDs.')
+      }
+
+      return executeWrite(database, () => {
+        const currents = normalized.map(entry => requireCandidateRevision(
+          database,
+          entry.candidateId,
+          entry.expectedRevision,
+        ))
+        for (const current of currents) {
+          if (ignored && !CANDIDATE_STATES.has(current.status)) {
+            throw new StorageValidationError('Only actionable candidates can be ignored.', {
+              reason: 'invalid_candidate_transition',
+              candidateId: current.candidateId,
+            })
+          }
+          if (!ignored && (current.status !== 'ignored'
+            || !CANDIDATE_STATES.has(current.statusBeforeIgnored))) {
+            throw new StorageValidationError('Only ignored actionable candidates can be restored.', {
+              reason: 'invalid_candidate_transition',
+              candidateId: current.candidateId,
+            })
+          }
+        }
+
+        const updatedAt = requireTimestamp(now(), 'now()')
+        const ignore = database.prepare(`
+          UPDATE import_candidates
+          SET status_before_ignored = status, status = 'ignored',
+            revision = revision + 1, updated_at = ?
+          WHERE candidate_id = ? AND revision = ?
+        `)
+        const restore = database.prepare(`
+          UPDATE import_candidates
+          SET status = status_before_ignored, status_before_ignored = NULL,
+            revision = revision + 1, updated_at = ?
+          WHERE candidate_id = ? AND revision = ?
+        `)
+        for (const entry of normalized) {
+          const result = (ignored ? ignore : restore).run(
+            updatedAt,
+            entry.candidateId,
+            entry.expectedRevision,
+          )
+          if (Number(result.changes) !== 1) {
+            throw new StorageValidationError('Candidate batch revision changed during update.', {
+              reason: 'revision_conflict',
+              candidateId: entry.candidateId,
+            })
+          }
+        }
+        return Object.freeze(normalized.map(entry => selectImportCandidate(database, entry.candidateId)))
+      })
     },
 
     setImportCandidateIgnored(candidateId, ignored, expectedRevision) {
@@ -3371,6 +3618,30 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
               'Relocation candidate update unexpectedly affected no rows.',
             )
           }
+          // Every scan remains an immutable historical snapshot, so the same
+          // workspace can have more than one open relocation candidate. Once
+          // one of them is accepted, older candidates with the same canonical
+          // path and manifest identity are no longer actionable. Close them in
+          // the same transaction so a later review cannot repeat the rebind.
+          database.prepare(`
+            UPDATE import_candidates
+            SET status = 'imported', status_before_ignored = NULL,
+              matched_project_id = ?, revision = revision + 1, updated_at = ?
+            WHERE candidate_id <> ?
+              AND root_path_key = ?
+              AND manifest_project_id = ?
+              AND (
+                status = 'relocation_candidate'
+                OR (status = 'ignored' AND status_before_ignored = 'relocation_candidate')
+              )
+              AND matched_project_id IS NULL
+          `).run(
+            command.target.projectId,
+            recordedAt,
+            candidateBinding.candidateId,
+            newLocationPathKey,
+            command.target.projectId,
+          )
         }
 
         const afterRevision = Number(updated.revision)

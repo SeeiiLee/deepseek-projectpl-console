@@ -339,7 +339,7 @@ test('managed registration ignores renderer remapping and preserves manifest mul
   )
 })
 
-test('an accepted signed rebind replays before the relocation candidate is resolved again', async t => {
+test('an accepted signed rebind closes same-path relocation duplicates and replays before rescan', async t => {
   const tempRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-intake-rebind-'))
   const oldRoot = join(tempRoot, 'Managed Project Old')
   const newRoot = join(tempRoot, 'Managed Project New')
@@ -425,19 +425,33 @@ test('an accepted signed rebind replays before the relocation candidate is resol
   })
   const relocation = relocationScan.candidates[0]
   assert.equal(relocation.status, 'relocation_candidate')
-  const rebind = await runtime.intake.prepareCandidate(relocation.candidateId, {
+  const duplicateRelocationScan = await runtime.intake.scan({
+    mode: 'project-root',
+    selection: {
+      path: newRoot,
+      authorization: issueProjectControlSelectionTicket({ kind: 'project-root', path: newRoot, secret }),
+    },
+  })
+  const duplicateRelocation = duplicateRelocationScan.candidates[0]
+  assert.equal(duplicateRelocation.status, 'relocation_candidate')
+  assert.notEqual(duplicateRelocation.candidateId, relocation.candidateId)
+  const rebind = await runtime.intake.prepareCandidate(duplicateRelocation.candidateId, {
     registrationMode: 'managed',
-    name: relocation.suggestedName,
-    expectedRevision: relocation.revision,
+    name: duplicateRelocation.suggestedName,
+    expectedRevision: duplicateRelocation.revision,
     documentBindings: [],
   })
   assert.equal(rebind.kind, 'project.rebindLocation')
   const rebound = await submitLifecycle(origin, rebind)
   assert.equal(rebound.status, 'accepted')
   assert.equal(rebound.outcome, 'location_rebound')
-  const imported = storage.getImportCandidate(relocation.candidateId)
+  const imported = storage.getImportCandidate(duplicateRelocation.candidateId)
   assert.equal(imported?.status, 'imported')
-  assert.equal(imported?.revision, relocation.revision + 1)
+  assert.equal(imported?.revision, duplicateRelocation.revision + 1)
+  const closedDuplicate = storage.getImportCandidate(relocation.candidateId)
+  assert.equal(closedDuplicate?.status, 'imported')
+  assert.equal(closedDuplicate?.matchedProjectId, registered.projectId)
+  assert.equal(closedDuplicate?.revision, relocation.revision + 1)
 
   const callsAfterFirstSubmit = projectScanCalls
   const replay = await submitLifecycle(origin, rebind)
@@ -457,7 +471,7 @@ test('an accepted signed rebind replays before the relocation candidate is resol
   assert.equal(activeLocation?.locationId, rebind.payload.newLocationRef)
   assert.equal(
     testWindowsPathKey(activeLocation.normalizedPath),
-    testWindowsPathKey(relocation.root.normalizedPath),
+    testWindowsPathKey(duplicateRelocation.root.normalizedPath),
   )
   assert.equal(storage.listEvents().length, 2)
   assert.equal(storage.listOutbox().length, 2)
@@ -506,6 +520,35 @@ test('a linked legacy relocation without a matching registered document fails cl
     documentBindings: [],
   }), error => error?.code === 'IDENTITY_EVIDENCE_REQUIRED')
   assert.equal(fixture.storage.getProject(fixture.projectId).revision, 1)
+})
+
+test('candidate center maps a stale view cursor to a public refresh error', () => {
+  const storageError = new Error('cursor left the selected view')
+  storageError.details = { reason: 'candidate_cursor_not_found' }
+  const runtime = createProjectControlIntakeRuntime({
+    storage: {
+      queryImportCandidates() { throw storageError },
+    },
+    scanner: {
+      async scanSourceDirectory() { assert.fail('unexpected source scan') },
+      async scanProjectDirectory() { assert.fail('unexpected project scan') },
+    },
+    selectionSecret: 'candidate-cursor-test-secret-long-enough',
+    applicationInstanceId: 'candidate-cursor-test',
+    applicationVersion: '0.1.0-test',
+  })
+
+  assert.throws(
+    () => runtime.intake.listCandidates({
+      view: 'review',
+      search: 'Alpha',
+      limit: 25,
+      afterCandidateId: 'can_019c0000-0000-7000-8000-000000000001',
+    }),
+    error => error.code === 'CANDIDATE_CURSOR_INVALID'
+      && error.status === 409
+      && /第一页/u.test(error.message),
+  )
 })
 
 async function setupLinkedLegacyRelocation(t, options = {}) {
