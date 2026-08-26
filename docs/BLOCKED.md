@@ -1,15 +1,16 @@
 # Blocked
 
-## 当前阻断（2026-08-26，Candidate Center 第一批已本地提交，rc.11 尚未进入 Stable）
+## 当前阻断（2026-08-26，rc.11 本地候选已通过，尚未提交/发布/安装）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
 - **K3 canonical 上下文阻断已关闭**：K3 已新建对应 `F:\Projects\deepseek-harness-personal\workspace` 的 Workspace，只读核验 project_id、canonicalWorkspace、phase、nextTask 与 6 份权威 hash 一致，`context-status=ready`；未修改文件。旧 Workspace 只作历史，不建 junction、不继续写、不删除。
-- **Candidate Center 第一批代码阻断已本地关闭，生产阻断尚未关闭**：服务端过滤后分页、状态计数/四类视图、批量软忽略/恢复与指纹继承、陈旧 relocation duplicate 原子关闭已提交为 `7337bb3`，Project Control `191/191`、安全仓库套件 `831/831`。但它尚未打成 rc.11、push、发布或安装 Stable；Stable 中 conflict/discovered/ignored/imported/relocation_candidate 混杂的现象仍会继续出现。
+- **Candidate Center 第一批代码阻断已本地关闭，生产阻断尚未关闭**：服务端过滤后分页、状态计数/四类视图、批量软忽略/恢复与指纹继承、陈旧 relocation duplicate 原子关闭已提交为 `7337bb3`，Project Control `191/191`、安全仓库套件 `831/831`；rc.11 本地 fixture 也已通过。但 rc.11 源码候选尚未 commit/push/发布或安装 Stable；Stable 中 conflict/discovered/ignored/imported/relocation_candidate 混杂的现象仍会继续出现。
+- **rc.11 构建可复现性待收口**：同一源码从任务 worktree 与 canonical workspace 构建会因内嵌绝对 CSS 源路径而产生不同 CSS Module class 名和 bundle SHA。当前候选已用 canonical 字节重新构建并冻结，运行和隔离验收通过，但不能声称跨 checkout 可复现。推荐在 commit/push/Release 前修复并做双路径同 SHA 验收；若接受债务，必须由 Cyrus 明确批准“只发布冻结 bundle”的例外。
 - **陈旧 relocation candidate 只能由 rc.11 安装后的同一事务收口**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 当前仍在 Stable。禁止重复 rebind、直接改库、人工删除候选或把本地代码通过误写 Stable 方式“提前生效”。
 - **DSH 自身及其他项目换绑暂停**：DSH 正式项目仍指向 `D:\Deepseek Harness Personal`；量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。三者都必须等待候选中心和位置生命周期通过 Stable 验收后再逐项处理。
 - **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
-- **本轮授权只到本地 rc.11 候选**：允许当前 7 份治理文件的精确 docs-only commit、本地非 force 历史合并和 rc.11 单插件候选/隔离验收；不允许 push、GitHub Release、Stable 安装/写入、项目换绑/迁移或 B1b。既有 `release-staging/` 必须保留；新候选只能写新的 task-owned 目录。
+- **本轮授权已在本地 rc.11 候选处用完**：治理提交=`3c918fb`、历史 merge=`c0ababd`、rc.11 本地 fixture 已完成；不允许继续提交 rc.11 产品候选、push、GitHub Release、Stable 安装/写入、项目换绑/迁移或 B1b。既有 staging 和新 rc.11 候选证据均保留。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 

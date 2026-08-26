@@ -1,5 +1,14 @@
 # Progress
 
+## 2026-08-26：rc.11 本地候选通过，发现并隔离绝对路径构建可复现性债务
+
+- 权威治理状态已先提交为 `3c918fb57677b9ed99535cde541daa17b2ab666f`；随后以无 force 普通 merge 将 Candidate Center 产品提交 `7337bb3` 合入，merge commit=`c0ababd95ebeaf3951bb5453ac108e02be2dba1f`。两条历史和 rc.10 源码 `ef41ea4` 均已验证为 merge HEAD 祖先；旧 `release-staging/` 未进入提交。
+- Project Control 已在未提交的本地候选中版本化为 `0.1.0-rc.11`，release batch=`B-G4-CANDIDATE-CENTER-FIRST-BATCH`。本地 staging `release-staging/plugins-v2026.08.26.2` 精确含一个插件资产和四份元数据文件；tgz 288,655 bytes，SHA-256=`f21eed76f3c1b24397ab309b2bd6587dc4fc16ebdb0fc73b882441bd53eb6324`，与 plugin lock 一致。
+- 隔离 generation 验收通过：rc.10 builtin → rc.11 external 检测、装配、Host Schema 自包含导入、pending activation、commit、builtin rollback、临时 profile 清理全部 pass。Project Control `191/191`；116 文件安全仓库套件 exit 0；插件门禁、typecheck、build、checkout 1,285 文件、launch、governance 22/22、lock 与 diff 均通过。未运行 packed E2E、未创建客户端 package-set。
+- 候选 receipt=`../local/receipts/op_b_g4_candidate_center_rc11_local_candidate_20260826_01.json`；隔离 receipt=`../local/receipts/op_b_g4_candidate_center_rc11_local_candidate_20260826_01-isolated.json`；merge receipt=`../local/receipts/op_b_g4_candidate_center_post_commit_alignment_rc11_20260826_01-merge.json`。
+- 构建复核发现：同一 client 源码从任务 worktree 与 canonical workspace 构建时，生成 bundle 内嵌不同绝对 CSS 源路径，并派生不同 CSS Module class 名和 SHA。功能不受影响，本次 rc.11 已用 canonical 字节重新构建并冻结；但跨路径可复现性不成立，推荐在 commit/push/Release 前做 `B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE`。
+- 未 commit rc.11 源码候选、未 push、未创建 Release、未安装/写 Stable、未换绑/迁移项目、未进入 B1b。生成 plugin lock 时的一次性 18-tgz task temp 已清除；rc.11 staging 作为候选证据保留。
+
 ## 2026-08-26：Candidate Center 第一批已提交，进入 canonical 历史合并与 rc.11 本地候选
 
 - Candidate Center 第一批已在隔离 worktree 精确提交为 `7337bb36624672983e51f4229d3f96a43d4fe63e`，父提交为 Project Control rc.10 源码 `ef41ea4624347116a183294c1904c28cfa261b31`；提交主题为 `feat(project-control): close candidate center first batch`。

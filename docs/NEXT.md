@@ -1,11 +1,11 @@
 # Next Development
 
-状态：**Candidate Center 第一批已由 `7337bb3` 本地提交并通过验收；下一门为 Project Control `0.1.0-rc.11` 本地单插件候选**
+状态：**Candidate Center 第一批历史已合并，Project Control `0.1.0-rc.11` 本地单插件候选已通过；下一门为构建可复现性收口**
 当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.10 active；Amazon revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；治理基点=`e630870`，Candidate Center 产品提交=`7337bb36624672983e51f4229d3f96a43d4fe63e`，其父提交为 rc.10 源码 `ef41ea4624347116a183294c1904c28cfa261b31`。先提交本页所载治理状态，再以普通本地 merge 合成一条历史；禁止 force 或覆盖旧历史
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；治理提交=`3c918fb`，Candidate Center 产品提交=`7337bb3`，普通本地 merge=`c0ababd95ebeaf3951bb5453ac108e02be2dba1f`。rc.11 源码候选仍未提交，禁止 force 或覆盖旧历史
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-26 当前唯一执行顺序**：① 把 `7337bb3` 与验收收据写回 canonical 治理链并做精确 docs-only 提交；② 本地合并 `codex/project-control-candidate-closure` 与 `codex/governance-alignment`，形成单一可追溯历史；③ 只制作并隔离验收 Project Control `0.1.0-rc.11` 本地候选；④ push/Release、Stable 安装、第二批位置生命周期、DSH/量化/食溯换绑均保持独立授权门。
+> **2026-08-26 当前唯一执行顺序**：① `3c918fb` + `7337bb3` 已合并为 `c0ababd`；② rc.11 本地单插件候选已通过；③ 先修复或由 Cyrus 明确接受“CSS 模块产物依赖 checkout 绝对路径”的构建可复现性债务；④ 此后才能申请 rc.11 源码提交/push/Release；⑤ Stable 安装、第二批位置生命周期、DSH/量化/食溯换绑继续保持独立授权门。
 
 ## 已完成：G4-K3-CANONICAL-CONTEXT-ALIGNMENT
 
@@ -21,26 +21,35 @@
 - 验收 receipt：`../local/receipts/op_b_g4_candidate_center_review_fix_20260826_01.json`；commit receipt：`../local/receipts/op_b_g4_candidate_center_first_batch_20260826_01-commit.json`。
 - 本提交仍未 push、未发布、未安装 Stable；因此 Stable 中陈旧候选和 imported 终态混入问题仍是生产待处理，不应误写为已上线。
 
-## 当前唯一任务：B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE
+## 已完成：B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE
 
-在合并历史通过后，把 Project Control 从 `0.1.0-rc.10` 窄幅版本化为 `0.1.0-rc.11`，只生成一个新的本地单插件 staging 目录，并完成隔离 generation 加载/激活/回滚与相关门禁。不得复用或覆盖 rc.10/旧 staging，不制作新的客户端 package-set，不 push、不创建 GitHub Release、不安装或写 Stable。
+- 本地 staging：`release-staging/plugins-v2026.08.26.2`，仅 1 个 Project Control 资产、共 5 个文件；`localFixture=true`、`bootstrap=false`、`minClient=0.4.6`。
+- 资产：`cyrus-dsh-project-control-0.1.0-rc.11.tgz`，288,655 bytes，SHA-256=`f21eed76f3c1b24397ab309b2bd6587dc4fc16ebdb0fc73b882441bd53eb6324`，与 plugin lock 一致。
+- 隔离验收完整通过 rc.10 → rc.11 检测、generation、Host 自包含导入、激活、builtin 回滚与临时 profile 清理；Project Control `191/191`，116 文件安全仓库套件 exit 0，未创建 package-set。
+- 收据：`../local/receipts/op_b_g4_candidate_center_rc11_local_candidate_20260826_01.json`；隔离收据：`../local/receipts/op_b_g4_candidate_center_rc11_local_candidate_20260826_01-isolated.json`。
+- rc.11 源码候选尚未 commit/push/publish/install，Stable 仍是 rc.10。
+
+## 当前唯一任务：B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE
+
+本次在 canonical workspace 重建 client bundle 时，发现同一源码从任务 worktree 和 canonical 路径构建会把不同绝对路径写入 bundle，并派生出不同 CSS Module class 名与 SHA-256。运行功能已通过，rc.11 当前候选也已固定为 canonical 构建字节；但这会让“同一源码在不同 checkout 可重建同一资产”的治理承诺失真。推荐先把 CSS 模块标识和生成注释改为与绝对路径无关，并用两个隔离路径证明 bundle SHA 完全一致，再申请 commit/push/Release；若 Cyrus 决定接受该债务，也必须把“只允许用已冻结 canonical bundle 发布”写成显式例外。
 
 ## 权威后续任务队列（可随时查阅）
 
 | 顺序 | 任务 ID | 内容 | 当前门禁 |
 |---:|---|---|---|
-| 1 | `B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE` | rc.11 本地单插件候选与隔离验收 | 本轮已授权 |
-| 2 | `B-G4-CANDIDATE-CENTER-PUSH-RELEASE-AUTHORIZATION` | 精确 push 产品/治理历史并发布 rc.11 单插件 Release | 需 Cyrus 新授权 |
-| 3 | `B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE` | 通过现有插件更新通道安装 Stable，人工验收四类视图、批量操作和陈旧候选关闭 | 需 Cyrus 新授权；依赖 2 |
-| 4 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 需单独产品授权；不含物理删除或 instance detach |
-| 5 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 依赖 3、4；单项目授权 |
-| 6 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 5；需迁移与换绑授权 |
-| 7 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 6；需单独方案与授权 |
-| 8 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
-| 9 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
-| 10 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
-| 11 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
-| 12 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
+| 1 | `B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE` | rc.11 本地单插件候选与隔离验收 | 已完成 |
+| 2 | `B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE` | 清除 bundle 对 checkout 绝对路径的依赖，并做双路径同 SHA 验收 | 推荐修复；需 Cyrus 授权产品构建工具改动 |
+| 3 | `B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION` | 精确提交 rc.11 候选、push 合并历史并发布单插件 Release | 需 Cyrus 新授权；依赖 2 关闭或显式接受债务 |
+| 4 | `B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE` | 通过现有插件更新通道安装 Stable，人工验收四类视图、批量操作和陈旧候选关闭 | 需 Cyrus 新授权；依赖 3 |
+| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 需单独产品授权；不含物理删除或 instance detach |
+| 6 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 依赖 4、5；单项目授权 |
+| 7 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 6；需迁移与换绑授权 |
+| 8 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 7；需单独方案与授权 |
+| 9 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
+| 10 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
+| 11 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
+| 12 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
+| 13 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
 
 这张表是当前后续任务的人工总表；同一队列也写入 `docs/governance/current-state.json::futureTasks`，Harness 应以机器指针和本表交叉核对，不以聊天摘要替代。
 

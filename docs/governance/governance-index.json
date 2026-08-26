@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-26T13:41:06.000Z",
+  "generatedAt": "2026-08-26T13:54:33.000Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -37,12 +37,12 @@
     "publishPolicy": "explicit-user-authorization",
     "standingAuthorization": {
       "id": "governance-development-continuous-v1",
-      "status": "cyrus-authorized-through-rc11-local-candidate",
+      "status": "consumed-through-rc11-local-candidate-paused-at-build-reproducibility",
       "localValidatedCommits": true,
       "taskOwnedTemporaryCleanup": true,
       "push": false,
       "publish": false,
-      "scopeEnd": "pause-after-project-control-rc11-local-candidate-acceptance"
+      "scopeEnd": "pause-at-project-control-rc11-build-reproducibility-decision"
     }
   },
   "packedTestPolicy": {
@@ -174,15 +174,17 @@
       "releaseReceiptSha256": "8f0ce54f5d2fa19e765e4346d0a32fdfb77e100e97e3b5f14d76632ebf5cd0fc",
       "stateAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
       "formalFullTests": "826/826 isolated-runnable-suite; project-control 186/186",
-      "next": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE",
+      "next": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE",
       "forbidden": ["migration-or-database-schema", "b1b", "direct-stable-database-write", "repeat-amazon-rebind", "other-project-rebind-before-candidate-center", "push-publish-delete-without-new-authorization"]
     },
     "candidateCenterFirstBatch": {
-      "status": "accepted-and-committed-local-awaiting-canonical-merge-and-rc11-local-candidate",
+      "status": "history-merged-rc11-local-candidate-passed-awaiting-build-reproducibility-closure",
       "k3ContextReceipt": "../local/receipts/op_k3_canonical_context_alignment_20260826_01.json",
       "candidateWorktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_project_control_candidate_closure_20260826",
       "candidateBaseCommit": "ef41ea4624347116a183294c1904c28cfa261b31",
       "productCommit": "7337bb36624672983e51f4229d3f96a43d4fe63e",
+      "governanceCommit": "3c918fb57677b9ed99535cde541daa17b2ab666f",
+      "mergeCommit": "c0ababd95ebeaf3951bb5453ac108e02be2dba1f",
       "acceptanceReceipt": "../local/receipts/op_b_g4_candidate_center_review_fix_20260826_01.json",
       "acceptanceReceiptSha256": "fca3960b560899d1d149604d87767a5102213ab2f88c7a3a4fcad29b30bd0635",
       "commitReceipt": "../local/receipts/op_b_g4_candidate_center_first_batch_20260826_01-commit.json",
@@ -193,8 +195,20 @@
       "machineGates": "check-plugins build tsc checkout launch governance diff passed",
       "requiredOrder": ["server-filter-before-pagination", "candidate-counts-and-separated-views", "bulk-ignore-and-restore-with-fingerprint", "stale-relocation-duplicate-closure", "120-candidate-machine-acceptance"],
       "laterLifecycle": ["project-archive-and-unarchive", "user-initiated-rebind-reusing-one-transaction", "instance-detach-only-after-separate-decision"],
-      "next": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE",
-      "productionInstalled": false
+      "next": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE",
+      "productionInstalled": false,
+      "rc11LocalCandidate": {
+        "version": "0.1.0-rc.11",
+        "status": "passed-local-not-committed-not-pushed-not-published-not-installed",
+        "staging": "release-staging/plugins-v2026.08.26.2",
+        "assetName": "cyrus-dsh-project-control-0.1.0-rc.11.tgz",
+        "assetBytes": 288655,
+        "assetSha256": "f21eed76f3c1b24397ab309b2bd6587dc4fc16ebdb0fc73b882441bd53eb6324",
+        "minClient": "0.4.6",
+        "receipt": "../local/receipts/op_b_g4_candidate_center_rc11_local_candidate_20260826_01.json",
+        "isolatedReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_local_candidate_20260826_01-isolated.json",
+        "buildReproducibility": "absolute-checkout-path-affects-css-module-identifiers-and-client-bundle-sha"
+      }
     },
     "g1ProjectHome": {
       "status": "committed-and-pushed-as-ancestor-not-separately-published",
@@ -239,7 +253,7 @@
       "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
       "unknownOrUnmanagedObjects": 0,
       "deletionPerformed": true,
-      "next": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"
+      "next": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"
     },
     "g3CrossHarness": {
       "status": "main-commit-pushed-as-ancestor-toolbox-and-memory-repositories-local-not-published",
@@ -284,22 +298,23 @@
       "kimiCompatibilityState": "new-canonical-workspace-required-old-workspace-history-only-no-junction",
       "identityAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_identity_alignment_20260825_01.json",
       "postRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
-      "next": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"
+      "next": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"
     }
   },
   "futureTasks": [
-    {"order": 1, "id": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE", "status": "authorized-current", "dependsOn": ["7337bb3-and-governance-history-merged"], "authorizationGate": "local-only-no-push-release-or-stable"},
-    {"order": 2, "id": "B-G4-CANDIDATE-CENTER-PUSH-RELEASE-AUTHORIZATION", "status": "pending", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 3, "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-CANDIDATE-CENTER-PUSH-RELEASE-AUTHORIZATION"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 4, "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH", "status": "pending", "dependsOn": ["candidate-center-stable-acceptance"], "authorizationGate": "separate-product-authorization", "scope": ["project-archive-unarchive", "user-initiated-rebind-reusing-one-transaction"], "excluded": ["physical-delete", "instance-detach"]},
-    {"order": 5, "id": "G4-DSH-CANONICAL-REBIND", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "single-project-rebind-authorization"},
-    {"order": 6, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-DSH-CANONICAL-REBIND"], "authorizationGate": "migration-and-rebind-authorization"},
-    {"order": 7, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
-    {"order": 8, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
-    {"order": 9, "id": "B2-GOVERNANCE-VIEW", "status": "pending", "dependsOn": ["B1B-APPROVAL-INBOX-MVP", "ADR-005"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 10, "id": "B3-AUTHORIZATION-SESSION-CALENDAR", "status": "pending", "dependsOn": ["B2-GOVERNANCE-VIEW"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 11, "id": "G3-CROSS-HARNESS-ACTIVATION", "status": "pending", "dependsOn": ["per-harness-discovery"], "authorizationGate": "per-harness-authorization"},
-    {"order": 12, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
+    {"order": 1, "id": "B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["7337bb3-and-governance-history-merged"], "authorizationGate": "completed-local-only"},
+    {"order": 2, "id": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE", "status": "awaiting-cyrus-authorization-or-explicit-debt-acceptance", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"], "authorizationGate": "product-build-tooling-change-or-explicit-exception"},
+    {"order": 3, "id": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION", "status": "pending", "dependsOn": ["B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 4, "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 5, "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH", "status": "pending", "dependsOn": ["candidate-center-stable-acceptance"], "authorizationGate": "separate-product-authorization", "scope": ["project-archive-unarchive", "user-initiated-rebind-reusing-one-transaction"], "excluded": ["physical-delete", "instance-detach"]},
+    {"order": 6, "id": "G4-DSH-CANONICAL-REBIND", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "single-project-rebind-authorization"},
+    {"order": 7, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-DSH-CANONICAL-REBIND"], "authorizationGate": "migration-and-rebind-authorization"},
+    {"order": 8, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
+    {"order": 9, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
+    {"order": 10, "id": "B2-GOVERNANCE-VIEW", "status": "pending", "dependsOn": ["B1B-APPROVAL-INBOX-MVP", "ADR-005"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 11, "id": "B3-AUTHORIZATION-SESSION-CALENDAR", "status": "pending", "dependsOn": ["B2-GOVERNANCE-VIEW"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 12, "id": "G3-CROSS-HARNESS-ACTIVATION", "status": "pending", "dependsOn": ["per-harness-discovery"], "authorizationGate": "per-harness-authorization"},
+    {"order": 13, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
   ],
   "g4MigrationOrder": [
     "amazon-store",

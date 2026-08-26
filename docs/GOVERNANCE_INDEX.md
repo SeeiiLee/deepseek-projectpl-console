@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 原审批中心任务继续暂停。真实 Stable 客户端是 `0.4.6`、Project Control 是 `0.1.0-rc.10`；Amazon 已稳定换绑到 `F:\Projects\amazon-store\workspace`，K3 canonical 上下文已验收。Candidate Center 第一批已由本地产品提交 `7337bb36624672983e51f4229d3f96a43d4fe63e` 完成并通过 Project Control `191/191`、安全仓库套件 `831/831`，但尚未进入 Stable。当前唯一下一门是把产品与治理分支合成一条本地历史并制作/隔离验收 Project Control `0.1.0-rc.11` 单插件候选；push、Release、Stable 安装和项目换绑仍需分别授权。完整后续任务可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。真实 Stable 客户端是 `0.4.6`、Project Control 仍是 `0.1.0-rc.10`；Amazon binding 与 K3 canonical 上下文已对齐。Candidate Center 产品 `7337bb3`、治理 `3c918fb` 已由本地 merge `c0ababd` 合成一条历史；Project Control `0.1.0-rc.11` 本地单插件候选已通过，资产 SHA-256=`f21eed76...6324`，但源码候选未提交、未发布、未安装。当前唯一下一门是处理 bundle 对 checkout 绝对路径的构建可复现性债务；关闭或由 Cyrus 显式接受后，才申请 rc.11 commit/push/Release。完整后续任务可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
 
 ## 权威链
 
