@@ -107,13 +107,17 @@ export function createProjectControlIntakeRuntime(options: {
     },
 
     listCandidates(filter) {
-      return options.storage.listImportCandidates({
-        ...(filter.jobId === undefined ? {} : { importJobId: filter.jobId }),
-        // The global inbox collapses superseded rescans. A job-specific result
-        // must remain a stable historical snapshot even after a later scan.
-        latestPerPath: filter.jobId === undefined,
-        limit: 100,
-      })
+      try {
+        return options.storage.queryImportCandidates({
+          ...(filter.jobId === undefined ? {} : { importJobId: filter.jobId }),
+          view: filter.view ?? (filter.jobId === undefined ? 'review' : 'all'),
+          search: filter.search ?? '',
+          limit: filter.limit ?? 25,
+          afterCandidateId: filter.afterCandidateId ?? '',
+        })
+      } catch (error) {
+        throw publicIntakeError(error)
+      }
     },
 
     getCandidate(candidateId) {
@@ -127,6 +131,14 @@ export function createProjectControlIntakeRuntime(options: {
           input.ignored,
           input.expectedRevision,
         )
+      } catch (error) {
+        throw publicIntakeError(error)
+      }
+    },
+
+    setCandidatesIgnored(input) {
+      try {
+        return options.storage.setImportCandidatesIgnored(input.candidates, input.ignored)
       } catch (error) {
         throw publicIntakeError(error)
       }
@@ -1673,8 +1685,11 @@ function publicIntakeError(error: unknown): unknown {
       return projectControlHttpError('CANDIDATE_NOT_FOUND', '项目候选不存在。', 404)
     case 'revision_conflict':
       return projectControlHttpError('CANDIDATE_REVISION_CONFLICT', '候选已经变化，请刷新后重试。', 409)
+    case 'candidate_cursor_not_found':
+      return projectControlHttpError('CANDIDATE_CURSOR_INVALID', '候选列表已经变化，请从第一页重新打开。', 409)
     case 'candidate_not_issuable':
     case 'candidate_already_imported':
+    case 'invalid_candidate_transition':
       return projectControlHttpError('CANDIDATE_NOT_READY', '这个项目候选当前不能执行该操作。', 409)
     default:
       return projectControlHttpError('INTAKE_OPERATION_FAILED', '项目扫描或候选操作失败。', 409)

@@ -535,6 +535,11 @@ function createBusinessId(idFactory, prefix, field) {
 function parseJson(value) {
 	return value === null || value === void 0 ? null : JSON.parse(value);
 }
+function candidateManifestHash(confidenceJson) {
+	const confidence = parseJson(confidenceJson);
+	const manifest = confidence !== null && typeof confidence === "object" && !Array.isArray(confidence) ? confidence.manifest : null;
+	return manifest !== null && typeof manifest === "object" && !Array.isArray(manifest) && typeof manifest.hash === "string" ? manifest.hash : null;
+}
 function mapLocation(row) {
 	if (!row) return null;
 	return {
@@ -2078,15 +2083,21 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 					if (activeProject) {
 						status = "imported";
 						matchedProjectId = activeProject.projectId;
-					} else if (database.prepare(`
+					} else {
+						const manifestHash = candidateManifestHash(candidate.confidenceJson);
+						if (database.prepare(`
               SELECT status, status_before_ignored AS statusBeforeIgnored
               FROM import_candidates
               WHERE root_path_key = ?
+                AND detected_mode = ?
+                AND manifest_project_id IS ?
+                AND json_extract(confidence_json, '$.manifest.hash') IS ?
               ORDER BY rowid DESC
               LIMIT 1
-            `).get(candidate.root.pathKey)?.status === "ignored") {
-						status = "ignored";
-						statusBeforeIgnored = candidate.status;
+            `).get(candidate.root.pathKey, candidate.detectedMode, candidate.manifestProjectId, manifestHash)?.status === "ignored") {
+							status = "ignored";
+							statusBeforeIgnored = candidate.status;
+						}
 					}
 					database.prepare(`
             INSERT INTO import_candidates(
@@ -2221,6 +2232,186 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
         ORDER BY c.rowid DESC
         LIMIT ?
       `).all(beforeRowId, beforeRowId, sourceRootId, sourceRootId, importJobId, importJobId, status, status, latestPerPath ? 1 : 0, limit).map((row) => selectImportCandidate(database, row.candidateId));
+		},
+		queryImportCandidates({ importJobId = null, view = "review", search = "", limit = 25, afterCandidateId = "" } = {}) {
+			ensureOpen();
+			if (importJobId !== null) requireString(importJobId, "importJobId");
+			if (![
+				"all",
+				"review",
+				"ignored",
+				"history"
+			].includes(view)) throw new StorageValidationError("Candidate center view is not supported.");
+			if (typeof search !== "string") throw new StorageValidationError("Candidate center search must be a string.");
+			const normalizedSearch = search.trim();
+			if (normalizedSearch.length > 200) throw new StorageValidationError("Candidate center search cannot exceed 200 characters.");
+			requireInteger(limit, "limit", 1);
+			if (limit > 100) throw new StorageValidationError("Candidate center page limit cannot exceed 100.");
+			if (afterCandidateId !== "") requireString(afterCandidateId, "afterCandidateId");
+			const latestForPath = `NOT EXISTS (
+        SELECT 1 FROM import_candidates newer
+        WHERE newer.root_path_key = c.root_path_key AND newer.rowid > c.rowid
+      )`;
+			const supersededForPath = `EXISTS (
+        SELECT 1 FROM import_candidates newer
+        WHERE newer.root_path_key = c.root_path_key AND newer.rowid > c.rowid
+      )`;
+			const viewPredicates = {
+				all: "1 = 1",
+				review: `c.status IN ('discovered', 'conflict', 'relocation_candidate') AND ${latestForPath}`,
+				ignored: `c.status = 'ignored' AND ${latestForPath}`,
+				history: `(c.status = 'imported' OR ${supersededForPath})`
+			};
+			const searchPredicate = normalizedSearch === "" ? "1 = 1" : `(
+          instr(lower(c.candidate_id), lower(?)) > 0
+          OR instr(lower(c.root_display_path), lower(?)) > 0
+          OR instr(lower(coalesce(c.suggested_name, '')), lower(?)) > 0
+          OR instr(lower(coalesce(c.manifest_project_id, '')), lower(?)) > 0
+        )`;
+			const baseParams = normalizedSearch === "" ? [importJobId, importJobId] : [
+				importJobId,
+				importJobId,
+				normalizedSearch,
+				normalizedSearch,
+				normalizedSearch,
+				normalizedSearch
+			];
+			const blockingRank = `CASE
+        WHEN c.status = 'conflict' OR EXISTS (
+          SELECT 1 FROM import_issues blocking_issue
+          WHERE blocking_issue.candidate_id = c.candidate_id
+            AND blocking_issue.status = 'open'
+            AND blocking_issue.severity = 'blocking'
+        ) THEN 0 ELSE 1 END`;
+			const typeRank = `CASE c.status
+        WHEN 'conflict' THEN 0
+        WHEN 'relocation_candidate' THEN 1
+        WHEN 'discovered' THEN 2
+        ELSE 3 END`;
+			let cursor = null;
+			if (afterCandidateId !== "") {
+				cursor = database.prepare(`
+          SELECT c.rowid AS rowId, c.updated_at AS updatedAt,
+            ${blockingRank} AS blockingRank, ${typeRank} AS typeRank
+          FROM import_candidates c
+          WHERE c.candidate_id = ?
+            AND (? IS NULL OR c.import_job_id = ?)
+            AND ${searchPredicate}
+            AND ${viewPredicates[view]}
+        `).get(afterCandidateId, ...baseParams);
+				if (!cursor) throw new StorageValidationError("Import candidate pagination cursor was not found in this view.", { reason: "candidate_cursor_not_found" });
+			}
+			const countsRow = database.prepare(`
+        SELECT
+          sum(CASE WHEN ${viewPredicates.review} THEN 1 ELSE 0 END) AS review,
+          sum(CASE WHEN ${viewPredicates.ignored} THEN 1 ELSE 0 END) AS ignored,
+          sum(CASE WHEN ${viewPredicates.history} THEN 1 ELSE 0 END) AS history,
+          count(*) AS allCount
+        FROM import_candidates c
+        WHERE (? IS NULL OR c.import_job_id = ?)
+          AND ${searchPredicate}
+      `).get(...baseParams);
+			const counts = Object.freeze({
+				review: Number(countsRow.review ?? 0),
+				ignored: Number(countsRow.ignored ?? 0),
+				history: Number(countsRow.history ?? 0)
+			});
+			const total = view === "all" ? Number(countsRow.allCount ?? 0) : counts[view];
+			const paginationPredicate = cursor === null ? "1 = 1" : view === "review" ? `(
+            ${blockingRank} > ?
+            OR (${blockingRank} = ? AND ${typeRank} > ?)
+            OR (${blockingRank} = ? AND ${typeRank} = ? AND c.updated_at < ?)
+            OR (${blockingRank} = ? AND ${typeRank} = ? AND c.updated_at = ? AND c.rowid < ?)
+          )` : "c.rowid < ?";
+			const paginationParams = cursor === null ? [] : view === "review" ? [
+				Number(cursor.blockingRank),
+				Number(cursor.blockingRank),
+				Number(cursor.typeRank),
+				Number(cursor.blockingRank),
+				Number(cursor.typeRank),
+				cursor.updatedAt,
+				Number(cursor.blockingRank),
+				Number(cursor.typeRank),
+				cursor.updatedAt,
+				Number(cursor.rowId)
+			] : [Number(cursor.rowId)];
+			const orderBy = view === "review" ? `${blockingRank}, ${typeRank}, c.updated_at DESC, c.rowid DESC` : "c.rowid DESC";
+			const historyReason = `CASE
+        WHEN c.status = 'imported' THEN 'completed'
+        WHEN ${supersededForPath} THEN 'superseded'
+        ELSE NULL END`;
+			const rows = database.prepare(`
+        SELECT c.candidate_id AS candidateId, ${historyReason} AS historyReason
+        FROM import_candidates c
+        WHERE (? IS NULL OR c.import_job_id = ?)
+          AND ${searchPredicate}
+          AND ${viewPredicates[view]}
+          AND ${paginationPredicate}
+        ORDER BY ${orderBy}
+        LIMIT ?
+      `).all(...baseParams, ...paginationParams, limit + 1);
+			const candidates = rows.slice(0, limit).map((row) => {
+				const candidate = selectImportCandidate(database, row.candidateId);
+				return view === "history" && row.historyReason !== null ? Object.freeze({
+					...candidate,
+					historyReason: row.historyReason
+				}) : candidate;
+			});
+			return Object.freeze({
+				candidates: Object.freeze(candidates),
+				total,
+				counts,
+				nextCursor: rows.length > limit ? candidates[candidates.length - 1]?.candidateId ?? null : null
+			});
+		},
+		setImportCandidatesIgnored(entries, ignored) {
+			ensureOpen();
+			if (!Array.isArray(entries) || entries.length < 1 || entries.length > 100) throw new StorageValidationError("Candidate batch must contain between 1 and 100 items.");
+			if (typeof ignored !== "boolean") throw new StorageValidationError("ignored must be boolean.");
+			const normalized = entries.map((raw, index) => {
+				const entry = requireObject(raw, `entries[${index}]`);
+				requireString(entry.candidateId, `entries[${index}].candidateId`);
+				requireInteger(entry.expectedRevision, `entries[${index}].expectedRevision`, 1);
+				return {
+					candidateId: entry.candidateId,
+					expectedRevision: entry.expectedRevision
+				};
+			});
+			if (new Set(normalized.map((entry) => entry.candidateId)).size !== normalized.length) throw new StorageValidationError("Candidate batch contains duplicate candidate IDs.");
+			return executeWrite(database, () => {
+				const currents = normalized.map((entry) => requireCandidateRevision$1(database, entry.candidateId, entry.expectedRevision));
+				for (const current of currents) {
+					if (ignored && !CANDIDATE_STATES.has(current.status)) throw new StorageValidationError("Only actionable candidates can be ignored.", {
+						reason: "invalid_candidate_transition",
+						candidateId: current.candidateId
+					});
+					if (!ignored && (current.status !== "ignored" || !CANDIDATE_STATES.has(current.statusBeforeIgnored))) throw new StorageValidationError("Only ignored actionable candidates can be restored.", {
+						reason: "invalid_candidate_transition",
+						candidateId: current.candidateId
+					});
+				}
+				const updatedAt = requireTimestamp(now(), "now()");
+				const ignore = database.prepare(`
+          UPDATE import_candidates
+          SET status_before_ignored = status, status = 'ignored',
+            revision = revision + 1, updated_at = ?
+          WHERE candidate_id = ? AND revision = ?
+        `);
+				const restore = database.prepare(`
+          UPDATE import_candidates
+          SET status = status_before_ignored, status_before_ignored = NULL,
+            revision = revision + 1, updated_at = ?
+          WHERE candidate_id = ? AND revision = ?
+        `);
+				for (const entry of normalized) {
+					const result = (ignored ? ignore : restore).run(updatedAt, entry.candidateId, entry.expectedRevision);
+					if (Number(result.changes) !== 1) throw new StorageValidationError("Candidate batch revision changed during update.", {
+						reason: "revision_conflict",
+						candidateId: entry.candidateId
+					});
+				}
+				return Object.freeze(normalized.map((entry) => selectImportCandidate(database, entry.candidateId)));
+			});
 		},
 		setImportCandidateIgnored(candidateId, ignored, expectedRevision) {
 			ensureOpen();
@@ -2823,6 +3014,19 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
               AND matched_project_id IS NULL
             RETURNING revision
           `).get(command.target.projectId, recordedAt, candidateBinding.candidateId, candidateBinding.candidateRevision)) throw new StorageValidationError("Relocation candidate update unexpectedly affected no rows.");
+					database.prepare(`
+            UPDATE import_candidates
+            SET status = 'imported', status_before_ignored = NULL,
+              matched_project_id = ?, revision = revision + 1, updated_at = ?
+            WHERE candidate_id <> ?
+              AND root_path_key = ?
+              AND manifest_project_id = ?
+              AND (
+                status = 'relocation_candidate'
+                OR (status = 'ignored' AND status_before_ignored = 'relocation_candidate')
+              )
+              AND matched_project_id IS NULL
+          `).run(command.target.projectId, recordedAt, candidateBinding.candidateId, newLocationPathKey, command.target.projectId);
 				}
 				const afterRevision = Number(updated.revision);
 				const sequence = nextSequence(database);
@@ -11335,10 +11539,27 @@ var require_dist = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	exports.default = formatsPlugin;
 }));
 //#endregion
-//#region src/manifest-validator.ts
+//#region src/runtime-schema.ts
 var import__2020 = /* @__PURE__ */ __toESM(require__2020(), 1);
 var import_dist = /* @__PURE__ */ __toESM(require_dist(), 1);
-const MANIFEST_SCHEMA_PATH = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/schemas/project-manifest.schema.json", import.meta.url));
+const RUNTIME_SCHEMAS = Object.freeze({
+	projectManifest: ["project-manifest.schema.json", "../../../protocol/project-control/v1alpha1/schemas/project-manifest.schema.json"],
+	lifecycleCommand: ["lifecycle-command-envelope.schema.json", "../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-envelope.schema.json"],
+	lifecycleResult: ["lifecycle-command-result.schema.json", "../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-result.schema.json"],
+	externalCommand: ["external-command-envelope.schema.json", "../../../protocol/project-control/v1alpha1/schemas/command-envelope.schema.json"],
+	projectHome: ["project-home.schema.json", "../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json"],
+	templateManifest: ["template-manifest.schema.json", "../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json"]
+});
+/** Resolve packaged bytes first, retaining a source-tree fallback for direct tests. */
+function runtimeSchemaPath(name) {
+	const [fileName, authorityRelativePath] = RUNTIME_SCHEMAS[name];
+	const found = [fileURLToPath(new URL(`./runtime-schemas/${fileName}`, import.meta.url)), fileURLToPath(new URL(authorityRelativePath, import.meta.url))].find(existsSync);
+	if (found !== void 0) return found;
+	throw new Error(`Project Control runtime Schema is unavailable: ${name}`);
+}
+//#endregion
+//#region src/manifest-validator.ts
+const MANIFEST_SCHEMA_PATH = runtimeSchemaPath("projectManifest");
 let manifestValidator;
 function validateProjectManifest(value) {
 	let validate;
@@ -12462,8 +12683,8 @@ const scanProjectDirectory = scanProjectDirectory$1;
 const scanSourceDirectory = scanSourceDirectory$1;
 //#endregion
 //#region src/lifecycle-validator.ts
-const COMMAND_SCHEMA_PATH$1 = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-envelope.schema.json", import.meta.url));
-const RESULT_SCHEMA_PATH = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/lifecycle/schemas/lifecycle-command-result.schema.json", import.meta.url));
+const COMMAND_SCHEMA_PATH$1 = runtimeSchemaPath("lifecycleCommand");
+const RESULT_SCHEMA_PATH = runtimeSchemaPath("lifecycleResult");
 let commandValidator$1;
 let commandValidatorUnavailable$1 = false;
 let resultValidator;
@@ -12544,7 +12765,7 @@ function publicValidationIssue$1(error) {
 }
 //#endregion
 //#region src/external-update-validator.ts
-const COMMAND_SCHEMA_PATH = fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/schemas/command-envelope.schema.json", import.meta.url));
+const COMMAND_SCHEMA_PATH = runtimeSchemaPath("externalCommand");
 let commandValidator;
 let commandValidatorUnavailable = false;
 /** Validate the canonical external update envelope without a second schema copy in runtime code. */
@@ -12838,6 +13059,8 @@ function createProjectControlRequestHandler(service, options = {}) {
 								"intake.directory.scan",
 								"intake.candidates.read",
 								"intake.candidates.review",
+								"intake.candidates.views",
+								"intake.candidates.bulk-review",
 								"project.documents.read",
 								"project.workspace.read",
 								"project.documents.refresh",
@@ -12921,8 +13144,35 @@ function createProjectControlRequestHandler(service, options = {}) {
 				requireGetWithoutBody(request);
 				const intake = requireIntake(options);
 				const jobId = optionalSingleQuery(parsed, "jobId", IMPORT_JOB_ID);
-				rejectUnexpectedQuery(parsed, new Set(["jobId"]));
-				const candidates = normalizeCandidateList(await intake.listCandidates({ ...jobId === void 0 ? {} : { jobId } }));
+				const view = optionalSingleQuery(parsed, "view", /^(?:review|ignored|history)$/u);
+				const search = optionalBoundedQuery(parsed, "search", 200);
+				const limit = optionalIntegerQuery(parsed, "limit", 1, 100);
+				const afterCandidateId = optionalSingleQuery(parsed, "afterCandidateId", IMPORT_CANDIDATE_ID);
+				rejectUnexpectedQuery(parsed, new Set([
+					"jobId",
+					"view",
+					"search",
+					"limit",
+					"afterCandidateId"
+				]));
+				sendJson(response, 200, {
+					ok: true,
+					data: normalizeCandidatePage(await intake.listCandidates({
+						...jobId === void 0 ? {} : { jobId },
+						...view === void 0 ? {} : { view },
+						...search === void 0 ? {} : { search },
+						...limit === void 0 ? {} : { limit },
+						...afterCandidateId === void 0 ? {} : { afterCandidateId }
+					}))
+				});
+				return;
+			}
+			if (resource === "/intake/candidates/bulk-ignore") {
+				requireMethod(request, "POST");
+				const intake = requireIntake(options);
+				rejectUnexpectedQuery(parsed, /* @__PURE__ */ new Set());
+				const input = normalizeBulkIgnoreRequest(await readJsonBody(request));
+				const candidates = normalizeCandidateList(await intake.setCandidatesIgnored(input));
 				sendJson(response, 200, {
 					ok: true,
 					data: {
@@ -13412,6 +13662,27 @@ function normalizeIgnoreRequest(value) {
 	return {
 		ignored: candidate.ignored,
 		expectedRevision: requestRevision(candidate.expectedRevision, "候选修订", 1)
+	};
+}
+function normalizeBulkIgnoreRequest(value) {
+	const candidate = requestObject(value, "候选批量忽略请求");
+	requireExactKeys(candidate, new Set(["ignored", "candidates"]), "候选批量忽略请求");
+	if (typeof candidate.ignored !== "boolean" || !Array.isArray(candidate.candidates) || candidate.candidates.length < 1 || candidate.candidates.length > 100) throw projectControlHttpError("INVALID_BODY", "候选批量忽略请求无效。");
+	const seen = /* @__PURE__ */ new Set();
+	const candidates = candidate.candidates.map((raw, index) => {
+		const entry = requestObject(raw, `候选批量项 ${String(index + 1)}`);
+		requireExactKeys(entry, new Set(["candidateId", "expectedRevision"]), `候选批量项 ${String(index + 1)}`);
+		const candidateId = requestText(entry.candidateId, "候选 ID", 80);
+		if (!IMPORT_CANDIDATE_ID.test(candidateId) || seen.has(candidateId)) throw projectControlHttpError("INVALID_BODY", "候选批量项包含无效或重复的候选 ID。");
+		seen.add(candidateId);
+		return {
+			candidateId,
+			expectedRevision: requestRevision(entry.expectedRevision, "候选修订", 1)
+		};
+	});
+	return {
+		ignored: candidate.ignored,
+		candidates
 	};
 }
 function normalizeCandidatePreparation(value) {
@@ -14219,12 +14490,46 @@ function normalizeCandidateList(value) {
 	if (!Array.isArray(value) || value.length > 500) throw new TypeError("intake service returned an invalid candidate list");
 	return value.map((candidate) => normalizeCandidate(candidate, false));
 }
+function normalizeCandidatePage(value) {
+	if (Array.isArray(value)) {
+		const candidates = normalizeCandidateList(value);
+		return {
+			candidates,
+			total: candidates.length,
+			counts: {
+				review: candidates.filter((candidate) => [
+					"discovered",
+					"conflict",
+					"relocation_candidate"
+				].includes(candidate.status)).length,
+				ignored: candidates.filter((candidate) => candidate.status === "ignored").length,
+				history: candidates.filter((candidate) => candidate.status === "imported").length
+			},
+			nextCursor: null
+		};
+	}
+	const page = responseObject(value, "candidate page");
+	const candidates = normalizeCandidateList(page.candidates);
+	const counts = responseObject(page.counts, "candidate counts");
+	const nextCursor = page.nextCursor === null ? null : responseId(page.nextCursor, IMPORT_CANDIDATE_ID, "candidate cursor");
+	return {
+		candidates,
+		total: requiredRevision(page.total, "candidate total", 0),
+		counts: {
+			review: requiredRevision(counts.review, "review candidate count", 0),
+			ignored: requiredRevision(counts.ignored, "ignored candidate count", 0),
+			history: requiredRevision(counts.history, "history candidate count", 0)
+		},
+		nextCursor
+	};
+}
 function normalizeCandidate(value, includeDetails = true) {
 	const candidate = responseObject(value, "candidate");
 	const root = candidate.root === void 0 ? void 0 : responseObject(candidate.root, "candidate root");
 	const confidence = candidate.confidence === void 0 ? {} : responseObject(candidate.confidence, "candidate confidence");
 	const detectedMode = boundedText(candidate.detectedMode, "detectedMode", 40);
 	const status = boundedText(candidate.status, "candidate status", 40);
+	const historyReason = candidate.historyReason;
 	const evidenceLevel = String(candidate.evidenceLevel ?? confidence.level ?? "low");
 	if (![
 		"unknown",
@@ -14236,7 +14541,7 @@ function normalizeCandidate(value, includeDetails = true) {
 		"relocation_candidate",
 		"ignored",
 		"imported"
-	].includes(status) || ![
+	].includes(status) || historyReason !== void 0 && !["completed", "superseded"].includes(String(historyReason)) || ![
 		"high",
 		"medium",
 		"low"
@@ -14255,6 +14560,7 @@ function normalizeCandidate(value, includeDetails = true) {
 		summarySource: normalizeValueSource(candidate.summarySource, "summarySource"),
 		evidenceLevel,
 		status,
+		...historyReason === void 0 ? {} : { historyReason },
 		detectedMode,
 		manifestProjectId: boundedNullableText(candidate.manifestProjectId, "manifestProjectId", 80),
 		documentCount: documents.length,
@@ -14329,6 +14635,22 @@ function optionalSingleQuery(parsed, key, pattern) {
 	if (values.length === 0) return void 0;
 	if (values.length !== 1 || !pattern.test(values[0] ?? "")) throw projectControlHttpError("INVALID_QUERY", "项目候选筛选条件无效。");
 	return values[0];
+}
+function optionalBoundedQuery(parsed, key, maxLength) {
+	const values = parsed.searchParams.getAll(key);
+	if (values.length === 0) return void 0;
+	const value = values[0] ?? "";
+	if (values.length !== 1 || value.length > maxLength || /[\u0000-\u001f\u007f]/u.test(value)) throw projectControlHttpError("INVALID_QUERY", "项目候选筛选条件无效。");
+	return value;
+}
+function optionalIntegerQuery(parsed, key, minimum, maximum) {
+	const values = parsed.searchParams.getAll(key);
+	if (values.length === 0) return void 0;
+	const value = values[0] ?? "";
+	if (values.length !== 1 || !/^[0-9]+$/u.test(value)) throw projectControlHttpError("INVALID_QUERY", "项目候选筛选条件无效。");
+	const number = Number(value);
+	if (!Number.isSafeInteger(number) || number < minimum || number > maximum) throw projectControlHttpError("INVALID_QUERY", "项目候选筛选条件无效。");
+	return number;
 }
 function rejectUnexpectedQuery(parsed, allowed) {
 	for (const key of parsed.searchParams.keys()) if (!allowed.has(key)) throw projectControlHttpError("INVALID_QUERY", "项目控制台查询参数无效。");
@@ -15262,13 +15584,7 @@ Object.freeze({
 	local: "local"
 });
 const PROJECT_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,118}[a-z0-9])?$/u;
-function existingFile$1(candidates) {
-	for (const candidate of candidates) if (existsSync(candidate)) return candidate;
-	const fallback = candidates.at(-1);
-	if (fallback === void 0) throw new Error("Project Home schema path candidates are required.");
-	return fallback;
-}
-const SCHEMA_PATH = existingFile$1([fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json", import.meta.url)), fileURLToPath(new URL("../../../../protocol/project-control/v1alpha1/project-home/schemas/project-home.schema.json", import.meta.url))]);
+const SCHEMA_PATH = runtimeSchemaPath("projectHome");
 var ProjectHomeContractError = class extends Error {
 	code;
 	details;
@@ -15333,13 +15649,9 @@ function hasTemplateFiles(directory) {
 	}
 	return false;
 }
-function existingFile(candidates) {
-	for (const candidate of candidates) if (existsSync(candidate)) return candidate;
-	return candidates[candidates.length - 1];
-}
 const TEMPLATE_DIRECTORY_CANDIDATES = [fileURLToPath(new URL("../templates/", import.meta.url)), fileURLToPath(new URL("../../templates/", import.meta.url))];
 const TEMPLATES_DIRECTORY = TEMPLATE_DIRECTORY_CANDIDATES.find(hasTemplateFiles) ?? TEMPLATE_DIRECTORY_CANDIDATES[TEMPLATE_DIRECTORY_CANDIDATES.length - 1];
-const TEMPLATE_SCHEMA_PATH = existingFile([fileURLToPath(new URL("../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json", import.meta.url)), fileURLToPath(new URL("../../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json", import.meta.url))]);
+const TEMPLATE_SCHEMA_PATH = runtimeSchemaPath("templateManifest");
 const LEGACY_PROJECT_MANIFEST_PATH = ".dsh-project/project.yaml";
 const COMMON_PLACEHOLDERS = Object.freeze([
 	"{{PROJECT_ID}}",
@@ -15879,11 +16191,17 @@ function createProjectControlIntakeRuntime(options) {
 				});
 			},
 			listCandidates(filter) {
-				return options.storage.listImportCandidates({
-					...filter.jobId === void 0 ? {} : { importJobId: filter.jobId },
-					latestPerPath: filter.jobId === void 0,
-					limit: 100
-				});
+				try {
+					return options.storage.queryImportCandidates({
+						...filter.jobId === void 0 ? {} : { importJobId: filter.jobId },
+						view: filter.view ?? (filter.jobId === void 0 ? "review" : "all"),
+						search: filter.search ?? "",
+						limit: filter.limit ?? 25,
+						afterCandidateId: filter.afterCandidateId ?? ""
+					});
+				} catch (error) {
+					throw publicIntakeError(error);
+				}
 			},
 			getCandidate(candidateId) {
 				return requireCandidate(options.storage, candidateId);
@@ -15891,6 +16209,13 @@ function createProjectControlIntakeRuntime(options) {
 			setCandidateIgnored(candidateId, input) {
 				try {
 					return options.storage.setImportCandidateIgnored(candidateId, input.ignored, input.expectedRevision);
+				} catch (error) {
+					throw publicIntakeError(error);
+				}
+			},
+			setCandidatesIgnored(input) {
+				try {
+					return options.storage.setImportCandidatesIgnored(input.candidates, input.ignored);
 				} catch (error) {
 					throw publicIntakeError(error);
 				}
@@ -16970,8 +17295,10 @@ function publicIntakeError(error) {
 	switch (asObject(error instanceof Error ? error.details : void 0)?.reason) {
 		case "candidate_not_found": return projectControlHttpError("CANDIDATE_NOT_FOUND", "项目候选不存在。", 404);
 		case "revision_conflict": return projectControlHttpError("CANDIDATE_REVISION_CONFLICT", "候选已经变化，请刷新后重试。", 409);
+		case "candidate_cursor_not_found": return projectControlHttpError("CANDIDATE_CURSOR_INVALID", "候选列表已经变化，请从第一页重新打开。", 409);
 		case "candidate_not_issuable":
-		case "candidate_already_imported": return projectControlHttpError("CANDIDATE_NOT_READY", "这个项目候选当前不能执行该操作。", 409);
+		case "candidate_already_imported":
+		case "invalid_candidate_transition": return projectControlHttpError("CANDIDATE_NOT_READY", "这个项目候选当前不能执行该操作。", 409);
 		default: return projectControlHttpError("INTAKE_OPERATION_FAILED", "项目扫描或候选操作失败。", 409);
 	}
 }
@@ -17769,4 +18096,4 @@ function packageVersion() {
 	return "0.1.0-rc.5";
 }
 //#endregion
-export { PROJECT_CONTROL_API_PREFIX, apply, createProjectControlRequestHandler, disposeProjectControlRegistration, fileSyncJournal, inject, recoverPendingFileSyncPlans, storageConsoleAdapter, storageExternalAdapter, storageLifecycleAdapter, validateLifecycleCommand, validateLifecycleResult };
+export { PROJECT_CONTROL_API_PREFIX, apply, createProjectControlRequestHandler, disposeProjectControlRegistration, fileSyncJournal, inject, recoverPendingFileSyncPlans, storageConsoleAdapter, storageExternalAdapter, storageLifecycleAdapter, validateLifecycleCommand, validateLifecycleResult, validateProjectManifest };

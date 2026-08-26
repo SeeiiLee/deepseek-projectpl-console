@@ -1,0 +1,461 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:lifecycle-command-result",
+  "title": "Project Control Lifecycle Command Result v1alpha1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/successResult"
+    },
+    {
+      "$ref": "#/$defs/rejectedResult"
+    }
+  ],
+  "$defs": {
+    "projectId": {
+      "type": "string",
+      "pattern": "^prj_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "commandId": {
+      "type": "string",
+      "pattern": "^cmd_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "eventId": {
+      "type": "string",
+      "pattern": "^evt_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "planId": {
+      "type": "string",
+      "pattern": "^pln_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{3})?Z$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "kind": {
+      "enum": [
+        "project.registerLegacy",
+        "project.registerManaged",
+        "project.createFromTemplate",
+        "project.rebindLocation",
+        "project.upgradeManaged"
+      ]
+    },
+    "noWriteSync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "const": "not_required"
+        }
+      }
+    },
+    "verifiedManifestSync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "manifestHash"
+      ],
+      "properties": {
+        "status": {
+          "const": "verified_existing"
+        },
+        "manifestHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "committedWriteSync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "planId",
+        "planHash",
+        "manifestHash"
+      ],
+      "properties": {
+        "status": {
+          "const": "committed"
+        },
+        "planId": {
+          "$ref": "#/$defs/planId"
+        },
+        "planHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifestHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "failedWriteSync": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "planId",
+        "planHash",
+        "manifestHash"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "planned",
+            "rolled_back",
+            "failed_recovery_required"
+          ]
+        },
+        "planId": {
+          "$ref": "#/$defs/planId"
+        },
+        "planHash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifestHash": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "successResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "schemaVersion",
+        "commandId",
+        "correlationId",
+        "kind",
+        "status",
+        "recordedAt",
+        "projectId",
+        "projectMode",
+        "aggregateRevision",
+        "eventId",
+        "outcome",
+        "fileSync"
+      ],
+      "properties": {
+        "protocolVersion": {
+          "const": "project-control.dsh/v1alpha1"
+        },
+        "schemaVersion": {
+          "const": "lifecycle-command-result/v1alpha1"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/correlationId"
+        },
+        "kind": {
+          "$ref": "#/$defs/kind"
+        },
+        "status": {
+          "enum": [
+            "accepted",
+            "replayed"
+          ]
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/utcTimestamp"
+        },
+        "projectId": {
+          "$ref": "#/$defs/projectId"
+        },
+        "projectMode": {
+          "enum": [
+            "linked_legacy",
+            "managed"
+          ]
+        },
+        "aggregateRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "eventId": {
+          "$ref": "#/$defs/eventId"
+        },
+        "outcome": {
+          "enum": [
+            "legacy_registered",
+            "managed_registered",
+            "managed_created",
+            "location_rebound",
+            "managed_upgraded"
+          ]
+        },
+        "fileSync": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/noWriteSync"
+            },
+            {
+              "$ref": "#/$defs/verifiedManifestSync"
+            },
+            {
+              "$ref": "#/$defs/committedWriteSync"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "project.registerLegacy"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "projectMode": {
+                "const": "linked_legacy"
+              },
+              "outcome": {
+                "const": "legacy_registered"
+              },
+              "fileSync": {
+                "$ref": "#/$defs/noWriteSync"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "project.registerManaged"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "projectMode": {
+                "const": "managed"
+              },
+              "outcome": {
+                "const": "managed_registered"
+              },
+              "fileSync": {
+                "$ref": "#/$defs/verifiedManifestSync"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "project.createFromTemplate"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "projectMode": {
+                "const": "managed"
+              },
+              "outcome": {
+                "const": "managed_created"
+              },
+              "fileSync": {
+                "$ref": "#/$defs/committedWriteSync"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "project.rebindLocation"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "outcome": {
+                "const": "location_rebound"
+              },
+              "fileSync": {
+                "$ref": "#/$defs/noWriteSync"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "project.upgradeManaged"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "projectMode": {
+                "const": "managed"
+              },
+              "outcome": {
+                "const": "managed_upgraded"
+              },
+              "fileSync": {
+                "$ref": "#/$defs/committedWriteSync"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "rejectedResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "schemaVersion",
+        "commandId",
+        "correlationId",
+        "kind",
+        "status",
+        "recordedAt",
+        "error"
+      ],
+      "properties": {
+        "protocolVersion": {
+          "const": "project-control.dsh/v1alpha1"
+        },
+        "schemaVersion": {
+          "const": "lifecycle-command-result/v1alpha1"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "correlationId": {
+          "$ref": "#/$defs/correlationId"
+        },
+        "kind": {
+          "$ref": "#/$defs/kind"
+        },
+        "status": {
+          "const": "rejected"
+        },
+        "recordedAt": {
+          "$ref": "#/$defs/utcTimestamp"
+        },
+        "currentRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code"
+          ],
+          "properties": {
+            "code": {
+              "enum": [
+                "PROTOCOL_VERSION_UNSUPPORTED",
+                "SCHEMA_INVALID",
+                "CAPABILITY_NOT_NEGOTIATED",
+                "REFERENCE_UNRESOLVED",
+                "IDEMPOTENCY_CONFLICT",
+                "REVISION_CONFLICT",
+                "PATH_OUTSIDE_WORKSPACE",
+                "CREDENTIAL_DATA_REJECTED",
+                "QUARANTINED",
+                "PROJECT_ALREADY_EXISTS",
+                "LOCATION_CONFLICT",
+                "MODE_CONFLICT",
+                "MANIFEST_INVALID",
+                "MANIFEST_HASH_MISMATCH",
+                "WRITE_PLAN_STALE",
+                "TARGET_NOT_EMPTY",
+                "FILE_SYNC_FAILED"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        },
+        "fileSync": {
+          "$ref": "#/$defs/failedWriteSync"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "project.registerLegacy",
+                  "project.registerManaged",
+                  "project.rebindLocation"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "type": "object",
+              "properties": {
+                "fileSync": true
+              },
+              "required": [
+                "fileSync"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "project.createFromTemplate",
+                  "project.upgradeManaged"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "fileSync"
+            ]
+          }
+        }
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 50,
+      "propertyNames": {
+        "pattern": "^(?:[a-z][a-z0-9-]*\\.)+[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -188,6 +188,7 @@ export interface FileSyncPlanView {
 export type ImportJobStatus = 'completed' | 'failed' | 'cancelled'
 export type ImportCandidateDiscoveryStatus = 'discovered' | 'conflict' | 'relocation_candidate'
 export type ImportCandidateStatus = ImportCandidateDiscoveryStatus | 'ignored' | 'imported'
+export type ImportCandidateCenterView = 'all' | 'review' | 'ignored' | 'history'
 export type ImportIssueSeverity = 'info' | 'warning' | 'error' | 'blocking'
 export type ProjectDocumentRole =
   | 'readme'
@@ -332,6 +333,7 @@ export interface ImportCandidateView {
   summarySource: string | null
   confidence: Record<string, unknown>
   status: ImportCandidateStatus
+  historyReason?: 'completed' | 'superseded'
   statusBeforeIgnored: ImportCandidateDiscoveryStatus | null
   matchedProjectId: string | null
   revision: number
@@ -339,6 +341,13 @@ export interface ImportCandidateView {
   updatedAt: string
   documents: ImportCandidateDocumentView[]
   issues: ImportIssueView[]
+}
+
+export interface ImportCandidateCenterPage {
+  candidates: Readonly<ImportCandidateView>[]
+  total: number
+  counts: Readonly<{ review: number; ignored: number; history: number }>
+  nextCursor: string | null
 }
 
 export interface ImportScanView {
@@ -570,6 +579,17 @@ export interface ProjectControlStorage {
     limit?: number
     afterCandidateId?: string
   }): Readonly<ImportCandidateView>[]
+  queryImportCandidates(options?: {
+    importJobId?: string | null
+    view?: ImportCandidateCenterView
+    search?: string
+    limit?: number
+    afterCandidateId?: string
+  }): Readonly<ImportCandidateCenterPage>
+  setImportCandidatesIgnored(
+    entries: readonly { candidateId: string; expectedRevision: number }[],
+    ignored: boolean,
+  ): Readonly<ImportCandidateView>[]
   setImportCandidateIgnored(
     candidateId: string,
     ignored: boolean,

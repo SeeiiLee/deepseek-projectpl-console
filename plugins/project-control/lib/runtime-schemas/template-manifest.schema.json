@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dsh-personal:project-control:v1alpha1:template-manifest",
+  "title": "Project Control Template Manifest v1alpha1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "files"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "project-template.dsh/v1alpha1"
+    },
+    "kind": {
+      "const": "ProjectTemplate"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateId",
+        "templateVersion",
+        "displayName",
+        "protocolVersion"
+      ],
+      "properties": {
+        "templateId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+        },
+        "templateVersion": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "protocolVersion": {
+          "const": "project-control.dsh/v1alpha1"
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/templateEntry"
+      }
+    }
+  },
+  "$defs": {
+    "templateEntry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "relativePath"
+          ],
+          "properties": {
+            "kind": {
+              "const": "directory"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "relativePath",
+            "content"
+          ],
+          "properties": {
+            "kind": {
+              "const": "file"
+            },
+            "relativePath": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 65536
+            }
+          }
+        }
+      ]
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*[:\\\\])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[\\u0000-\\u001F\\u007F])(?!.*//)(?!.*\\/$)[^/]+(?:/[^/]+)*$"
+    }
+  }
+}

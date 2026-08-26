@@ -1,13 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import type { AnySchema, ValidateFunction } from 'ajv'
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
+import { runtimeSchemaPath } from './runtime-schema.ts'
 
-const COMMAND_SCHEMA_PATH = fileURLToPath(new URL(
-  '../../../protocol/project-control/v1alpha1/schemas/command-envelope.schema.json',
-  import.meta.url,
-))
+const COMMAND_SCHEMA_PATH = runtimeSchemaPath('externalCommand')
 
 let commandValidator: ValidateFunction<ExternalUpdateCommand> | undefined
 let commandValidatorUnavailable = false

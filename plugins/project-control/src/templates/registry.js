@@ -8,6 +8,7 @@ import addFormats from 'ajv-formats'
 import { canonicalJson } from '../host/canonical-json.js'
 import { parseYamlSubset } from '../discovery/runtime.js'
 import { validateProjectManifest } from '../manifest-validator.ts'
+import { runtimeSchemaPath } from '../runtime-schema.ts'
 import {
   PROJECT_HOME_MANIFEST_PATH,
   PROJECT_HOME_MARKER_PATH,
@@ -39,29 +40,13 @@ function hasTemplateFiles(directory) {
   return false
 }
 
-function existingFile(candidates) {
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate
-  }
-  return candidates[candidates.length - 1]
-}
-
 const TEMPLATE_DIRECTORY_CANDIDATES = [
   fileURLToPath(new URL('../templates/', import.meta.url)),
   fileURLToPath(new URL('../../templates/', import.meta.url)),
 ]
 const TEMPLATES_DIRECTORY = TEMPLATE_DIRECTORY_CANDIDATES.find(hasTemplateFiles)
   ?? TEMPLATE_DIRECTORY_CANDIDATES[TEMPLATE_DIRECTORY_CANDIDATES.length - 1]
-const TEMPLATE_SCHEMA_PATH = existingFile([
-  fileURLToPath(new URL(
-    '../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json',
-    import.meta.url,
-  )),
-  fileURLToPath(new URL(
-    '../../../../protocol/project-control/v1alpha1/templates/schemas/template-manifest.schema.json',
-    import.meta.url,
-  )),
-])
+const TEMPLATE_SCHEMA_PATH = runtimeSchemaPath('templateManifest')
 const LEGACY_PROJECT_MANIFEST_PATH = '.dsh-project/project.yaml'
 const COMMON_PLACEHOLDERS = Object.freeze([
   '{{PROJECT_ID}}', '{{PROJECT_NAME}}', '{{CREATED_AT}}', '{{TEMPLATE_ID}}', '{{TEMPLATE_VERSION}}',

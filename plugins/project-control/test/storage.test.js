@@ -137,6 +137,9 @@ function intakeScan(root, overrides = {}) {
     candidates: overrides.candidates ?? [{
       root: { displayPath: candidatePath, normalizedPath: candidatePath.toLowerCase() },
       detectedMode: 'linked_legacy',
+      ...(overrides.manifestProjectId === undefined
+        ? {}
+        : { manifestProjectId: overrides.manifestProjectId }),
       suggestedName: 'Alpha',
       suggestedSummary: 'A bounded import candidate.',
       summarySource: 'README.md#goal',
@@ -221,7 +224,6 @@ test('storage rejects direct UNC and extended UNC database paths', async () => {
 test('trusted project resolution cannot reintroduce a UNC workspace path', async (t) => {
   const root = makeRoot(t)
   const storage = await openStorage(root)
-  t.after(() => storage.close())
   const command = legacyCommand(12)
   const trusted = trustedRegistration(root, command, 12)
   trusted.location.displayPath = '\\\\server\\share\\Project-12'
@@ -1123,6 +1125,200 @@ test('candidate history lists latest-first and can collapse to one newest row pe
   storage.close()
 })
 
+test('candidate center filters 120 mixed rows before pagination and reports view counts', async (t) => {
+  const root = makeRoot(t)
+  const storage = await openStorage(root)
+  const importedProject = legacyCommand(500)
+  storage.registerProject(importedProject, trustedRegistration(root, importedProject, 500))
+  const sourcePath = join(root, 'Projects')
+  const fixtureCandidate = intakeScan(root).candidates[0]
+  const candidateFor = (index, name) => ({
+    ...structuredClone(fixtureCandidate),
+    root: {
+      displayPath: join(sourcePath, `Project-${String(index).padStart(3, '0')}`),
+      normalizedPath: join(sourcePath, `Project-${String(index).padStart(3, '0')}`).toLowerCase(),
+    },
+    suggestedName: name,
+    status: index === 0 ? 'conflict' : index === 1 ? 'relocation_candidate' : 'discovered',
+  })
+
+  const oldScan = storage.recordImportScan(intakeScan(root, {
+    candidates: Array.from({ length: 15 }, (_, index) => candidateFor(index + 5, `Old ${String(index)}`)),
+  }))
+  assert.equal(oldScan.candidates.length, 15)
+  const current = storage.recordImportScan(intakeScan(root, {
+    candidates: Array.from({ length: 105 }, (_, index) => candidateFor(
+      index,
+      index < 5 ? `Review Needle ${String(index)}` : `Terminal ${String(index)}`,
+    )),
+  })).candidates
+
+  const fixtureDb = new DatabaseSync(join(root, 'project-control.sqlite3'))
+  const importCandidate = fixtureDb.prepare(`
+    UPDATE import_candidates
+    SET status = 'imported', matched_project_id = ?, revision = revision + 1
+    WHERE candidate_id = ?
+  `)
+  for (const candidate of current.slice(5, 55)) {
+    importCandidate.run(importedProject.target.projectId, candidate.candidateId)
+  }
+  const ignoreCandidate = fixtureDb.prepare(`
+    UPDATE import_candidates
+    SET status_before_ignored = status, status = 'ignored', revision = revision + 1
+    WHERE candidate_id = ?
+  `)
+  for (const candidate of current.slice(55)) ignoreCandidate.run(candidate.candidateId)
+  fixtureDb.close()
+
+  const firstPage = storage.queryImportCandidates({ view: 'review', limit: 2 })
+  assert.equal(firstPage.total, 5)
+  assert.deepEqual(firstPage.counts, { review: 5, ignored: 50, history: 65 })
+  assert.equal(firstPage.candidates.length, 2)
+  assert.equal(firstPage.candidates[0].status, 'conflict')
+  assert.equal(firstPage.candidates[1].status, 'relocation_candidate')
+  assert.match(firstPage.nextCursor, /^can_/)
+  assert.ok(firstPage.candidates.every(candidate => [
+    'discovered', 'conflict', 'relocation_candidate',
+  ].includes(candidate.status)))
+
+  const secondPage = storage.queryImportCandidates({
+    view: 'review',
+    limit: 3,
+    afterCandidateId: firstPage.nextCursor,
+  })
+  assert.equal(secondPage.candidates.length, 3)
+  assert.equal(secondPage.nextCursor, null)
+  assert.equal(new Set([
+    ...firstPage.candidates,
+    ...secondPage.candidates,
+  ].map(candidate => candidate.candidateId)).size, 5)
+
+  const ignored = storage.queryImportCandidates({ view: 'ignored', limit: 25 })
+  assert.equal(ignored.total, 50)
+  assert.equal(ignored.candidates.length, 25)
+  assert.match(ignored.nextCursor, /^can_/)
+  assert.ok(ignored.candidates.every(candidate => candidate.status === 'ignored'))
+
+  const history = storage.queryImportCandidates({ view: 'history', limit: 100 })
+  assert.equal(history.total, 65)
+  assert.equal(history.candidates.length, 65)
+  assert.ok(history.candidates.some(candidate => (
+    candidate.status === 'discovered' && candidate.historyReason === 'superseded'
+  )))
+  assert.ok(history.candidates.some(candidate => candidate.status === 'imported'))
+
+  assert.throws(
+    () => storage.queryImportCandidates({
+      view: 'review',
+      limit: 25,
+      afterCandidateId: current[5].candidateId,
+    }),
+    error => error.details?.reason === 'candidate_cursor_not_found',
+  )
+
+  const searched = storage.queryImportCandidates({
+    view: 'review',
+    search: 'Needle 3',
+    limit: 25,
+  })
+  assert.equal(searched.total, 1)
+  assert.equal(searched.candidates[0].suggestedName, 'Review Needle 3')
+  assert.equal(storage.listProjects().length, 1)
+  assert.equal(storage.getProject(importedProject.target.projectId).name, importedProject.payload.name)
+  storage.close()
+})
+
+test('candidate center bulk ignore and restore are atomic and preserve path fingerprints', async (t) => {
+  const root = makeRoot(t)
+  const storage = await openStorage(root)
+  const sourcePath = join(root, 'Projects')
+  const fixtureCandidate = intakeScan(root).candidates[0]
+  const candidates = ['discovered', 'conflict', 'relocation_candidate'].map((status, index) => ({
+    ...structuredClone(fixtureCandidate),
+    root: {
+      displayPath: join(sourcePath, `Bulk-${String(index)}`),
+      normalizedPath: join(sourcePath, `Bulk-${String(index)}`).toLowerCase(),
+    },
+    suggestedName: `Bulk ${String(index)}`,
+    status,
+  }))
+  const saved = storage.recordImportScan(intakeScan(root, { candidates })).candidates
+  const ignored = storage.setImportCandidatesIgnored(
+    saved.map(candidate => ({
+      candidateId: candidate.candidateId,
+      expectedRevision: candidate.revision,
+    })),
+    true,
+  )
+  assert.deepEqual(ignored.map(candidate => candidate.status), ['ignored', 'ignored', 'ignored'])
+
+  assert.throws(
+    () => storage.setImportCandidatesIgnored(ignored.map((candidate, index) => ({
+      candidateId: candidate.candidateId,
+      expectedRevision: candidate.revision + (index === 1 ? 1 : 0),
+    })), false),
+    (error) => error.details?.reason === 'revision_conflict',
+  )
+  assert.deepEqual(
+    ignored.map(candidate => storage.getImportCandidate(candidate.candidateId).status),
+    ['ignored', 'ignored', 'ignored'],
+  )
+
+  const restored = storage.setImportCandidatesIgnored(ignored.map(candidate => ({
+    candidateId: candidate.candidateId,
+    expectedRevision: candidate.revision,
+  })), false)
+  assert.deepEqual(
+    restored.map(candidate => candidate.status),
+    ['discovered', 'conflict', 'relocation_candidate'],
+  )
+
+  const fingerprintProjectId = createPrefixedUuidV7('prj')
+  const fingerprintPath = join(sourcePath, 'Fingerprint')
+  const fingerprintScan = intakeScan(root, {
+    candidatePath: fingerprintPath,
+    manifestProjectId: fingerprintProjectId,
+  })
+  fingerprintScan.candidates[0].confidence = {
+    level: 'high',
+    manifest: { hash: `sha256:${'a'.repeat(64)}` },
+  }
+  const fingerprintCandidate = storage.recordImportScan(fingerprintScan).candidates[0]
+  storage.setImportCandidateIgnored(
+    fingerprintCandidate.candidateId,
+    true,
+    fingerprintCandidate.revision,
+  )
+  const inheritedScan = intakeScan(root, {
+    candidatePath: fingerprintPath,
+    manifestProjectId: fingerprintProjectId,
+  })
+  inheritedScan.candidates[0].confidence = {
+    level: 'high',
+    manifest: { hash: `sha256:${'a'.repeat(64)}` },
+  }
+  const inherited = storage.recordImportScan(inheritedScan).candidates[0]
+  assert.equal(inherited.status, 'ignored')
+
+  const changedManifestScan = intakeScan(root, {
+    candidatePath: fingerprintPath,
+    manifestProjectId: fingerprintProjectId,
+  })
+  changedManifestScan.candidates[0].confidence = {
+    level: 'high',
+    manifest: { hash: `sha256:${'b'.repeat(64)}` },
+  }
+  const changedManifest = storage.recordImportScan(changedManifestScan).candidates[0]
+  assert.equal(changedManifest.status, 'discovered')
+
+  const changedIdentity = storage.recordImportScan(intakeScan(root, {
+    candidatePath: fingerprintPath,
+    manifestProjectId: createPrefixedUuidV7('prj'),
+  })).candidates[0]
+  assert.equal(changedIdentity.status, 'discovered')
+  storage.close()
+})
+
 test('candidate latest and ignore inheritance use Unicode path keys', async (t) => {
   const root = makeRoot(t)
   const storage = await openStorage(root)
@@ -1370,10 +1566,35 @@ test('relocation candidate, project rebind, event, and outbox commit or roll bac
   storage.registerProject(registered, trustedRegistration(root, registered, 90))
   const occupiedOutboxId = storage.listOutbox()[0].outboxId
 
+  const staleSaved = storage.recordImportScan(intakeScan(root, {
+    candidateStatus: 'relocation_candidate',
+    manifestProjectId: registered.target.projectId,
+  }))
+  const staleCandidate = staleSaved.candidates[0]
   const saved = storage.recordImportScan(intakeScan(root, {
     candidateStatus: 'relocation_candidate',
+    manifestProjectId: registered.target.projectId,
   }))
   const candidate = saved.candidates[0]
+  const ignoredDuplicate = storage.recordImportScan(intakeScan(root, {
+    candidateStatus: 'relocation_candidate',
+    manifestProjectId: registered.target.projectId,
+  })).candidates[0]
+  const ignoredDuplicateState = storage.setImportCandidateIgnored(
+    ignoredDuplicate.candidateId,
+    true,
+    ignoredDuplicate.revision,
+  )
+  assert.notEqual(staleCandidate.candidateId, candidate.candidateId)
+  const differentProjectCandidate = storage.recordImportScan(intakeScan(root, {
+    candidateStatus: 'relocation_candidate',
+    manifestProjectId: legacyCommand(93).target.projectId,
+  })).candidates[0]
+  const differentPathCandidate = storage.recordImportScan(intakeScan(root, {
+    candidateStatus: 'relocation_candidate',
+    manifestProjectId: registered.target.projectId,
+    candidatePath: join(root, 'Projects', 'Other-Location'),
+  })).candidates[0]
   const context = {
     applicationInstanceId: 'desktop-relocation-test',
     scope: 'project-control.lifecycle',
@@ -1396,6 +1617,8 @@ test('relocation candidate, project rebind, event, and outbox commit or roll bac
   assert.equal(rejected.error.code, 'REVISION_CONFLICT')
   assert.equal(storage.getProject(registered.target.projectId).revision, 1)
   assert.equal(storage.getImportCandidate(candidate.candidateId).status, 'relocation_candidate')
+  assert.equal(storage.getImportCandidate(staleCandidate.candidateId).status, 'relocation_candidate')
+  assert.equal(storage.getImportCandidate(ignoredDuplicate.candidateId).status, 'ignored')
 
   const rebind = rebindCommand(registered, 92, 1)
   rebind.payload.newLocationRef = refs.locationRef
@@ -1419,6 +1642,12 @@ test('relocation candidate, project rebind, event, and outbox commit or roll bac
   assert.equal(storage.getCommandReceipt(rebind.commandId), null)
   assert.equal(storage.getImportCandidate(candidate.candidateId).status, 'relocation_candidate')
   assert.equal(storage.getImportCandidate(candidate.candidateId).revision, candidate.revision)
+  assert.equal(storage.getImportCandidate(staleCandidate.candidateId).status, 'relocation_candidate')
+  assert.equal(storage.getImportCandidate(staleCandidate.candidateId).revision, staleCandidate.revision)
+  assert.equal(storage.getImportCandidate(ignoredDuplicate.candidateId).status, 'ignored')
+  assert.equal(storage.getImportCandidate(ignoredDuplicate.candidateId).revision, ignoredDuplicateState.revision)
+  assert.equal(storage.getImportCandidate(differentProjectCandidate.candidateId).status, 'relocation_candidate')
+  assert.equal(storage.getImportCandidate(differentPathCandidate.candidateId).status, 'relocation_candidate')
   assert.equal(storage.listEvents().length, 1)
   assert.equal(storage.listOutbox().length, 1)
 
@@ -1439,6 +1668,24 @@ test('relocation candidate, project rebind, event, and outbox commit or roll bac
   assert.equal(imported.status, 'imported')
   assert.equal(imported.matchedProjectId, registered.target.projectId)
   assert.equal(imported.revision, candidate.revision + 1)
+  const closedDuplicate = storage.getImportCandidate(staleCandidate.candidateId)
+  assert.equal(closedDuplicate.status, 'imported')
+  assert.equal(closedDuplicate.matchedProjectId, registered.target.projectId)
+  assert.equal(closedDuplicate.revision, staleCandidate.revision + 1)
+  const closedIgnoredDuplicate = storage.getImportCandidate(ignoredDuplicate.candidateId)
+  assert.equal(closedIgnoredDuplicate.status, 'imported')
+  assert.equal(closedIgnoredDuplicate.matchedProjectId, registered.target.projectId)
+  assert.equal(closedIgnoredDuplicate.revision, ignoredDuplicateState.revision + 1)
+  assert.throws(
+    () => storage.setImportCandidateIgnored(
+      closedIgnoredDuplicate.candidateId,
+      false,
+      closedIgnoredDuplicate.revision,
+    ),
+    error => error.details?.reason === 'candidate_already_imported',
+  )
+  assert.equal(storage.getImportCandidate(differentProjectCandidate.candidateId).status, 'relocation_candidate')
+  assert.equal(storage.getImportCandidate(differentPathCandidate.candidateId).status, 'relocation_candidate')
   assert.equal(storage.listEvents().length, 2)
   assert.equal(storage.listOutbox().length, 2)
 

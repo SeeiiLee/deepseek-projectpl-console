@@ -60,11 +60,23 @@ window.__ModuleLoader__.load({
 					selection,
 					...options.maxDepth === void 0 ? {} : { maxDepth: options.maxDepth }
 				}, options.signal)),
-				listCandidates: async (jobId, signal) => normalizeCandidateList(await request("GET", `/intake/candidates${jobId === void 0 ? "" : `?jobId=${encodeURIComponent(validateIdentifier(jobId, "扫描任务"))}`}`, void 0, signal)),
+				listCandidates: async (options = {}, signal) => {
+					const query = new URLSearchParams();
+					if (options.jobId !== void 0) query.set("jobId", validateIdentifier(options.jobId, "扫描任务"));
+					if (options.view !== void 0) query.set("view", validateCandidateView(options.view));
+					if (options.search !== void 0) query.set("search", validateCandidateSearch(options.search));
+					if (options.limit !== void 0) query.set("limit", String(validateCandidateLimit(options.limit)));
+					if (options.afterCandidateId !== void 0) query.set("afterCandidateId", validateCandidateId(options.afterCandidateId));
+					return normalizeCandidateList(await request("GET", `/intake/candidates${query.size === 0 ? "" : `?${query.toString()}`}`, void 0, signal));
+				},
 				getCandidate: async (candidateId, signal) => normalizeCandidate(await request("GET", `/intake/candidates/${encodeURIComponent(validateCandidateId(candidateId))}`, void 0, signal)),
 				setCandidateIgnored: async (candidateId, ignored, expectedRevision, signal) => normalizeCandidate(await request("POST", `/intake/candidates/${encodeURIComponent(validateCandidateId(candidateId))}/ignore`, {
 					ignored,
 					expectedRevision: validateRevision(expectedRevision)
+				}, signal)),
+				setCandidatesIgnored: async (candidates, ignored, signal) => normalizeCandidateMutationList(await request("POST", "/intake/candidates/bulk-ignore", {
+					ignored,
+					candidates: validateCandidateBatch(candidates)
 				}, signal)),
 				prepareCandidate: async (candidateId, input, signal) => {
 					return requiredRecord(requiredRecord(await request("POST", `/intake/candidates/${encodeURIComponent(validateCandidateId(candidateId))}/prepare`, input, signal), "候选注册预检").command, "候选注册指令");
@@ -135,16 +147,36 @@ window.__ModuleLoader__.load({
 		function normalizeCandidateList(value) {
 			const object = requiredRecord(value, "候选列表");
 			const candidates = requiredArray(object.candidates, "候选列表").map(normalizeCandidate);
+			const countsObject = object.counts === void 0 ? void 0 : requiredRecord(object.counts, "候选计数");
 			return {
 				candidates,
 				total: requiredInteger(object.total ?? candidates.length, "候选总数", candidates.length),
+				counts: countsObject === void 0 ? {
+					review: candidates.filter((candidate) => [
+						"discovered",
+						"conflict",
+						"relocation_candidate"
+					].includes(candidate.status)).length,
+					ignored: candidates.filter((candidate) => candidate.status === "ignored").length,
+					history: candidates.filter((candidate) => candidate.status === "imported").length
+				} : {
+					review: requiredInteger(countsObject.review, "待审阅候选数量", 0),
+					ignored: requiredInteger(countsObject.ignored, "已忽略候选数量", 0),
+					history: requiredInteger(countsObject.history, "历史候选数量", 0)
+				},
+				nextCursor: object.nextCursor === void 0 || object.nextCursor === null ? null : validateCandidateId(requiredText(object.nextCursor, "候选分页游标", 200)),
 				...object.jobId === void 0 ? {} : { jobId: requiredText(object.jobId, "扫描任务", 200) }
 			};
+		}
+		function normalizeCandidateMutationList(value) {
+			return requiredArray(requiredRecord(value, "候选批量操作结果").candidates, "候选批量操作结果").map(normalizeCandidate);
 		}
 		/** Host DTO compatibility is deliberately centralized here instead of leaking into components. */
 		function normalizeCandidate(value) {
 			const object = requiredRecord(value, "项目候选");
 			const status = requiredText(object.status, "候选状态", 80);
+			const historyReason = object.historyReason;
+			if (historyReason !== void 0 && historyReason !== "completed" && historyReason !== "superseded") throw apiError("候选历史原因无效。", "INVALID_CANDIDATE");
 			const confidence = isRecord$1(object.confidence) ? object.confidence : void 0;
 			const detectedMode = optionalBoundedText(object.detectedMode, 40);
 			const nameSource = normalizeValueSource(object.nameSource, "名称来源");
@@ -164,6 +196,7 @@ window.__ModuleLoader__.load({
 				evidenceLevel: normalizeEvidenceLevel(object.evidenceLevel ?? confidence?.level),
 				evidence: normalizeStringList(object.evidence ?? confidence?.evidence, "候选证据", 100, 500),
 				status,
+				...historyReason === void 0 ? {} : { historyReason },
 				detectedMode: detectedMode === "managed" || detectedMode === "linked_legacy" ? detectedMode : "unknown",
 				...manifestProjectId === void 0 ? {} : { manifestProjectId },
 				ignored: object.ignored === void 0 ? status === "ignored" : requiredBoolean(object.ignored, "忽略状态"),
@@ -674,6 +707,31 @@ window.__ModuleLoader__.load({
 			if (!isCandidateResourceKey(value)) throw apiError("候选项目标识无效。", "INVALID_CANDIDATE_ID");
 			return value;
 		}
+		function validateCandidateView(value) {
+			if (![
+				"review",
+				"ignored",
+				"history"
+			].includes(value)) throw apiError("候选中心视图无效。", "INVALID_CANDIDATE_VIEW");
+			return value;
+		}
+		function validateCandidateSearch(value) {
+			if (typeof value !== "string" || value.length > 200 || /[\u0000-\u001f\u007f]/u.test(value)) throw apiError("候选搜索条件无效。", "INVALID_CANDIDATE_SEARCH");
+			return value;
+		}
+		function validateCandidateLimit(value) {
+			if (!Number.isSafeInteger(value) || value < 1 || value > 100) throw apiError("候选分页大小无效。", "INVALID_CANDIDATE_LIMIT");
+			return value;
+		}
+		function validateCandidateBatch(candidates) {
+			if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 100) throw apiError("候选批量操作必须包含 1 至 100 项。", "INVALID_CANDIDATE_BATCH");
+			const normalized = candidates.map((candidate) => ({
+				candidateId: validateCandidateId(candidate.candidateId),
+				expectedRevision: validateRevision(candidate.expectedRevision)
+			}));
+			if (new Set(normalized.map((candidate) => candidate.candidateId)).size !== normalized.length) throw apiError("候选批量操作不能包含重复项目。", "INVALID_CANDIDATE_BATCH");
+			return normalized;
+		}
 		function validateProjectId(value) {
 			if (!/^prj_[A-Za-z0-9-]{8,180}$/.test(value)) throw apiError("项目标识无效。", "INVALID_PROJECT_ID");
 			return value;
@@ -870,8 +928,8 @@ window.__ModuleLoader__.load({
 			for (const listener of [...listeners]) listener();
 		}
 		//#endregion
-		//#region \0dsh-css:F:\Projects\deepseek-harness-personal\workspace\plugins\project-control\src\client\CandidateDetails.module.css.mjs
-		const css$2 = ".CzzvHa_details{overscroll-behavior:contain;min-width:0;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;display:flex;overflow-y:auto}.CzzvHa_header{border-bottom:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);padding:18px 18px 14px}.CzzvHa_headerRow,.CzzvHa_statusLine,.CzzvHa_sectionHeading,.CzzvHa_documentHeading,.CzzvHa_documentMeta,.CzzvHa_issueList div{align-items:center;display:flex}.CzzvHa_headerRow,.CzzvHa_sectionHeading,.CzzvHa_documentHeading,.CzzvHa_issueList div{justify-content:space-between;gap:10px}.CzzvHa_eyebrow{color:var(--dsw-alias-state-business-primary);letter-spacing:.05em;font-size:.857rem;font-weight:700}.CzzvHa_evidenceBadge,.CzzvHa_statusLine span,.CzzvHa_documentMeta span,.CzzvHa_issueList div span{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);border-radius:999px;padding:3px 7px;font-size:.786rem;line-height:14px}.CzzvHa_evidenceBadge[data-level=high]{color:var(--dsw-alias-state-success-primary,#4e9962)}.CzzvHa_evidenceBadge[data-level=low],.CzzvHa_evidenceBadge[data-level=unknown]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.CzzvHa_header h2{margin:10px 0 3px;font-size:1.357rem;line-height:24px}.CzzvHa_absolutePath{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary);margin:0;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:.857rem;line-height:16px}.CzzvHa_statusLine{flex-wrap:wrap;gap:5px;margin-top:10px}.CzzvHa_section{border-bottom:1px solid var(--dsw-alias-border-l2);padding:15px 18px}.CzzvHa_section h3,.CzzvHa_sectionHeading h3{margin:0 0 10px;font-size:1rem;font-weight:650}.CzzvHa_sectionHeading h3{margin:0}.CzzvHa_sectionHeading>span{color:var(--dsw-alias-label-tertiary);font-size:.857rem}.CzzvHa_field{gap:5px;display:grid}.CzzvHa_field>span,.CzzvHa_summaryBox>span{color:var(--dsw-alias-label-secondary);font-size:.857rem;font-weight:600}.CzzvHa_field input,.CzzvHa_documentHeading select{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:inherit;border-radius:8px;font-size:.929rem}.CzzvHa_field input{width:100%;min-height:34px;padding:6px 9px}.CzzvHa_field input:focus-visible,.CzzvHa_documentHeading select:focus-visible,.CzzvHa_primaryButton:focus-visible,.CzzvHa_secondaryButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.CzzvHa_sourceLine{color:var(--dsw-alias-label-tertiary);grid-template-columns:auto minmax(0,1fr);gap:8px;margin:7px 0 0;font-size:.786rem;display:grid}.CzzvHa_sourceLine code{color:inherit;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.CzzvHa_summaryBox{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 68%, transparent);border-radius:9px;margin-top:13px;padding:10px}.CzzvHa_summaryBox p{color:var(--dsw-alias-label-secondary);margin:5px 0 0;font-size:.929rem;line-height:17px}.CzzvHa_evidenceList,.CzzvHa_issueList,.CzzvHa_documentList{gap:7px;margin:10px 0 0;padding:0;list-style:none;display:grid}.CzzvHa_evidenceList li{color:var(--dsw-alias-label-secondary);padding-left:12px;font-size:.857rem;line-height:16px}.CzzvHa_evidenceList li:before{width:12px;color:var(--dsw-alias-state-business-primary);content:\"•\";margin-left:-12px;display:inline-block}.CzzvHa_issueList li{border:1px solid var(--dsw-alias-border-l2);border-left-width:3px;border-radius:8px;padding:9px}.CzzvHa_issueList li[data-severity=blocking],.CzzvHa_issueList li[data-severity=error]{border-left-color:var(--dsw-alias-state-error-primary,#bf5252)}.CzzvHa_issueList li[data-severity=warning]{border-left-color:var(--dsw-alias-state-warning-primary,#b07a2e)}.CzzvHa_issueList strong{font-size:.857rem}.CzzvHa_issueList p{color:var(--dsw-alias-label-secondary);margin:5px 0 0;font-size:.857rem;line-height:16px}.CzzvHa_issueList code{overflow-wrap:anywhere;color:var(--dsw-alias-label-tertiary);margin-top:5px;font-size:.786rem;display:block}.CzzvHa_documentCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:10px;min-width:0;padding:10px}.CzzvHa_documentHeading>div{min-width:0}.CzzvHa_documentHeading strong,.CzzvHa_documentHeading code{text-overflow:ellipsis;white-space:nowrap;display:block;overflow:hidden}.CzzvHa_documentHeading strong{font-size:.929rem}.CzzvHa_documentHeading code{color:var(--dsw-alias-label-tertiary);margin-top:2px;font-size:.786rem}.CzzvHa_documentHeading select{max-width:118px;min-height:30px;padding:4px 7px}.CzzvHa_lockedBinding{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);max-width:138px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent);text-align:center;border-radius:999px;padding:5px 8px;font-size:.786rem;line-height:14px}.CzzvHa_documentMeta{flex-wrap:wrap;gap:4px;margin-top:8px}.CzzvHa_preview{max-height:130px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:7px;margin:8px 0 0;padding:8px;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:.786rem;line-height:15px;overflow:auto}.CzzvHa_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:10px 0 0;font-size:.857rem}.CzzvHa_actions{z-index:1;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);gap:9px;margin-top:auto;padding:16px 18px 20px;display:grid;position:sticky;bottom:0}.CzzvHa_impactNote{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 6%, transparent);border-radius:9px;gap:3px;padding:10px;display:grid}.CzzvHa_impactNote strong{font-size:.857rem}.CzzvHa_impactNote span{color:var(--dsw-alias-label-secondary);font-size:.786rem;line-height:15px}.CzzvHa_primaryButton,.CzzvHa_secondaryButton{min-height:34px;font:inherit;cursor:pointer;border:1px solid #0000;border-radius:8px;padding:7px 12px;font-size:.929rem;font-weight:600}.CzzvHa_primaryButton{color:var(--dsw-alias-label-on-color,#fff);background:var(--dsw-alias-state-business-primary)}.CzzvHa_primaryButton:disabled{opacity:.48;cursor:default}.CzzvHa_secondaryButton{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);margin-top:10px}.CzzvHa_validation,.CzzvHa_submitError,.CzzvHa_submitStatus{margin:0;font-size:.857rem;line-height:16px}.CzzvHa_validation,.CzzvHa_submitError{color:var(--dsw-alias-state-error-primary,#bf5252)}.CzzvHa_submitStatus{color:var(--dsw-alias-state-success-primary,#4e9962)}.CzzvHa_message{text-align:center;place-content:center;min-height:260px;padding:24px;display:grid}.CzzvHa_message h2{margin:0;font-size:1.143rem}.CzzvHa_message p{max-width:280px;color:var(--dsw-alias-label-secondary);margin:7px 0 0;font-size:.929rem;line-height:18px}.CzzvHa_visuallyHidden{clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}.CzzvHa_sectionHeadingTools{align-items:center;gap:8px;display:flex}.CzzvHa_autoResolveButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 45%, transparent);color:var(--dsw-alias-state-warning-primary,#b07a2e);font:inherit;cursor:pointer;background:0 0;border-radius:999px;padding:4px 9px;font-size:.857rem;font-weight:600}.CzzvHa_autoResolveButton:hover{background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 10%, transparent)}.CzzvHa_documentCard.CzzvHa_roleConflict{border-left:3px solid var(--dsw-alias-state-warning-primary,#b07a2e)}.CzzvHa_conflictBadge{color:var(--dsw-alias-state-warning-primary,#b07a2e);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 12%, transparent);border-radius:999px;flex:none;padding:3px 7px;font-size:.786rem;line-height:14px}.CzzvHa_conflictBadge[data-kind=primary]{color:var(--dsw-alias-state-success-primary,#4e9962);background:color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 12%, transparent)}@media (width<=420px){.CzzvHa_header,.CzzvHa_section,.CzzvHa_actions{padding-left:12px;padding-right:12px}.CzzvHa_documentHeading{flex-direction:column;align-items:stretch}.CzzvHa_documentHeading select{width:100%;max-width:none}.CzzvHa_lockedBinding{max-width:none}}";
+		//#region \0dsh-css:F:\Projects\deepseek-harness-personal\worktrees\active\wt_project_control_candidate_closure_20260826\plugins\project-control\src\client\CandidateDetails.module.css.mjs
+		const css$2 = ".xsigXG_details{overscroll-behavior:contain;min-width:0;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;display:flex;overflow-y:auto}.xsigXG_header{border-bottom:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);padding:18px 18px 14px}.xsigXG_headerRow,.xsigXG_statusLine,.xsigXG_sectionHeading,.xsigXG_documentHeading,.xsigXG_documentMeta,.xsigXG_issueList div{align-items:center;display:flex}.xsigXG_headerRow,.xsigXG_sectionHeading,.xsigXG_documentHeading,.xsigXG_issueList div{justify-content:space-between;gap:10px}.xsigXG_eyebrow{color:var(--dsw-alias-state-business-primary);letter-spacing:.05em;font-size:.857rem;font-weight:700}.xsigXG_evidenceBadge,.xsigXG_statusLine span,.xsigXG_documentMeta span,.xsigXG_issueList div span{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);border-radius:999px;padding:3px 7px;font-size:.786rem;line-height:14px}.xsigXG_evidenceBadge[data-level=high]{color:var(--dsw-alias-state-success-primary,#4e9962)}.xsigXG_evidenceBadge[data-level=low],.xsigXG_evidenceBadge[data-level=unknown]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.xsigXG_header h2{margin:10px 0 3px;font-size:1.357rem;line-height:24px}.xsigXG_absolutePath{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary);margin:0;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:.857rem;line-height:16px}.xsigXG_statusLine{flex-wrap:wrap;gap:5px;margin-top:10px}.xsigXG_section{border-bottom:1px solid var(--dsw-alias-border-l2);padding:15px 18px}.xsigXG_section h3,.xsigXG_sectionHeading h3{margin:0 0 10px;font-size:1rem;font-weight:650}.xsigXG_sectionHeading h3{margin:0}.xsigXG_sectionHeading>span{color:var(--dsw-alias-label-tertiary);font-size:.857rem}.xsigXG_field{gap:5px;display:grid}.xsigXG_field>span,.xsigXG_summaryBox>span{color:var(--dsw-alias-label-secondary);font-size:.857rem;font-weight:600}.xsigXG_field input,.xsigXG_documentHeading select{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:inherit;border-radius:8px;font-size:.929rem}.xsigXG_field input{width:100%;min-height:34px;padding:6px 9px}.xsigXG_field input:focus-visible,.xsigXG_documentHeading select:focus-visible,.xsigXG_primaryButton:focus-visible,.xsigXG_secondaryButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.xsigXG_sourceLine{color:var(--dsw-alias-label-tertiary);grid-template-columns:auto minmax(0,1fr);gap:8px;margin:7px 0 0;font-size:.786rem;display:grid}.xsigXG_sourceLine code{color:inherit;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.xsigXG_summaryBox{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 68%, transparent);border-radius:9px;margin-top:13px;padding:10px}.xsigXG_summaryBox p{color:var(--dsw-alias-label-secondary);margin:5px 0 0;font-size:.929rem;line-height:17px}.xsigXG_evidenceList,.xsigXG_issueList,.xsigXG_documentList{gap:7px;margin:10px 0 0;padding:0;list-style:none;display:grid}.xsigXG_evidenceList li{color:var(--dsw-alias-label-secondary);padding-left:12px;font-size:.857rem;line-height:16px}.xsigXG_evidenceList li:before{width:12px;color:var(--dsw-alias-state-business-primary);content:\"•\";margin-left:-12px;display:inline-block}.xsigXG_issueList li{border:1px solid var(--dsw-alias-border-l2);border-left-width:3px;border-radius:8px;padding:9px}.xsigXG_issueList li[data-severity=blocking],.xsigXG_issueList li[data-severity=error]{border-left-color:var(--dsw-alias-state-error-primary,#bf5252)}.xsigXG_issueList li[data-severity=warning]{border-left-color:var(--dsw-alias-state-warning-primary,#b07a2e)}.xsigXG_issueList strong{font-size:.857rem}.xsigXG_issueList p{color:var(--dsw-alias-label-secondary);margin:5px 0 0;font-size:.857rem;line-height:16px}.xsigXG_issueList code{overflow-wrap:anywhere;color:var(--dsw-alias-label-tertiary);margin-top:5px;font-size:.786rem;display:block}.xsigXG_documentCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:10px;min-width:0;padding:10px}.xsigXG_documentHeading>div{min-width:0}.xsigXG_documentHeading strong,.xsigXG_documentHeading code{text-overflow:ellipsis;white-space:nowrap;display:block;overflow:hidden}.xsigXG_documentHeading strong{font-size:.929rem}.xsigXG_documentHeading code{color:var(--dsw-alias-label-tertiary);margin-top:2px;font-size:.786rem}.xsigXG_documentHeading select{max-width:118px;min-height:30px;padding:4px 7px}.xsigXG_lockedBinding{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);max-width:138px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent);text-align:center;border-radius:999px;padding:5px 8px;font-size:.786rem;line-height:14px}.xsigXG_documentMeta{flex-wrap:wrap;gap:4px;margin-top:8px}.xsigXG_preview{max-height:130px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:7px;margin:8px 0 0;padding:8px;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:.786rem;line-height:15px;overflow:auto}.xsigXG_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:10px 0 0;font-size:.857rem}.xsigXG_actions{z-index:1;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);gap:9px;margin-top:auto;padding:16px 18px 20px;display:grid;position:sticky;bottom:0}.xsigXG_impactNote{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 6%, transparent);border-radius:9px;gap:3px;padding:10px;display:grid}.xsigXG_impactNote strong{font-size:.857rem}.xsigXG_impactNote span{color:var(--dsw-alias-label-secondary);font-size:.786rem;line-height:15px}.xsigXG_primaryButton,.xsigXG_secondaryButton{min-height:34px;font:inherit;cursor:pointer;border:1px solid #0000;border-radius:8px;padding:7px 12px;font-size:.929rem;font-weight:600}.xsigXG_primaryButton{color:var(--dsw-alias-label-on-color,#fff);background:var(--dsw-alias-state-business-primary)}.xsigXG_primaryButton:disabled{opacity:.48;cursor:default}.xsigXG_secondaryButton{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);margin-top:10px}.xsigXG_validation,.xsigXG_submitError,.xsigXG_submitStatus{margin:0;font-size:.857rem;line-height:16px}.xsigXG_validation,.xsigXG_submitError{color:var(--dsw-alias-state-error-primary,#bf5252)}.xsigXG_submitStatus{color:var(--dsw-alias-state-success-primary,#4e9962)}.xsigXG_message{text-align:center;place-content:center;min-height:260px;padding:24px;display:grid}.xsigXG_message h2{margin:0;font-size:1.143rem}.xsigXG_message p{max-width:280px;color:var(--dsw-alias-label-secondary);margin:7px 0 0;font-size:.929rem;line-height:18px}.xsigXG_visuallyHidden{clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}.xsigXG_sectionHeadingTools{align-items:center;gap:8px;display:flex}.xsigXG_autoResolveButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 45%, transparent);color:var(--dsw-alias-state-warning-primary,#b07a2e);font:inherit;cursor:pointer;background:0 0;border-radius:999px;padding:4px 9px;font-size:.857rem;font-weight:600}.xsigXG_autoResolveButton:hover{background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 10%, transparent)}.xsigXG_documentCard.xsigXG_roleConflict{border-left:3px solid var(--dsw-alias-state-warning-primary,#b07a2e)}.xsigXG_conflictBadge{color:var(--dsw-alias-state-warning-primary,#b07a2e);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 12%, transparent);border-radius:999px;flex:none;padding:3px 7px;font-size:.786rem;line-height:14px}.xsigXG_conflictBadge[data-kind=primary]{color:var(--dsw-alias-state-success-primary,#4e9962);background:color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 12%, transparent)}@media (width<=420px){.xsigXG_header,.xsigXG_section,.xsigXG_actions{padding-left:12px;padding-right:12px}.xsigXG_documentHeading{flex-direction:column;align-items:stretch}.xsigXG_documentHeading select{width:100%;max-width:none}.xsigXG_lockedBinding{max-width:none}}";
 		const tagId$2 = "@cyrus/dsh-project-control/CandidateDetails.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -881,40 +939,40 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var CandidateDetails_module_css_default = {
-			"absolutePath": "CzzvHa_absolutePath",
-			"actions": "CzzvHa_actions",
-			"autoResolveButton": "CzzvHa_autoResolveButton",
-			"conflictBadge": "CzzvHa_conflictBadge",
-			"details": "CzzvHa_details",
-			"documentCard": "CzzvHa_documentCard",
-			"documentHeading": "CzzvHa_documentHeading",
-			"documentList": "CzzvHa_documentList",
-			"documentMeta": "CzzvHa_documentMeta",
-			"emptyCopy": "CzzvHa_emptyCopy",
-			"evidenceBadge": "CzzvHa_evidenceBadge",
-			"evidenceList": "CzzvHa_evidenceList",
-			"eyebrow": "CzzvHa_eyebrow",
-			"field": "CzzvHa_field",
-			"header": "CzzvHa_header",
-			"headerRow": "CzzvHa_headerRow",
-			"impactNote": "CzzvHa_impactNote",
-			"issueList": "CzzvHa_issueList",
-			"lockedBinding": "CzzvHa_lockedBinding",
-			"message": "CzzvHa_message",
-			"preview": "CzzvHa_preview",
-			"primaryButton": "CzzvHa_primaryButton",
-			"roleConflict": "CzzvHa_roleConflict",
-			"secondaryButton": "CzzvHa_secondaryButton",
-			"section": "CzzvHa_section",
-			"sectionHeading": "CzzvHa_sectionHeading",
-			"sectionHeadingTools": "CzzvHa_sectionHeadingTools",
-			"sourceLine": "CzzvHa_sourceLine",
-			"statusLine": "CzzvHa_statusLine",
-			"submitError": "CzzvHa_submitError",
-			"submitStatus": "CzzvHa_submitStatus",
-			"summaryBox": "CzzvHa_summaryBox",
-			"validation": "CzzvHa_validation",
-			"visuallyHidden": "CzzvHa_visuallyHidden"
+			"absolutePath": "xsigXG_absolutePath",
+			"actions": "xsigXG_actions",
+			"autoResolveButton": "xsigXG_autoResolveButton",
+			"conflictBadge": "xsigXG_conflictBadge",
+			"details": "xsigXG_details",
+			"documentCard": "xsigXG_documentCard",
+			"documentHeading": "xsigXG_documentHeading",
+			"documentList": "xsigXG_documentList",
+			"documentMeta": "xsigXG_documentMeta",
+			"emptyCopy": "xsigXG_emptyCopy",
+			"evidenceBadge": "xsigXG_evidenceBadge",
+			"evidenceList": "xsigXG_evidenceList",
+			"eyebrow": "xsigXG_eyebrow",
+			"field": "xsigXG_field",
+			"header": "xsigXG_header",
+			"headerRow": "xsigXG_headerRow",
+			"impactNote": "xsigXG_impactNote",
+			"issueList": "xsigXG_issueList",
+			"lockedBinding": "xsigXG_lockedBinding",
+			"message": "xsigXG_message",
+			"preview": "xsigXG_preview",
+			"primaryButton": "xsigXG_primaryButton",
+			"roleConflict": "xsigXG_roleConflict",
+			"secondaryButton": "xsigXG_secondaryButton",
+			"section": "xsigXG_section",
+			"sectionHeading": "xsigXG_sectionHeading",
+			"sectionHeadingTools": "xsigXG_sectionHeadingTools",
+			"sourceLine": "xsigXG_sourceLine",
+			"statusLine": "xsigXG_statusLine",
+			"submitError": "xsigXG_submitError",
+			"submitStatus": "xsigXG_submitStatus",
+			"summaryBox": "xsigXG_summaryBox",
+			"validation": "xsigXG_validation",
+			"visuallyHidden": "xsigXG_visuallyHidden"
 		};
 		//#endregion
 		//#region src/client/CandidateDetails.tsx
@@ -1118,7 +1176,7 @@ window.__ModuleLoader__.load({
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: CandidateDetails_module_css_default.statusLine,
 								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: candidateStatusLabel(candidate.status) }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: candidateStatusLabel$1(candidate.status) }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: candidate.detectedMode === "managed" ? "检测到受管理 manifest" : "现有项目" }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: ["修订 ", candidate.revision] })
 								]
@@ -1338,7 +1396,7 @@ window.__ModuleLoader__.load({
 				case "unknown": return "未知";
 			}
 		}
-		function candidateStatusLabel(status) {
+		function candidateStatusLabel$1(status) {
 			switch (status) {
 				case "discovered": return "待确认";
 				case "ignored": return "已忽略";
@@ -1432,8 +1490,8 @@ window.__ModuleLoader__.load({
 			return typeof value === "object" && value !== null && !Array.isArray(value);
 		}
 		//#endregion
-		//#region \0dsh-css:F:\Projects\deepseek-harness-personal\workspace\plugins\project-control\src\client\ProjectConsole.module.css.mjs
-		const css$1 = ".EjbyJa_console{width:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;display:flex}.EjbyJa_header{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:10px;display:flex}.EjbyJa_headerMain{flex-direction:column;gap:4px;min-width:0;display:flex}.EjbyJa_headerMain h2{margin:0;font-size:17px;line-height:24px}.EjbyJa_projectId{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:12px;overflow:hidden}.EjbyJa_headerActions{flex:none;gap:8px;display:flex}.EjbyJa_backButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;background:0 0;border-radius:8px;align-self:flex-start;padding:2px 8px;font-size:12px}.EjbyJa_backButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.EjbyJa_smallButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);font:inherit;cursor:pointer;border-radius:8px;padding:4px 10px;font-size:12px}.EjbyJa_smallButton:hover:not(:disabled){border-color:var(--dsw-alias-border-l3)}.EjbyJa_smallButton:disabled{opacity:.45;cursor:not-allowed}.EjbyJa_smallButton[data-pinned=true]{border-color:var(--dsw-alias-state-business-primary)}.EjbyJa_confirmButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent);color:#fff;background:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:650}.EjbyJa_confirmButton:hover:not(:disabled){filter:brightness(1.08)}.EjbyJa_confirmButton:disabled{opacity:.45;cursor:not-allowed}.EjbyJa_iconButton{border:1px solid var(--dsw-alias-border-l2);width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border-radius:8px;place-items:center;font-size:15px;display:grid}.EjbyJa_iconButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.EjbyJa_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;gap:4px;display:flex;overflow-x:auto}.EjbyJa_tab{color:var(--dsw-alias-label-secondary);font:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:0;border-bottom:2px solid #0000;align-items:center;gap:6px;padding:8px 14px;font-size:13px;display:flex;position:relative}.EjbyJa_tab:hover{color:var(--dsw-alias-label-primary)}.EjbyJa_tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:650}.EjbyJa_countBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:0 6px;font-size:11px}.EjbyJa_tabPanel{min-height:0;overflow:auto}.EjbyJa_errorBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 45%, transparent);color:var(--dsw-alias-state-danger-primary,#e5484d);border-radius:8px;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;font-size:12px;display:flex}.EjbyJa_tabNotice{color:var(--dsw-alias-label-tertiary);text-align:center;padding:28px 16px;font-size:13px}.EjbyJa_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:4px 0;font-size:12px}.EjbyJa_overview{flex-direction:column;gap:14px;display:flex}.EjbyJa_statGrid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;display:grid}.EjbyJa_statCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 4%, transparent);border-radius:10px;flex-direction:column;gap:2px;padding:12px;display:flex}.EjbyJa_statCard strong{font-size:22px;line-height:28px}.EjbyJa_statCard span{color:var(--dsw-alias-label-secondary);font-size:12px}.EjbyJa_statCard small{color:var(--dsw-alias-label-tertiary);font-size:11px}.EjbyJa_overviewFacts{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;padding:12px;display:flex}.EjbyJa_overviewFacts h3{margin:0;font-size:13px}.EjbyJa_overviewFacts dl{flex-direction:column;gap:4px;margin:0;font-size:12px;display:flex}.EjbyJa_overviewFacts dl>div{gap:10px;display:flex}.EjbyJa_overviewFacts dt{color:var(--dsw-alias-label-tertiary);min-width:72px}.EjbyJa_overviewFacts dd{margin:0}.EjbyJa_sectionBar{justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;display:flex}.EjbyJa_sectionBar h3{margin:0;font-size:14px}.EjbyJa_itemList{flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;display:flex}.EjbyJa_itemCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.EjbyJa_itemMain{min-width:0;color:inherit;font:inherit;text-align:left;cursor:default;background:0 0;border:0;flex-direction:column;gap:4px;padding:0;display:flex}button.EjbyJa_itemMain{cursor:pointer}button.EjbyJa_itemMain:hover strong{text-decoration:underline}.EjbyJa_itemTopline{justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.EjbyJa_itemTopline strong{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.EjbyJa_priorityBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;flex:none;padding:1px 7px;font-size:11px}.EjbyJa_itemInstruction{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.EjbyJa_acceptanceList{color:var(--dsw-alias-label-secondary);margin:2px 0 0;padding-left:16px;font-size:12px}.EjbyJa_itemMeta{color:var(--dsw-alias-label-tertiary);flex-wrap:wrap;align-items:center;gap:10px;font-size:11px;display:flex}.EjbyJa_itemActions{flex-wrap:wrap;gap:8px;display:flex}.EjbyJa_statusBadge{border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:1px 8px;font-size:11px}.EjbyJa_statusBadge[data-value=running],.EjbyJa_statusBadge[data-value=pending],.EjbyJa_statusBadge[data-value=requested],.EjbyJa_statusBadge[data-value=in_review]{color:var(--dsw-alias-state-business-primary);border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent)}.EjbyJa_statusBadge[data-value=blocked],.EjbyJa_statusBadge[data-value=failed],.EjbyJa_statusBadge[data-value=rejected]{color:var(--dsw-alias-state-danger-primary,#e5484d);border-color:color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 40%, transparent)}.EjbyJa_statusBadge[data-value=completed],.EjbyJa_statusBadge[data-value=approved]{color:var(--dsw-alias-state-success-primary,#46a758);border-color:color-mix(in srgb, var(--dsw-alias-state-success-primary,#46a758) 40%, transparent)}.EjbyJa_createItemForm{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;margin-bottom:12px;padding:12px;display:flex}.EjbyJa_createItemForm label{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:4px;font-size:12px;display:flex}.EjbyJa_createItemForm input,.EjbyJa_createItemForm textarea,.EjbyJa_reviewDecide textarea{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-background-panel,transparent);font:inherit;border-radius:8px;padding:6px 8px;font-size:12px}.EjbyJa_formActions{flex-wrap:wrap;gap:8px;display:flex}.EjbyJa_reviewDetail{border-top:1px dashed var(--dsw-alias-border-l2);flex-direction:column;gap:10px;padding-top:8px;display:flex}.EjbyJa_actionList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.EjbyJa_actionList li{align-items:baseline;gap:8px;font-size:12px;display:flex}.EjbyJa_actionList li strong{flex:none;min-width:56px}.EjbyJa_actionList li small{color:var(--dsw-alias-label-tertiary);margin-left:auto}.EjbyJa_reviewDecide{flex-direction:column;gap:8px;display:flex}.EjbyJa_reviewDecide textarea{resize:vertical;width:100%}.EjbyJa_updateList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.EjbyJa_updateList>li{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;overflow:hidden}.EjbyJa_updateMain{box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:0;flex-direction:column;gap:4px;padding:8px 10px;display:flex}.EjbyJa_updateMain:hover{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent)}.EjbyJa_updateKindBadge{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.EjbyJa_updateKindBadge[data-kind=blocker]{color:var(--dsw-alias-state-danger-primary,#e5484d)}.EjbyJa_updateKindBadge[data-kind=completion_declared]{color:var(--dsw-alias-state-success-primary,#46a758)}.EjbyJa_eventList{flex-direction:column;gap:4px;margin:8px 0 0;padding:0;list-style:none;display:flex}.EjbyJa_eventList>li{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:flex-start;gap:10px;padding:6px 0;display:flex}.EjbyJa_eventDot{background:var(--dsw-alias-state-business-primary);border-radius:999px;flex:none;width:7px;height:7px;margin-top:5px}.EjbyJa_eventMain{flex-direction:column;gap:2px;min-width:0;display:flex}.EjbyJa_eventMain strong{font-size:12px}.EjbyJa_eventAggregate{color:var(--dsw-alias-label-tertiary);font-size:11px}.EjbyJa_eventData{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;display:block;overflow:hidden}.EjbyJa_eventTime{color:var(--dsw-alias-label-tertiary);flex:none;margin-left:auto;font-size:11px}.EjbyJa_documentPath{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.EjbyJa_followBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);color:var(--dsw-alias-state-business-primary);border-radius:8px;padding:8px 12px;font-size:12px}.EjbyJa_currentBadge{color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.EjbyJa_itemCard[data-current-session=true]{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent)}";
+		//#region \0dsh-css:F:\Projects\deepseek-harness-personal\worktrees\active\wt_project_control_candidate_closure_20260826\plugins\project-control\src\client\ProjectConsole.module.css.mjs
+		const css$1 = ".voDRMG_console{width:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;display:flex}.voDRMG_header{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:10px;display:flex}.voDRMG_headerMain{flex-direction:column;gap:4px;min-width:0;display:flex}.voDRMG_headerMain h2{margin:0;font-size:17px;line-height:24px}.voDRMG_projectId{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:12px;overflow:hidden}.voDRMG_headerActions{flex:none;gap:8px;display:flex}.voDRMG_backButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;background:0 0;border-radius:8px;align-self:flex-start;padding:2px 8px;font-size:12px}.voDRMG_backButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.voDRMG_smallButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);font:inherit;cursor:pointer;border-radius:8px;padding:4px 10px;font-size:12px}.voDRMG_smallButton:hover:not(:disabled){border-color:var(--dsw-alias-border-l3)}.voDRMG_smallButton:disabled{opacity:.45;cursor:not-allowed}.voDRMG_smallButton[data-pinned=true]{border-color:var(--dsw-alias-state-business-primary)}.voDRMG_confirmButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent);color:#fff;background:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:650}.voDRMG_confirmButton:hover:not(:disabled){filter:brightness(1.08)}.voDRMG_confirmButton:disabled{opacity:.45;cursor:not-allowed}.voDRMG_iconButton{border:1px solid var(--dsw-alias-border-l2);width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border-radius:8px;place-items:center;font-size:15px;display:grid}.voDRMG_iconButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.voDRMG_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;gap:4px;display:flex;overflow-x:auto}.voDRMG_tab{color:var(--dsw-alias-label-secondary);font:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:0;border-bottom:2px solid #0000;align-items:center;gap:6px;padding:8px 14px;font-size:13px;display:flex;position:relative}.voDRMG_tab:hover{color:var(--dsw-alias-label-primary)}.voDRMG_tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:650}.voDRMG_countBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:0 6px;font-size:11px}.voDRMG_tabPanel{min-height:0;overflow:auto}.voDRMG_errorBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 45%, transparent);color:var(--dsw-alias-state-danger-primary,#e5484d);border-radius:8px;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;font-size:12px;display:flex}.voDRMG_tabNotice{color:var(--dsw-alias-label-tertiary);text-align:center;padding:28px 16px;font-size:13px}.voDRMG_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:4px 0;font-size:12px}.voDRMG_overview{flex-direction:column;gap:14px;display:flex}.voDRMG_statGrid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;display:grid}.voDRMG_statCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 4%, transparent);border-radius:10px;flex-direction:column;gap:2px;padding:12px;display:flex}.voDRMG_statCard strong{font-size:22px;line-height:28px}.voDRMG_statCard span{color:var(--dsw-alias-label-secondary);font-size:12px}.voDRMG_statCard small{color:var(--dsw-alias-label-tertiary);font-size:11px}.voDRMG_overviewFacts{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;padding:12px;display:flex}.voDRMG_overviewFacts h3{margin:0;font-size:13px}.voDRMG_overviewFacts dl{flex-direction:column;gap:4px;margin:0;font-size:12px;display:flex}.voDRMG_overviewFacts dl>div{gap:10px;display:flex}.voDRMG_overviewFacts dt{color:var(--dsw-alias-label-tertiary);min-width:72px}.voDRMG_overviewFacts dd{margin:0}.voDRMG_sectionBar{justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;display:flex}.voDRMG_sectionBar h3{margin:0;font-size:14px}.voDRMG_itemList{flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;display:flex}.voDRMG_itemCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.voDRMG_itemMain{min-width:0;color:inherit;font:inherit;text-align:left;cursor:default;background:0 0;border:0;flex-direction:column;gap:4px;padding:0;display:flex}button.voDRMG_itemMain{cursor:pointer}button.voDRMG_itemMain:hover strong{text-decoration:underline}.voDRMG_itemTopline{justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.voDRMG_itemTopline strong{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.voDRMG_priorityBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;flex:none;padding:1px 7px;font-size:11px}.voDRMG_itemInstruction{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.voDRMG_acceptanceList{color:var(--dsw-alias-label-secondary);margin:2px 0 0;padding-left:16px;font-size:12px}.voDRMG_itemMeta{color:var(--dsw-alias-label-tertiary);flex-wrap:wrap;align-items:center;gap:10px;font-size:11px;display:flex}.voDRMG_itemActions{flex-wrap:wrap;gap:8px;display:flex}.voDRMG_statusBadge{border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:1px 8px;font-size:11px}.voDRMG_statusBadge[data-value=running],.voDRMG_statusBadge[data-value=pending],.voDRMG_statusBadge[data-value=requested],.voDRMG_statusBadge[data-value=in_review]{color:var(--dsw-alias-state-business-primary);border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent)}.voDRMG_statusBadge[data-value=blocked],.voDRMG_statusBadge[data-value=failed],.voDRMG_statusBadge[data-value=rejected]{color:var(--dsw-alias-state-danger-primary,#e5484d);border-color:color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 40%, transparent)}.voDRMG_statusBadge[data-value=completed],.voDRMG_statusBadge[data-value=approved]{color:var(--dsw-alias-state-success-primary,#46a758);border-color:color-mix(in srgb, var(--dsw-alias-state-success-primary,#46a758) 40%, transparent)}.voDRMG_createItemForm{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;margin-bottom:12px;padding:12px;display:flex}.voDRMG_createItemForm label{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:4px;font-size:12px;display:flex}.voDRMG_createItemForm input,.voDRMG_createItemForm textarea,.voDRMG_reviewDecide textarea{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-background-panel,transparent);font:inherit;border-radius:8px;padding:6px 8px;font-size:12px}.voDRMG_formActions{flex-wrap:wrap;gap:8px;display:flex}.voDRMG_reviewDetail{border-top:1px dashed var(--dsw-alias-border-l2);flex-direction:column;gap:10px;padding-top:8px;display:flex}.voDRMG_actionList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.voDRMG_actionList li{align-items:baseline;gap:8px;font-size:12px;display:flex}.voDRMG_actionList li strong{flex:none;min-width:56px}.voDRMG_actionList li small{color:var(--dsw-alias-label-tertiary);margin-left:auto}.voDRMG_reviewDecide{flex-direction:column;gap:8px;display:flex}.voDRMG_reviewDecide textarea{resize:vertical;width:100%}.voDRMG_updateList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.voDRMG_updateList>li{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;overflow:hidden}.voDRMG_updateMain{box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:0;flex-direction:column;gap:4px;padding:8px 10px;display:flex}.voDRMG_updateMain:hover{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent)}.voDRMG_updateKindBadge{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.voDRMG_updateKindBadge[data-kind=blocker]{color:var(--dsw-alias-state-danger-primary,#e5484d)}.voDRMG_updateKindBadge[data-kind=completion_declared]{color:var(--dsw-alias-state-success-primary,#46a758)}.voDRMG_eventList{flex-direction:column;gap:4px;margin:8px 0 0;padding:0;list-style:none;display:flex}.voDRMG_eventList>li{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:flex-start;gap:10px;padding:6px 0;display:flex}.voDRMG_eventDot{background:var(--dsw-alias-state-business-primary);border-radius:999px;flex:none;width:7px;height:7px;margin-top:5px}.voDRMG_eventMain{flex-direction:column;gap:2px;min-width:0;display:flex}.voDRMG_eventMain strong{font-size:12px}.voDRMG_eventAggregate{color:var(--dsw-alias-label-tertiary);font-size:11px}.voDRMG_eventData{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;display:block;overflow:hidden}.voDRMG_eventTime{color:var(--dsw-alias-label-tertiary);flex:none;margin-left:auto;font-size:11px}.voDRMG_documentPath{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.voDRMG_followBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);color:var(--dsw-alias-state-business-primary);border-radius:8px;padding:8px 12px;font-size:12px}.voDRMG_currentBadge{color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.voDRMG_itemCard[data-current-session=true]{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent)}";
 		const tagId$1 = "@cyrus/dsh-project-control/ProjectConsole.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -1443,54 +1501,54 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var ProjectConsole_module_css_default = {
-			"acceptanceList": "EjbyJa_acceptanceList",
-			"actionList": "EjbyJa_actionList",
-			"backButton": "EjbyJa_backButton",
-			"confirmButton": "EjbyJa_confirmButton",
-			"console": "EjbyJa_console",
-			"countBadge": "EjbyJa_countBadge",
-			"createItemForm": "EjbyJa_createItemForm",
-			"currentBadge": "EjbyJa_currentBadge",
-			"documentPath": "EjbyJa_documentPath",
-			"emptyCopy": "EjbyJa_emptyCopy",
-			"errorBanner": "EjbyJa_errorBanner",
-			"eventAggregate": "EjbyJa_eventAggregate",
-			"eventData": "EjbyJa_eventData",
-			"eventDot": "EjbyJa_eventDot",
-			"eventList": "EjbyJa_eventList",
-			"eventMain": "EjbyJa_eventMain",
-			"eventTime": "EjbyJa_eventTime",
-			"followBanner": "EjbyJa_followBanner",
-			"formActions": "EjbyJa_formActions",
-			"header": "EjbyJa_header",
-			"headerActions": "EjbyJa_headerActions",
-			"headerMain": "EjbyJa_headerMain",
-			"iconButton": "EjbyJa_iconButton",
-			"itemActions": "EjbyJa_itemActions",
-			"itemCard": "EjbyJa_itemCard",
-			"itemInstruction": "EjbyJa_itemInstruction",
-			"itemList": "EjbyJa_itemList",
-			"itemMain": "EjbyJa_itemMain",
-			"itemMeta": "EjbyJa_itemMeta",
-			"itemTopline": "EjbyJa_itemTopline",
-			"overview": "EjbyJa_overview",
-			"overviewFacts": "EjbyJa_overviewFacts",
-			"priorityBadge": "EjbyJa_priorityBadge",
-			"projectId": "EjbyJa_projectId",
-			"reviewDecide": "EjbyJa_reviewDecide",
-			"reviewDetail": "EjbyJa_reviewDetail",
-			"sectionBar": "EjbyJa_sectionBar",
-			"smallButton": "EjbyJa_smallButton",
-			"statCard": "EjbyJa_statCard",
-			"statGrid": "EjbyJa_statGrid",
-			"statusBadge": "EjbyJa_statusBadge",
-			"tab": "EjbyJa_tab",
-			"tabNotice": "EjbyJa_tabNotice",
-			"tabPanel": "EjbyJa_tabPanel",
-			"tabs": "EjbyJa_tabs",
-			"updateKindBadge": "EjbyJa_updateKindBadge",
-			"updateList": "EjbyJa_updateList",
-			"updateMain": "EjbyJa_updateMain"
+			"acceptanceList": "voDRMG_acceptanceList",
+			"actionList": "voDRMG_actionList",
+			"backButton": "voDRMG_backButton",
+			"confirmButton": "voDRMG_confirmButton",
+			"console": "voDRMG_console",
+			"countBadge": "voDRMG_countBadge",
+			"createItemForm": "voDRMG_createItemForm",
+			"currentBadge": "voDRMG_currentBadge",
+			"documentPath": "voDRMG_documentPath",
+			"emptyCopy": "voDRMG_emptyCopy",
+			"errorBanner": "voDRMG_errorBanner",
+			"eventAggregate": "voDRMG_eventAggregate",
+			"eventData": "voDRMG_eventData",
+			"eventDot": "voDRMG_eventDot",
+			"eventList": "voDRMG_eventList",
+			"eventMain": "voDRMG_eventMain",
+			"eventTime": "voDRMG_eventTime",
+			"followBanner": "voDRMG_followBanner",
+			"formActions": "voDRMG_formActions",
+			"header": "voDRMG_header",
+			"headerActions": "voDRMG_headerActions",
+			"headerMain": "voDRMG_headerMain",
+			"iconButton": "voDRMG_iconButton",
+			"itemActions": "voDRMG_itemActions",
+			"itemCard": "voDRMG_itemCard",
+			"itemInstruction": "voDRMG_itemInstruction",
+			"itemList": "voDRMG_itemList",
+			"itemMain": "voDRMG_itemMain",
+			"itemMeta": "voDRMG_itemMeta",
+			"itemTopline": "voDRMG_itemTopline",
+			"overview": "voDRMG_overview",
+			"overviewFacts": "voDRMG_overviewFacts",
+			"priorityBadge": "voDRMG_priorityBadge",
+			"projectId": "voDRMG_projectId",
+			"reviewDecide": "voDRMG_reviewDecide",
+			"reviewDetail": "voDRMG_reviewDetail",
+			"sectionBar": "voDRMG_sectionBar",
+			"smallButton": "voDRMG_smallButton",
+			"statCard": "voDRMG_statCard",
+			"statGrid": "voDRMG_statGrid",
+			"statusBadge": "voDRMG_statusBadge",
+			"tab": "voDRMG_tab",
+			"tabNotice": "voDRMG_tabNotice",
+			"tabPanel": "voDRMG_tabPanel",
+			"tabs": "voDRMG_tabs",
+			"updateKindBadge": "voDRMG_updateKindBadge",
+			"updateList": "voDRMG_updateList",
+			"updateMain": "voDRMG_updateMain"
 		};
 		//#endregion
 		//#region src/client/ProjectConsole.tsx
@@ -2591,8 +2649,8 @@ window.__ModuleLoader__.load({
 			return error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
 		}
 		//#endregion
-		//#region \0dsh-css:F:\Projects\deepseek-harness-personal\workspace\plugins\project-control\src\client\ProjectControlPlaceholder.module.css.mjs
-		const css = ".L8uqga_console{box-sizing:border-box;width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);background:radial-gradient(circle at 100% 0, color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent), transparent 36%);flex-direction:column;display:flex;overflow:hidden}.L8uqga_consoleHeader{border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:10px;padding:14px 14px 12px;display:flex}.L8uqga_consoleHeader>div{min-width:0}.L8uqga_consoleHeader h1{margin:6px 0 0;font-size:17px;line-height:24px}.L8uqga_consoleHeader p{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;margin:2px 0 0;font-size:12px;overflow:hidden}.L8uqga_gateBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);letter-spacing:.04em;border-radius:999px;padding:2px 7px;font-size:12px;font-weight:650;display:inline-block}.L8uqga_iconButton{border:1px solid var(--dsw-alias-border-l2);width:30px;height:30px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:8px;flex:none;place-items:center;padding:0;display:grid}.L8uqga_content{flex:1;min-width:0;min-height:0;padding:12px 14px 16px;overflow:auto}.L8uqga_readyState{gap:13px;min-width:0;display:grid}.L8uqga_statusCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 72%, transparent);border-radius:11px;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px;display:grid}.L8uqga_statusIcon{width:32px;height:32px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);border-radius:9px;place-items:center;display:grid}.L8uqga_statusIcon svg,.L8uqga_emptyIcon svg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5px;width:19px;height:19px}.L8uqga_statusCard h2{margin:0;font-size:14px;line-height:24px}.L8uqga_statusCard p{color:var(--dsw-alias-label-tertiary);margin:2px 0 0;font-size:12px;line-height:17px}.L8uqga_countBadge{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap;border-radius:999px;padding:3px 7px;font-size:12px}.L8uqga_intakeSection,.L8uqga_candidateSection,.L8uqga_projectSection{min-width:0}.L8uqga_sectionHeading{justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:7px;display:flex}.L8uqga_sectionHeading h2{color:var(--dsw-alias-label-secondary);margin:0;font-size:14px;font-weight:650}.L8uqga_sectionHeading p{color:var(--dsw-alias-label-tertiary);margin:2px 0 0;font-size:12px;line-height:17px}.L8uqga_sectionHeading>span{color:var(--dsw-alias-label-tertiary);flex:none;font-size:12px}.L8uqga_actionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.L8uqga_primaryAction{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 22%, var(--dsw-alias-border-l2));min-width:0;min-height:52px;color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, var(--dsw-alias-bg-layer-2));font:inherit;text-align:left;cursor:pointer;border-radius:10px;grid-template-columns:25px minmax(0,1fr);align-items:center;gap:7px;padding:8px;display:grid}.L8uqga_primaryAction>span:first-child{width:24px;height:24px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);border-radius:7px;place-items:center;font-size:17px;display:grid}.L8uqga_primaryAction strong,.L8uqga_primaryAction small{text-overflow:ellipsis;display:block;overflow:hidden}.L8uqga_primaryAction strong{white-space:nowrap;font-size:13px}.L8uqga_primaryAction small{color:var(--dsw-alias-label-tertiary);margin-top:2px;font-size:14px;line-height:15px}.L8uqga_primaryAction:hover:not(:disabled),.L8uqga_candidateCard:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent)}.L8uqga_primaryAction:disabled,.L8uqga_ignoreButton:disabled{opacity:.45;cursor:default}.L8uqga_bridgeNotice,.L8uqga_scanNotice,.L8uqga_scanError,.L8uqga_emptyCopy{color:var(--dsw-alias-label-tertiary);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);border-radius:8px;margin:7px 0 0;padding:8px 9px;font-size:12px;line-height:17px}.L8uqga_bridgeNotice,.L8uqga_scanError{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 28%, transparent)}.L8uqga_scanNotice,.L8uqga_scanError{gap:2px;display:grid}.L8uqga_scanNotice strong,.L8uqga_scanError strong{color:var(--dsw-alias-label-secondary);font-size:12px}.L8uqga_scanNotice span,.L8uqga_scanError span{text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.L8uqga_candidateList,.L8uqga_projectList{gap:6px;margin:0;padding:0;list-style:none;display:grid}.L8uqga_candidateCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);border-radius:10px;grid-template-columns:minmax(0,1fr) auto;min-width:0;transition:border-color .12s;display:grid}.L8uqga_candidateCard[data-ignored=true]{opacity:.68}.L8uqga_candidateMain{min-width:0;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:0;gap:4px;padding:9px;display:grid}.L8uqga_candidateTopline,.L8uqga_candidateMeta{align-items:center;gap:5px;min-width:0;display:flex}.L8uqga_candidateTopline{justify-content:space-between}.L8uqga_candidateTopline strong{text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;overflow:hidden}.L8uqga_candidateTopline>span,.L8uqga_candidateMeta>span{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);border-radius:999px;flex:none;padding:2px 6px;font-size:14px}.L8uqga_candidateTopline>span[data-level=high]{color:var(--dsw-alias-state-success-primary,#4e9962)}.L8uqga_candidateTopline>span[data-level=low],.L8uqga_candidateTopline>span[data-level=unknown]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.L8uqga_candidatePath{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.L8uqga_candidateMeta{flex-wrap:wrap}.L8uqga_ignoreButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:7px;align-self:center;margin-right:8px;padding:4px 7px;font-size:14px}.L8uqga_projectItem{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);border-radius:9px;justify-content:space-between;align-items:center;gap:8px;min-width:0;padding:8px 9px;display:flex}.L8uqga_projectItem div{min-width:0}.L8uqga_projectItem strong,.L8uqga_projectItem small{text-overflow:ellipsis;white-space:nowrap;display:block;overflow:hidden}.L8uqga_projectItem strong{font-size:13px;font-weight:550}.L8uqga_projectItem small,.L8uqga_projectItem>span{color:var(--dsw-alias-label-tertiary);font-size:14px}.L8uqga_projectItem>span{flex:none}.L8uqga_createSection{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, var(--dsw-alias-border-l2));background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 48%, transparent);border-radius:11px;min-width:0;padding:9px}.L8uqga_createForm{gap:7px;min-width:0;display:grid}.L8uqga_createField{gap:3px;min-width:0;display:grid}.L8uqga_fieldLabel{color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600}.L8uqga_parentRow{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;min-width:0;display:grid}.L8uqga_pathText{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);text-overflow:ellipsis;white-space:nowrap;border-radius:8px;padding:6px 8px;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.L8uqga_textInput,.L8uqga_selectInput{border:1px solid var(--dsw-alias-border-l2);min-width:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;border-radius:8px;padding:6px 8px;font-size:13px}.L8uqga_textInput:disabled,.L8uqga_selectInput:disabled{opacity:.55}.L8uqga_templateDescription{color:var(--dsw-alias-label-tertiary);margin:0;font-size:14px;line-height:24px}.L8uqga_createActions{flex-wrap:wrap;justify-content:flex-end;gap:6px;margin-top:3px;display:flex}.L8uqga_confirmButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 34%, transparent);color:#fff;background:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:13px}.L8uqga_confirmButton:disabled{opacity:.5;cursor:default}.L8uqga_smallButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:7px;flex:none;padding:5px 8px;font-size:14px}.L8uqga_previewCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:9px;gap:6px;min-width:0;padding:8px;display:grid}.L8uqga_previewTopline{justify-content:space-between;align-items:center;gap:6px;min-width:0;display:flex}.L8uqga_previewTopline strong{font-size:13px}.L8uqga_previewTopline span{color:var(--dsw-alias-label-tertiary);flex:none;font-size:14px}.L8uqga_previewFacts{gap:3px;margin:0;display:grid}.L8uqga_previewFacts div{grid-template-columns:64px minmax(0,1fr);gap:6px;min-width:0;display:grid}.L8uqga_previewFacts dt{color:var(--dsw-alias-label-tertiary);font-size:14px}.L8uqga_previewFacts dd{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;margin:0;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.L8uqga_previewNote{color:var(--dsw-alias-label-tertiary);margin:0;font-size:14px;line-height:24px}.L8uqga_operationList{gap:2px;max-height:148px;margin:0;padding:0;list-style:none;display:grid;overflow:auto}.L8uqga_operationItem{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 46%, transparent);border-radius:6px;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:5px;min-width:0;padding:3px 6px;font-size:14px;display:grid}.L8uqga_operationPath{text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.L8uqga_hashText{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Cascadia Mono,Consolas,monospace}.L8uqga_createSuccess,.L8uqga_createError{border-radius:8px;gap:6px;margin-top:2px;padding:8px;font-size:12px;line-height:17px;display:grid}.L8uqga_createSuccess{border:1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 30%, transparent);color:var(--dsw-alias-state-success-primary,#4e9962);background:color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 8%, transparent)}.L8uqga_createError{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 28%, transparent);color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent)}.L8uqga_statusFacts{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0;display:grid}.L8uqga_statusFacts div{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:8px;min-width:0;padding:7px}.L8uqga_statusFacts dt{color:var(--dsw-alias-label-tertiary);font-size:14px}.L8uqga_statusFacts dd{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;margin:2px 0 0;font-size:12px;overflow:hidden}.L8uqga_statePanel{text-align:center;flex-direction:column;justify-content:center;align-items:center;min-height:260px;display:flex}.L8uqga_emptyIcon{border:1px solid var(--dsw-alias-border-l2);width:44px;height:44px;color:var(--dsw-alias-label-tertiary);border-radius:14px;place-items:center;margin-bottom:10px;display:grid}.L8uqga_statePanel h2{margin:0;font-size:13px}.L8uqga_statePanel p{max-width:260px;color:var(--dsw-alias-label-secondary);margin:6px 0 0;font-size:13px;line-height:24px}.L8uqga_secondaryButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:8px;margin-top:11px;padding:6px 12px;font-size:13px}.L8uqga_projectItemActions{flex:none;align-items:center;gap:6px;display:flex}.L8uqga_documentPanel{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, var(--dsw-alias-border-l2));background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 48%, transparent);border-radius:11px;min-width:0;padding:9px}.L8uqga_documentPanelHeader{justify-content:space-between;align-items:flex-start;gap:8px;min-width:0;display:flex}.L8uqga_documentPanelHeader>div:first-child{min-width:0}.L8uqga_documentPanelHeader strong{font-size:13px}.L8uqga_documentPanelHeader p{color:var(--dsw-alias-label-tertiary);margin:2px 0 0;font-size:14px}.L8uqga_documentPanelActions{flex:none;gap:5px;display:flex}.L8uqga_documentPanelEmpty{color:var(--dsw-alias-label-tertiary);margin:7px 0 0;font-size:12px;line-height:17px}.L8uqga_documentLocation{font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px}.L8uqga_documentList{gap:3px;max-height:190px;margin:7px 0 0;padding:0;list-style:none;display:grid;overflow:auto}.L8uqga_documentRow{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 46%, transparent);border-radius:7px;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;min-width:0;padding:5px 7px;display:grid}.L8uqga_documentRowMain{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:2px 7px;min-width:0;display:grid}.L8uqga_documentRole{color:var(--dsw-alias-label-secondary);flex:none;font-size:12px;font-weight:600}.L8uqga_documentPath,.L8uqga_proposalPath{text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.L8uqga_documentRowSide{align-items:center;gap:5px;min-width:0;display:flex}.L8uqga_documentStateBadge{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap;border-radius:999px;padding:2px 6px;font-size:14px}.L8uqga_documentStateBadge[data-state=ok]{color:var(--dsw-alias-state-success-primary,#4e9962)}.L8uqga_documentStateBadge[data-state=changed],.L8uqga_documentStateBadge[data-state=missing]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.L8uqga_documentStateBadge[data-state=unreadable]{color:var(--dsw-alias-state-danger-primary,#c25555)}.L8uqga_documentHash{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px}.L8uqga_documentIssues{grid-column:1/-1;gap:2px;display:grid}.L8uqga_documentIssue{color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:17px}.L8uqga_proposalGroup{gap:5px;margin-top:8px;display:grid}.L8uqga_proposalGroupTitle{color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:650}.L8uqga_proposalCard{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 22%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 52%, transparent);border-radius:9px;gap:5px;min-width:0;padding:7px;display:grid}.L8uqga_proposalLine,.L8uqga_proposalActions{min-width:0;color:var(--dsw-alias-label-secondary);flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;display:flex}.L8uqga_proposalActions select{border:1px solid var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;border-radius:7px;padding:4px 6px;font-size:14px}.L8uqga_proposalHint{color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:17px}.L8uqga_iconButton:focus-visible,.L8uqga_primaryAction:focus-visible,.L8uqga_candidateMain:focus-visible,.L8uqga_ignoreButton:focus-visible,.L8uqga_secondaryButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}@media (width<=1180px){.L8uqga_actionGrid,.L8uqga_statusFacts{grid-template-columns:1fr}}@media (prefers-reduced-motion:reduce){.L8uqga_candidateCard{transition:none}}";
+		//#region \0dsh-css:F:\Projects\deepseek-harness-personal\worktrees\active\wt_project_control_candidate_closure_20260826\plugins\project-control\src\client\ProjectControlPlaceholder.module.css.mjs
+		const css = ".-OvAuG_console{box-sizing:border-box;width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);background:radial-gradient(circle at 100% 0, color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent), transparent 36%);flex-direction:column;display:flex;overflow:hidden}.-OvAuG_consoleHeader{border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:10px;padding:14px 14px 12px;display:flex}.-OvAuG_consoleHeader>div{min-width:0}.-OvAuG_consoleHeader h1{margin:6px 0 0;font-size:17px;line-height:24px}.-OvAuG_consoleHeader p{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;margin:2px 0 0;font-size:12px;overflow:hidden}.-OvAuG_gateBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);letter-spacing:.04em;border-radius:999px;padding:2px 7px;font-size:12px;font-weight:650;display:inline-block}.-OvAuG_iconButton{border:1px solid var(--dsw-alias-border-l2);width:30px;height:30px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:8px;flex:none;place-items:center;padding:0;display:grid}.-OvAuG_content{flex:1;min-width:0;min-height:0;padding:12px 14px 16px;overflow:auto}.-OvAuG_readyState{gap:13px;min-width:0;display:grid}.-OvAuG_statusCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 72%, transparent);border-radius:11px;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px;display:grid}.-OvAuG_statusIcon{width:32px;height:32px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);border-radius:9px;place-items:center;display:grid}.-OvAuG_statusIcon svg,.-OvAuG_emptyIcon svg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5px;width:19px;height:19px}.-OvAuG_statusCard h2{margin:0;font-size:14px;line-height:24px}.-OvAuG_statusCard p{color:var(--dsw-alias-label-tertiary);margin:2px 0 0;font-size:12px;line-height:17px}.-OvAuG_countBadge{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap;border-radius:999px;padding:3px 7px;font-size:12px}.-OvAuG_intakeSection,.-OvAuG_candidateCenter,.-OvAuG_candidateSection,.-OvAuG_projectSection{min-width:0}.-OvAuG_candidateTabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;display:grid}.-OvAuG_candidateTab{border:1px solid var(--dsw-alias-border-l2);min-width:0;color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);font:inherit;cursor:pointer;border-radius:8px;justify-content:space-between;align-items:center;gap:6px;padding:7px 9px;display:flex}.-OvAuG_candidateTab[aria-selected=true]{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-border-l2));color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 9%, var(--dsw-alias-bg-layer-2))}.-OvAuG_candidateTab span{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.-OvAuG_candidateTab strong{background:var(--dsw-alias-interactive-bg-hover);text-align:center;border-radius:999px;flex:none;min-width:24px;padding:1px 6px;font-size:12px}.-OvAuG_candidateSearch{gap:6px;margin-top:7px;display:flex}.-OvAuG_candidateSearch input{border:1px solid var(--dsw-alias-border-l2);min-width:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);font:inherit;border-radius:7px;flex:1;padding:6px 8px}.-OvAuG_candidateBatchBar,.-OvAuG_candidatePagination{color:var(--dsw-alias-label-tertiary);align-items:center;gap:8px;margin-bottom:7px;font-size:12px;display:flex}.-OvAuG_candidateBatchBar label{align-items:center;gap:5px;display:flex}.-OvAuG_candidateBatchBar button{margin-left:auto}.-OvAuG_candidatePagination{justify-content:flex-end;margin-top:7px;margin-bottom:0}.-OvAuG_sectionHeading{justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:7px;display:flex}.-OvAuG_sectionHeading h2{color:var(--dsw-alias-label-secondary);margin:0;font-size:14px;font-weight:650}.-OvAuG_sectionHeading p{color:var(--dsw-alias-label-tertiary);margin:2px 0 0;font-size:12px;line-height:17px}.-OvAuG_sectionHeading>span{color:var(--dsw-alias-label-tertiary);flex:none;font-size:12px}.-OvAuG_actionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.-OvAuG_primaryAction{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 22%, var(--dsw-alias-border-l2));min-width:0;min-height:52px;color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, var(--dsw-alias-bg-layer-2));font:inherit;text-align:left;cursor:pointer;border-radius:10px;grid-template-columns:25px minmax(0,1fr);align-items:center;gap:7px;padding:8px;display:grid}.-OvAuG_primaryAction>span:first-child{width:24px;height:24px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);border-radius:7px;place-items:center;font-size:17px;display:grid}.-OvAuG_primaryAction strong,.-OvAuG_primaryAction small{text-overflow:ellipsis;display:block;overflow:hidden}.-OvAuG_primaryAction strong{white-space:nowrap;font-size:13px}.-OvAuG_primaryAction small{color:var(--dsw-alias-label-tertiary);margin-top:2px;font-size:14px;line-height:15px}.-OvAuG_primaryAction:hover:not(:disabled),.-OvAuG_candidateCard:hover{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent)}.-OvAuG_primaryAction:disabled,.-OvAuG_ignoreButton:disabled{opacity:.45;cursor:default}.-OvAuG_bridgeNotice,.-OvAuG_scanNotice,.-OvAuG_scanError,.-OvAuG_emptyCopy{color:var(--dsw-alias-label-tertiary);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);border-radius:8px;margin:7px 0 0;padding:8px 9px;font-size:12px;line-height:17px}.-OvAuG_bridgeNotice,.-OvAuG_scanError{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 28%, transparent)}.-OvAuG_scanNotice,.-OvAuG_scanError{gap:2px;display:grid}.-OvAuG_scanNotice strong,.-OvAuG_scanError strong{color:var(--dsw-alias-label-secondary);font-size:12px}.-OvAuG_scanNotice span,.-OvAuG_scanError span{text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.-OvAuG_candidateList,.-OvAuG_projectList{gap:6px;margin:0;padding:0;list-style:none;display:grid}.-OvAuG_candidateCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);border-radius:10px;grid-template-columns:minmax(0,1fr) auto;min-width:0;transition:border-color .12s;display:grid}.-OvAuG_candidateCard[data-selectable=true]{grid-template-columns:auto minmax(0,1fr) auto}.-OvAuG_candidateSelect{place-items:center;padding-left:9px;display:grid}.-OvAuG_candidateCard[data-ignored=true]{opacity:.68}.-OvAuG_candidateMain{min-width:0;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:0;gap:4px;padding:9px;display:grid}.-OvAuG_candidateTopline,.-OvAuG_candidateMeta{align-items:center;gap:5px;min-width:0;display:flex}.-OvAuG_candidateTopline{justify-content:space-between}.-OvAuG_candidateTopline strong{text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;overflow:hidden}.-OvAuG_candidateTopline>span,.-OvAuG_candidateMeta>span{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);border-radius:999px;flex:none;padding:2px 6px;font-size:14px}.-OvAuG_candidateTopline>span[data-level=high]{color:var(--dsw-alias-state-success-primary,#4e9962)}.-OvAuG_candidateTopline>span[data-level=low],.-OvAuG_candidateTopline>span[data-level=unknown]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.-OvAuG_candidatePath{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.-OvAuG_candidateMeta{flex-wrap:wrap}.-OvAuG_ignoreButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:7px;align-self:center;margin-right:8px;padding:4px 7px;font-size:14px}.-OvAuG_projectItem{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent);border-radius:9px;justify-content:space-between;align-items:center;gap:8px;min-width:0;padding:8px 9px;display:flex}.-OvAuG_projectItem div{min-width:0}.-OvAuG_projectItem strong,.-OvAuG_projectItem small{text-overflow:ellipsis;white-space:nowrap;display:block;overflow:hidden}.-OvAuG_projectItem strong{font-size:13px;font-weight:550}.-OvAuG_projectItem small,.-OvAuG_projectItem>span{color:var(--dsw-alias-label-tertiary);font-size:14px}.-OvAuG_projectItem>span{flex:none}.-OvAuG_createSection{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, var(--dsw-alias-border-l2));background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 48%, transparent);border-radius:11px;min-width:0;padding:9px}.-OvAuG_createForm{gap:7px;min-width:0;display:grid}.-OvAuG_createField{gap:3px;min-width:0;display:grid}.-OvAuG_fieldLabel{color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600}.-OvAuG_parentRow{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;min-width:0;display:grid}.-OvAuG_pathText{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);text-overflow:ellipsis;white-space:nowrap;border-radius:8px;padding:6px 8px;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.-OvAuG_textInput,.-OvAuG_selectInput{border:1px solid var(--dsw-alias-border-l2);min-width:0;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;border-radius:8px;padding:6px 8px;font-size:13px}.-OvAuG_textInput:disabled,.-OvAuG_selectInput:disabled{opacity:.55}.-OvAuG_templateDescription{color:var(--dsw-alias-label-tertiary);margin:0;font-size:14px;line-height:24px}.-OvAuG_createActions{flex-wrap:wrap;justify-content:flex-end;gap:6px;margin-top:3px;display:flex}.-OvAuG_confirmButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 34%, transparent);color:#fff;background:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:13px}.-OvAuG_confirmButton:disabled{opacity:.5;cursor:default}.-OvAuG_smallButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:7px;flex:none;padding:5px 8px;font-size:14px}.-OvAuG_previewCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:9px;gap:6px;min-width:0;padding:8px;display:grid}.-OvAuG_previewTopline{justify-content:space-between;align-items:center;gap:6px;min-width:0;display:flex}.-OvAuG_previewTopline strong{font-size:13px}.-OvAuG_previewTopline span{color:var(--dsw-alias-label-tertiary);flex:none;font-size:14px}.-OvAuG_previewFacts{gap:3px;margin:0;display:grid}.-OvAuG_previewFacts div{grid-template-columns:64px minmax(0,1fr);gap:6px;min-width:0;display:grid}.-OvAuG_previewFacts dt{color:var(--dsw-alias-label-tertiary);font-size:14px}.-OvAuG_previewFacts dd{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;margin:0;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.-OvAuG_previewNote{color:var(--dsw-alias-label-tertiary);margin:0;font-size:14px;line-height:24px}.-OvAuG_operationList{gap:2px;max-height:148px;margin:0;padding:0;list-style:none;display:grid;overflow:auto}.-OvAuG_operationItem{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 46%, transparent);border-radius:6px;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:5px;min-width:0;padding:3px 6px;font-size:14px;display:grid}.-OvAuG_operationPath{text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.-OvAuG_hashText{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Cascadia Mono,Consolas,monospace}.-OvAuG_createSuccess,.-OvAuG_createError{border-radius:8px;gap:6px;margin-top:2px;padding:8px;font-size:12px;line-height:17px;display:grid}.-OvAuG_createSuccess{border:1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 30%, transparent);color:var(--dsw-alias-state-success-primary,#4e9962);background:color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 8%, transparent)}.-OvAuG_createError{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 28%, transparent);color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 62%, transparent)}.-OvAuG_statusFacts{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0;display:grid}.-OvAuG_statusFacts div{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:8px;min-width:0;padding:7px}.-OvAuG_statusFacts dt{color:var(--dsw-alias-label-tertiary);font-size:14px}.-OvAuG_statusFacts dd{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;margin:2px 0 0;font-size:12px;overflow:hidden}.-OvAuG_statePanel{text-align:center;flex-direction:column;justify-content:center;align-items:center;min-height:260px;display:flex}.-OvAuG_emptyIcon{border:1px solid var(--dsw-alias-border-l2);width:44px;height:44px;color:var(--dsw-alias-label-tertiary);border-radius:14px;place-items:center;margin-bottom:10px;display:grid}.-OvAuG_statePanel h2{margin:0;font-size:13px}.-OvAuG_statePanel p{max-width:260px;color:var(--dsw-alias-label-secondary);margin:6px 0 0;font-size:13px;line-height:24px}.-OvAuG_secondaryButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;cursor:pointer;border-radius:8px;margin-top:11px;padding:6px 12px;font-size:13px}.-OvAuG_projectItemActions{flex:none;align-items:center;gap:6px;display:flex}.-OvAuG_documentPanel{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, var(--dsw-alias-border-l2));background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 48%, transparent);border-radius:11px;min-width:0;padding:9px}.-OvAuG_documentPanelHeader{justify-content:space-between;align-items:flex-start;gap:8px;min-width:0;display:flex}.-OvAuG_documentPanelHeader>div:first-child{min-width:0}.-OvAuG_documentPanelHeader strong{font-size:13px}.-OvAuG_documentPanelHeader p{color:var(--dsw-alias-label-tertiary);margin:2px 0 0;font-size:14px}.-OvAuG_documentPanelActions{flex:none;gap:5px;display:flex}.-OvAuG_documentPanelEmpty{color:var(--dsw-alias-label-tertiary);margin:7px 0 0;font-size:12px;line-height:17px}.-OvAuG_documentLocation{font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px}.-OvAuG_documentList{gap:3px;max-height:190px;margin:7px 0 0;padding:0;list-style:none;display:grid;overflow:auto}.-OvAuG_documentRow{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 46%, transparent);border-radius:7px;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;min-width:0;padding:5px 7px;display:grid}.-OvAuG_documentRowMain{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:2px 7px;min-width:0;display:grid}.-OvAuG_documentRole{color:var(--dsw-alias-label-secondary);flex:none;font-size:12px;font-weight:600}.-OvAuG_documentPath,.-OvAuG_proposalPath{text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px;overflow:hidden}.-OvAuG_documentRowSide{align-items:center;gap:5px;min-width:0;display:flex}.-OvAuG_documentStateBadge{color:var(--dsw-alias-label-tertiary);background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap;border-radius:999px;padding:2px 6px;font-size:14px}.-OvAuG_documentStateBadge[data-state=ok]{color:var(--dsw-alias-state-success-primary,#4e9962)}.-OvAuG_documentStateBadge[data-state=changed],.-OvAuG_documentStateBadge[data-state=missing]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.-OvAuG_documentStateBadge[data-state=unreadable]{color:var(--dsw-alias-state-danger-primary,#c25555)}.-OvAuG_documentHash{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:14px}.-OvAuG_documentIssues{grid-column:1/-1;gap:2px;display:grid}.-OvAuG_documentIssue{color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:17px}.-OvAuG_proposalGroup{gap:5px;margin-top:8px;display:grid}.-OvAuG_proposalGroupTitle{color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:650}.-OvAuG_proposalCard{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 22%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 52%, transparent);border-radius:9px;gap:5px;min-width:0;padding:7px;display:grid}.-OvAuG_proposalLine,.-OvAuG_proposalActions{min-width:0;color:var(--dsw-alias-label-secondary);flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;display:flex}.-OvAuG_proposalActions select{border:1px solid var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);font:inherit;border-radius:7px;padding:4px 6px;font-size:14px}.-OvAuG_proposalHint{color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:17px}.-OvAuG_iconButton:focus-visible,.-OvAuG_primaryAction:focus-visible,.-OvAuG_candidateMain:focus-visible,.-OvAuG_ignoreButton:focus-visible,.-OvAuG_secondaryButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}@media (width<=1180px){.-OvAuG_actionGrid,.-OvAuG_statusFacts{grid-template-columns:1fr}.-OvAuG_candidateTabs{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (prefers-reduced-motion:reduce){.-OvAuG_candidateCard{transition:none}}";
 		const tagId = "@cyrus/dsh-project-control/ProjectControlPlaceholder.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -2602,83 +2660,90 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var ProjectControlPlaceholder_module_css_default = {
-			"actionGrid": "L8uqga_actionGrid",
-			"bridgeNotice": "L8uqga_bridgeNotice",
-			"candidateCard": "L8uqga_candidateCard",
-			"candidateList": "L8uqga_candidateList",
-			"candidateMain": "L8uqga_candidateMain",
-			"candidateMeta": "L8uqga_candidateMeta",
-			"candidatePath": "L8uqga_candidatePath",
-			"candidateSection": "L8uqga_candidateSection",
-			"candidateTopline": "L8uqga_candidateTopline",
-			"confirmButton": "L8uqga_confirmButton",
-			"console": "L8uqga_console",
-			"consoleHeader": "L8uqga_consoleHeader",
-			"content": "L8uqga_content",
-			"countBadge": "L8uqga_countBadge",
-			"createActions": "L8uqga_createActions",
-			"createError": "L8uqga_createError",
-			"createField": "L8uqga_createField",
-			"createForm": "L8uqga_createForm",
-			"createSection": "L8uqga_createSection",
-			"createSuccess": "L8uqga_createSuccess",
-			"documentHash": "L8uqga_documentHash",
-			"documentIssue": "L8uqga_documentIssue",
-			"documentIssues": "L8uqga_documentIssues",
-			"documentList": "L8uqga_documentList",
-			"documentLocation": "L8uqga_documentLocation",
-			"documentPanel": "L8uqga_documentPanel",
-			"documentPanelActions": "L8uqga_documentPanelActions",
-			"documentPanelEmpty": "L8uqga_documentPanelEmpty",
-			"documentPanelHeader": "L8uqga_documentPanelHeader",
-			"documentPath": "L8uqga_documentPath",
-			"documentRole": "L8uqga_documentRole",
-			"documentRow": "L8uqga_documentRow",
-			"documentRowMain": "L8uqga_documentRowMain",
-			"documentRowSide": "L8uqga_documentRowSide",
-			"documentStateBadge": "L8uqga_documentStateBadge",
-			"emptyCopy": "L8uqga_emptyCopy",
-			"emptyIcon": "L8uqga_emptyIcon",
-			"fieldLabel": "L8uqga_fieldLabel",
-			"gateBadge": "L8uqga_gateBadge",
-			"hashText": "L8uqga_hashText",
-			"iconButton": "L8uqga_iconButton",
-			"ignoreButton": "L8uqga_ignoreButton",
-			"intakeSection": "L8uqga_intakeSection",
-			"operationItem": "L8uqga_operationItem",
-			"operationList": "L8uqga_operationList",
-			"operationPath": "L8uqga_operationPath",
-			"parentRow": "L8uqga_parentRow",
-			"pathText": "L8uqga_pathText",
-			"previewCard": "L8uqga_previewCard",
-			"previewFacts": "L8uqga_previewFacts",
-			"previewNote": "L8uqga_previewNote",
-			"previewTopline": "L8uqga_previewTopline",
-			"primaryAction": "L8uqga_primaryAction",
-			"projectItem": "L8uqga_projectItem",
-			"projectItemActions": "L8uqga_projectItemActions",
-			"projectList": "L8uqga_projectList",
-			"projectSection": "L8uqga_projectSection",
-			"proposalActions": "L8uqga_proposalActions",
-			"proposalCard": "L8uqga_proposalCard",
-			"proposalGroup": "L8uqga_proposalGroup",
-			"proposalGroupTitle": "L8uqga_proposalGroupTitle",
-			"proposalHint": "L8uqga_proposalHint",
-			"proposalLine": "L8uqga_proposalLine",
-			"proposalPath": "L8uqga_proposalPath",
-			"readyState": "L8uqga_readyState",
-			"scanError": "L8uqga_scanError",
-			"scanNotice": "L8uqga_scanNotice",
-			"secondaryButton": "L8uqga_secondaryButton",
-			"sectionHeading": "L8uqga_sectionHeading",
-			"selectInput": "L8uqga_selectInput",
-			"smallButton": "L8uqga_smallButton",
-			"statePanel": "L8uqga_statePanel",
-			"statusCard": "L8uqga_statusCard",
-			"statusFacts": "L8uqga_statusFacts",
-			"statusIcon": "L8uqga_statusIcon",
-			"templateDescription": "L8uqga_templateDescription",
-			"textInput": "L8uqga_textInput"
+			"actionGrid": "-OvAuG_actionGrid",
+			"bridgeNotice": "-OvAuG_bridgeNotice",
+			"candidateBatchBar": "-OvAuG_candidateBatchBar",
+			"candidateCard": "-OvAuG_candidateCard",
+			"candidateCenter": "-OvAuG_candidateCenter",
+			"candidateList": "-OvAuG_candidateList",
+			"candidateMain": "-OvAuG_candidateMain",
+			"candidateMeta": "-OvAuG_candidateMeta",
+			"candidatePagination": "-OvAuG_candidatePagination",
+			"candidatePath": "-OvAuG_candidatePath",
+			"candidateSearch": "-OvAuG_candidateSearch",
+			"candidateSection": "-OvAuG_candidateSection",
+			"candidateSelect": "-OvAuG_candidateSelect",
+			"candidateTab": "-OvAuG_candidateTab",
+			"candidateTabs": "-OvAuG_candidateTabs",
+			"candidateTopline": "-OvAuG_candidateTopline",
+			"confirmButton": "-OvAuG_confirmButton",
+			"console": "-OvAuG_console",
+			"consoleHeader": "-OvAuG_consoleHeader",
+			"content": "-OvAuG_content",
+			"countBadge": "-OvAuG_countBadge",
+			"createActions": "-OvAuG_createActions",
+			"createError": "-OvAuG_createError",
+			"createField": "-OvAuG_createField",
+			"createForm": "-OvAuG_createForm",
+			"createSection": "-OvAuG_createSection",
+			"createSuccess": "-OvAuG_createSuccess",
+			"documentHash": "-OvAuG_documentHash",
+			"documentIssue": "-OvAuG_documentIssue",
+			"documentIssues": "-OvAuG_documentIssues",
+			"documentList": "-OvAuG_documentList",
+			"documentLocation": "-OvAuG_documentLocation",
+			"documentPanel": "-OvAuG_documentPanel",
+			"documentPanelActions": "-OvAuG_documentPanelActions",
+			"documentPanelEmpty": "-OvAuG_documentPanelEmpty",
+			"documentPanelHeader": "-OvAuG_documentPanelHeader",
+			"documentPath": "-OvAuG_documentPath",
+			"documentRole": "-OvAuG_documentRole",
+			"documentRow": "-OvAuG_documentRow",
+			"documentRowMain": "-OvAuG_documentRowMain",
+			"documentRowSide": "-OvAuG_documentRowSide",
+			"documentStateBadge": "-OvAuG_documentStateBadge",
+			"emptyCopy": "-OvAuG_emptyCopy",
+			"emptyIcon": "-OvAuG_emptyIcon",
+			"fieldLabel": "-OvAuG_fieldLabel",
+			"gateBadge": "-OvAuG_gateBadge",
+			"hashText": "-OvAuG_hashText",
+			"iconButton": "-OvAuG_iconButton",
+			"ignoreButton": "-OvAuG_ignoreButton",
+			"intakeSection": "-OvAuG_intakeSection",
+			"operationItem": "-OvAuG_operationItem",
+			"operationList": "-OvAuG_operationList",
+			"operationPath": "-OvAuG_operationPath",
+			"parentRow": "-OvAuG_parentRow",
+			"pathText": "-OvAuG_pathText",
+			"previewCard": "-OvAuG_previewCard",
+			"previewFacts": "-OvAuG_previewFacts",
+			"previewNote": "-OvAuG_previewNote",
+			"previewTopline": "-OvAuG_previewTopline",
+			"primaryAction": "-OvAuG_primaryAction",
+			"projectItem": "-OvAuG_projectItem",
+			"projectItemActions": "-OvAuG_projectItemActions",
+			"projectList": "-OvAuG_projectList",
+			"projectSection": "-OvAuG_projectSection",
+			"proposalActions": "-OvAuG_proposalActions",
+			"proposalCard": "-OvAuG_proposalCard",
+			"proposalGroup": "-OvAuG_proposalGroup",
+			"proposalGroupTitle": "-OvAuG_proposalGroupTitle",
+			"proposalHint": "-OvAuG_proposalHint",
+			"proposalLine": "-OvAuG_proposalLine",
+			"proposalPath": "-OvAuG_proposalPath",
+			"readyState": "-OvAuG_readyState",
+			"scanError": "-OvAuG_scanError",
+			"scanNotice": "-OvAuG_scanNotice",
+			"secondaryButton": "-OvAuG_secondaryButton",
+			"sectionHeading": "-OvAuG_sectionHeading",
+			"selectInput": "-OvAuG_selectInput",
+			"smallButton": "-OvAuG_smallButton",
+			"statePanel": "-OvAuG_statePanel",
+			"statusCard": "-OvAuG_statusCard",
+			"statusFacts": "-OvAuG_statusFacts",
+			"statusIcon": "-OvAuG_statusIcon",
+			"templateDescription": "-OvAuG_templateDescription",
+			"textInput": "-OvAuG_textInput"
 		};
 		//#endregion
 		//#region src/client/ProjectControlPlaceholder.tsx
@@ -2713,6 +2778,12 @@ window.__ModuleLoader__.load({
 			const [scanState, setScanState] = (0, react.useState)({ kind: "idle" });
 			const [createState, setCreateState] = (0, react.useState)({ kind: "idle" });
 			const [candidateMutation, setCandidateMutation] = (0, react.useState)();
+			const [candidateView, setCandidateView] = (0, react.useState)("projects");
+			const [candidateSearchInput, setCandidateSearchInput] = (0, react.useState)("");
+			const [candidateSearch, setCandidateSearch] = (0, react.useState)("");
+			const [candidateCursor, setCandidateCursor] = (0, react.useState)();
+			const [candidateCursorHistory, setCandidateCursorHistory] = (0, react.useState)([]);
+			const [selectedCandidates, setSelectedCandidates] = (0, react.useState)({});
 			const [documentPanel, setDocumentPanel] = (0, react.useState)({ kind: "idle" });
 			const [documentMutation, setDocumentMutation] = (0, react.useState)();
 			const [rebindChoices, setRebindChoices] = (0, react.useState)({});
@@ -2729,13 +2800,27 @@ window.__ModuleLoader__.load({
 				const controller = new AbortController();
 				setLoadState({ kind: "loading" });
 				api$1.getStatus(controller.signal).then(async (status) => {
-					const [listResult, candidateResult] = await Promise.allSettled([api$1.listProjects(controller.signal), api$1.listCandidates(void 0, controller.signal)]);
+					const [listResult, candidateResult] = await Promise.allSettled([api$1.listProjects(controller.signal), api$1.listCandidates({
+						view: candidateView === "projects" ? "review" : candidateView,
+						limit: 25,
+						...candidateView === "projects" || candidateSearch === "" ? {} : { search: candidateSearch },
+						...candidateCursor === void 0 ? {} : { afterCandidateId: candidateCursor }
+					}, controller.signal)]);
 					if (controller.signal.aborted) return;
 					setLoadState({
 						kind: "ready",
 						status,
 						...listResult.status === "fulfilled" ? { list: listResult.value } : { listError: errorMessage(listResult.reason, "项目列表暂时无法读取。") },
-						candidates: candidateResult.status === "fulfilled" ? candidateResult.value.candidates : [],
+						candidatePage: candidateResult.status === "fulfilled" ? candidateResult.value : {
+							candidates: [],
+							total: 0,
+							counts: {
+								review: 0,
+								ignored: 0,
+								history: 0
+							},
+							nextCursor: null
+						},
 						...candidateResult.status === "fulfilled" ? {} : { candidateError: errorMessage(candidateResult.reason, "扫描候选暂时无法读取。") }
 					});
 				}, (error) => {
@@ -2748,7 +2833,12 @@ window.__ModuleLoader__.load({
 				return () => {
 					controller.abort();
 				};
-			}, [reloadKey]);
+			}, [
+				candidateCursor,
+				candidateSearch,
+				candidateView,
+				reloadKey
+			]);
 			const reload = (0, react.useCallback)(() => {
 				setReloadKey((value) => value + 1);
 			}, []);
@@ -2777,16 +2867,11 @@ window.__ModuleLoader__.load({
 				});
 				try {
 					const result = await api$1.scan(mode, outcome.selection);
-					const refreshed = await api$1.listCandidates();
-					setLoadState((current) => {
-						if (current.kind !== "ready") return current;
-						const next = {
-							...current,
-							candidates: refreshed.candidates
-						};
-						delete next.candidateError;
-						return next;
-					});
+					setCandidateView("review");
+					setCandidateCursor(void 0);
+					setCandidateCursorHistory([]);
+					setSelectedCandidates({});
+					reload();
 					setScanState({
 						kind: "success",
 						path: result.sourceRoot.path,
@@ -2803,11 +2888,7 @@ window.__ModuleLoader__.load({
 				if (candidateMutation !== void 0) return;
 				setCandidateMutation(candidate.candidateId);
 				try {
-					const updated = await api$1.setCandidateIgnored(candidate.candidateId, !candidate.ignored, candidate.revision);
-					setLoadState((current) => current.kind === "ready" ? {
-						...current,
-						candidates: current.candidates.map((item) => item.candidateId === updated.candidateId ? updated : item)
-					} : current);
+					if ((await api$1.setCandidateIgnored(candidate.candidateId, !candidate.ignored, candidate.revision)).candidateId === candidate.candidateId) reload();
 				} catch (error) {
 					setScanState({
 						kind: "error",
@@ -2816,6 +2897,74 @@ window.__ModuleLoader__.load({
 				} finally {
 					setCandidateMutation(void 0);
 				}
+			};
+			const chooseCandidateView = (view) => {
+				setCandidateView(view);
+				setCandidateCursor(void 0);
+				setCandidateCursorHistory([]);
+				setSelectedCandidates({});
+			};
+			const applyCandidateSearch = () => {
+				setCandidateSearch(candidateSearchInput.trim());
+				setCandidateCursor(void 0);
+				setCandidateCursorHistory([]);
+				setSelectedCandidates({});
+			};
+			const selectCandidate = (candidate, selected) => {
+				setSelectedCandidates((current) => {
+					const next = { ...current };
+					if (selected) next[candidate.candidateId] = candidate.revision;
+					else delete next[candidate.candidateId];
+					return next;
+				});
+			};
+			const selectCandidatePage = (candidates, selected) => {
+				setSelectedCandidates((current) => {
+					const next = { ...current };
+					for (const candidate of candidates) if (selected) next[candidate.candidateId] = candidate.revision;
+					else delete next[candidate.candidateId];
+					return next;
+				});
+			};
+			const mutateSelectedCandidates = async () => {
+				if (loadState.kind !== "ready" || !["review", "ignored"].includes(candidateView)) return;
+				const selectedCandidatesOnPage = loadState.candidatePage.candidates.filter((candidate) => selectedCandidates[candidate.candidateId] === candidate.revision);
+				const selected = selectedCandidatesOnPage.map((candidate) => ({
+					candidateId: candidate.candidateId,
+					expectedRevision: candidate.revision
+				}));
+				if (selected.length === 0 || candidateMutation !== void 0) return;
+				const ignored = candidateView === "review";
+				const action = ignored ? "忽略" : "恢复";
+				const preview = selectedCandidatesOnPage.slice(0, 10).map((candidate) => `- ${statusLabel(candidate.status)}：${candidatePathPreview(candidate.rootPath)}`).join("\n");
+				const remaining = selectedCandidatesOnPage.length > 10 ? `\n- 另有 ${String(selectedCandidatesOnPage.length - 10)} 项未展开` : "";
+				if (!globalThis.confirm(`即将${action}当前页选中的 ${String(selected.length)} 个候选。\n\n${preview}${remaining}\n\n该操作保留历史且可恢复，是否继续？`)) return;
+				setCandidateMutation("batch");
+				try {
+					await api$1.setCandidatesIgnored(selected, ignored);
+					setSelectedCandidates({});
+					reload();
+				} catch (error) {
+					setScanState({
+						kind: "error",
+						message: errorMessage(error, `批量${action}没有完成；本批次未部分生效。`)
+					});
+				} finally {
+					setCandidateMutation(void 0);
+				}
+			};
+			const nextCandidatePage = () => {
+				if (loadState.kind !== "ready" || loadState.candidatePage.nextCursor === null) return;
+				setCandidateCursorHistory((current) => [...current, candidateCursor]);
+				setCandidateCursor(loadState.candidatePage.nextCursor);
+				setSelectedCandidates({});
+			};
+			const previousCandidatePage = () => {
+				if (candidateCursorHistory.length === 0) return;
+				const previous = candidateCursorHistory[candidateCursorHistory.length - 1];
+				setCandidateCursorHistory((current) => current.slice(0, -1));
+				setCandidateCursor(previous);
+				setSelectedCandidates({});
 			};
 			const openCandidate = (candidate) => {
 				workbench.open({
@@ -3068,6 +3217,20 @@ window.__ModuleLoader__.load({
 							createState,
 							bridgeAvailable: hasProjectControlDirectoryBridge(),
 							candidateMutation,
+							candidateView,
+							candidateSearchInput,
+							selectedCandidates,
+							hasPreviousCandidatePage: candidateCursorHistory.length > 0,
+							onChooseCandidateView: chooseCandidateView,
+							onCandidateSearchInput: setCandidateSearchInput,
+							onApplyCandidateSearch: applyCandidateSearch,
+							onSelectCandidate: selectCandidate,
+							onSelectCandidatePage: selectCandidatePage,
+							onMutateSelectedCandidates: () => {
+								mutateSelectedCandidates();
+							},
+							onNextCandidatePage: nextCandidatePage,
+							onPreviousCandidatePage: previousCandidatePage,
 							onScan: (mode) => {
 								beginScan(mode);
 							},
@@ -3183,11 +3346,9 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function ReadyState({ state, scanState, createState, bridgeAvailable, candidateMutation, onScan, onOpenCandidate, onToggleIgnored, onBeginCreate, onUpdateCreateForm, onPrepareCreate, onSubmitCreate, onEditCreate, onCancelCreate, documentPanel, documentMutation, rebindChoices, onOpenDocuments, onRefreshDocuments, onResolveRebind, onChooseRebindCandidate, onCloseDocuments, pinnedProjectIds, onOpenConsole, onTogglePin }) {
+		function ReadyState({ state, scanState, createState, bridgeAvailable, candidateMutation, candidateView, candidateSearchInput, selectedCandidates, hasPreviousCandidatePage, onChooseCandidateView, onCandidateSearchInput, onApplyCandidateSearch, onSelectCandidate, onSelectCandidatePage, onMutateSelectedCandidates, onNextCandidatePage, onPreviousCandidatePage, onScan, onOpenCandidate, onToggleIgnored, onBeginCreate, onUpdateCreateForm, onPrepareCreate, onSubmitCreate, onEditCreate, onCancelCreate, documentPanel, documentMutation, rebindChoices, onOpenDocuments, onRefreshDocuments, onResolveRebind, onChooseRebindCandidate, onCloseDocuments, pinnedProjectIds, onOpenConsole, onTogglePin }) {
 			const descriptor = storageDescriptor(state.status.storage.state);
 			const scanning = scanState.kind === "selecting" || scanState.kind === "scanning";
-			const visibleCandidates = state.candidates.filter((candidate) => !candidate.ignored);
-			const ignoredCandidates = state.candidates.filter((candidate) => candidate.ignored);
 			const activeDocumentsProjectId = documentPanel.kind === "loading" || documentPanel.kind === "ready" ? documentPanel.kind === "loading" ? documentPanel.projectId : documentPanel.index.projectId : void 0;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: ProjectControlPlaceholder_module_css_default.readyState,
@@ -3278,22 +3439,17 @@ window.__ModuleLoader__.load({
 						onEdit: onEditCreate,
 						onCancel: onCancelCreate
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(CandidateSection, {
-						title: "待审阅候选",
-						candidates: visibleCandidates,
-						...state.candidateError === void 0 ? {} : { error: state.candidateError },
-						candidateMutation,
-						onOpen: onOpenCandidate,
-						onToggleIgnored
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(CandidateCenterNavigation, {
+						activeView: candidateView,
+						projectCount: state.list?.total ?? 0,
+						counts: state.candidatePage.counts,
+						...state.candidateError === void 0 ? {} : { candidateError: state.candidateError },
+						searchInput: candidateSearchInput,
+						onChooseView: onChooseCandidateView,
+						onSearchInput: onCandidateSearchInput,
+						onApplySearch: onApplyCandidateSearch
 					}),
-					ignoredCandidates.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CandidateSection, {
-						title: "已忽略",
-						candidates: ignoredCandidates,
-						candidateMutation,
-						onOpen: onOpenCandidate,
-						onToggleIgnored
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProjectSection, {
+					candidateView === "projects" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProjectSection, {
 						...state.list === void 0 ? {} : { list: state.list },
 						...state.listError === void 0 ? {} : { error: state.listError },
 						...activeDocumentsProjectId === void 0 ? {} : { documentsProjectId: activeDocumentsProjectId },
@@ -3301,6 +3457,22 @@ window.__ModuleLoader__.load({
 						pinnedProjectIds,
 						onOpenConsole,
 						onTogglePin
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CandidateSection, {
+						view: candidateView,
+						candidates: state.candidatePage.candidates,
+						total: state.candidatePage.total,
+						nextCursor: state.candidatePage.nextCursor,
+						hasPreviousPage: hasPreviousCandidatePage,
+						selectedCandidates,
+						...state.candidateError === void 0 ? {} : { error: state.candidateError },
+						candidateMutation,
+						onOpen: onOpenCandidate,
+						onToggleIgnored,
+						onSelect: onSelectCandidate,
+						onSelectPage: onSelectCandidatePage,
+						onMutateSelected: onMutateSelectedCandidates,
+						onNextPage: onNextCandidatePage,
+						onPreviousPage: onPreviousCandidatePage
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DocumentIndexPanel, {
 						panel: documentPanel,
@@ -3631,68 +3803,218 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function CandidateSection({ title, candidates, error, candidateMutation, onOpen, onToggleIgnored }) {
+		function CandidateCenterNavigation({ activeView, projectCount, counts, candidateError, searchInput, onChooseView, onSearchInput, onApplySearch }) {
+			const views = [
+				{
+					id: "projects",
+					label: "项目",
+					count: projectCount
+				},
+				{
+					id: "review",
+					label: "待审阅",
+					count: counts.review
+				},
+				{
+					id: "ignored",
+					label: "已忽略",
+					count: counts.ignored
+				},
+				{
+					id: "history",
+					label: "历史记录",
+					count: counts.history
+				}
+			];
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+				className: ProjectControlPlaceholder_module_css_default.candidateCenter,
+				"aria-labelledby": "candidate-center-heading",
+				"data-candidate-center-view": activeView,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: ProjectControlPlaceholder_module_css_default.sectionHeading,
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+							id: "candidate-center-heading",
+							children: "候选中心"
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: "正式项目、待处理项、已忽略项和历史证据彼此分开。" })] })
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						className: ProjectControlPlaceholder_module_css_default.candidateTabs,
+						role: "tablist",
+						"aria-label": "候选中心视图",
+						children: views.map((view) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							className: ProjectControlPlaceholder_module_css_default.candidateTab,
+							type: "button",
+							role: "tab",
+							"aria-selected": activeView === view.id,
+							onClick: () => {
+								onChooseView(view.id);
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: view.label }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: String(view.count) })]
+						}, view.id))
+					}),
+					activeView === "projects" && candidateError !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+						className: ProjectControlPlaceholder_module_css_default.scanError,
+						role: "alert",
+						children: ["候选计数暂时无法读取：", candidateError]
+					}),
+					activeView !== "projects" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+						className: ProjectControlPlaceholder_module_css_default.candidateSearch,
+						role: "search",
+						onSubmit: (event) => {
+							event.preventDefault();
+							onApplySearch();
+						},
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							type: "search",
+							value: searchInput,
+							maxLength: 200,
+							placeholder: "搜索名称、路径、候选 ID 或项目 ID",
+							"aria-label": "搜索候选",
+							onChange: (event) => {
+								onSearchInput(event.currentTarget.value);
+							}
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "submit",
+							children: "搜索"
+						})]
+					})
+				]
+			});
+		}
+		function CandidateSection({ view, candidates, total, nextCursor, hasPreviousPage, selectedCandidates, error, candidateMutation, onOpen, onToggleIgnored, onSelect, onSelectPage, onMutateSelected, onNextPage, onPreviousPage }) {
+			const title = view === "review" ? "待审阅候选" : view === "ignored" ? "已忽略" : "历史记录";
+			const selectable = view !== "history";
+			const selectedCount = candidates.filter((candidate) => selectedCandidates[candidate.candidateId] === candidate.revision).length;
+			const allSelected = selectable && candidates.length > 0 && selectedCount === candidates.length;
+			const emptyMessage = view === "review" ? "当前没有需要处理的候选。已登记、已忽略和旧扫描不会占用这里的位置。" : view === "ignored" ? "当前没有已忽略候选。" : "当前没有候选历史记录。";
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 				className: ProjectControlPlaceholder_module_css_default.candidateSection,
-				"aria-labelledby": `candidate-section-${title}`,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: ProjectControlPlaceholder_module_css_default.sectionHeading,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-						id: `candidate-section-${title}`,
-						children: title
-					}) }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [candidates.length, " 项"] })]
-				}), error !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: ProjectControlPlaceholder_module_css_default.emptyCopy,
-					role: "alert",
-					children: error
-				}) : candidates.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: ProjectControlPlaceholder_module_css_default.emptyCopy,
-					children: "暂无候选。选择来源目录或单个项目后，识别结果会显示在这里。"
-				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-					className: ProjectControlPlaceholder_module_css_default.candidateList,
-					children: candidates.map((candidate) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-						className: ProjectControlPlaceholder_module_css_default.candidateCard,
-						"data-ignored": candidate.ignored || void 0,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-							className: ProjectControlPlaceholder_module_css_default.candidateMain,
-							type: "button",
-							onClick: () => {
-								onOpen(candidate);
-							},
+				"aria-labelledby": `candidate-section-${view}`,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: ProjectControlPlaceholder_module_css_default.sectionHeading,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+							id: `candidate-section-${view}`,
+							children: title
+						}) }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+							"本页 ",
+							String(candidates.length),
+							" / 共 ",
+							String(total),
+							" 项"
+						] })]
+					}),
+					selectable && candidates.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: ProjectControlPlaceholder_module_css_default.candidateBatchBar,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								type: "checkbox",
+								checked: allSelected,
+								onChange: (event) => {
+									onSelectPage(candidates, event.currentTarget.checked);
+								}
+							}), "选择本页"] }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+								"已选 ",
+								String(selectedCount),
+								" 项"
+							] }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								className: ProjectControlPlaceholder_module_css_default.smallButton,
+								type: "button",
+								disabled: selectedCount === 0 || candidateMutation !== void 0,
+								onClick: onMutateSelected,
+								children: candidateMutation === "batch" ? "处理中…" : view === "review" ? "批量忽略" : "批量恢复"
+							})
+						]
+					}),
+					error !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectControlPlaceholder_module_css_default.emptyCopy,
+						role: "alert",
+						children: error
+					}) : candidates.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectControlPlaceholder_module_css_default.emptyCopy,
+						children: emptyMessage
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+						className: ProjectControlPlaceholder_module_css_default.candidateList,
+						children: candidates.map((candidate) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+							className: ProjectControlPlaceholder_module_css_default.candidateCard,
+							"data-ignored": candidate.ignored || void 0,
+							"data-selectable": selectable || void 0,
 							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-									className: ProjectControlPlaceholder_module_css_default.candidateTopline,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: candidate.suggestedName }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										"data-level": candidate.evidenceLevel,
-										children: evidenceLabel(candidate.evidenceLevel)
-									})]
+								selectable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+									className: ProjectControlPlaceholder_module_css_default.candidateSelect,
+									"aria-label": `选择 ${candidate.suggestedName}`,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+										type: "checkbox",
+										checked: selectedCandidates[candidate.candidateId] === candidate.revision,
+										onChange: (event) => {
+											onSelect(candidate, event.currentTarget.checked);
+										}
+									})
 								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: ProjectControlPlaceholder_module_css_default.candidatePath,
-									title: candidate.rootPath,
-									children: candidate.rootPath
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-									className: ProjectControlPlaceholder_module_css_default.candidateMeta,
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+									className: ProjectControlPlaceholder_module_css_default.candidateMain,
+									type: "button",
+									onClick: () => {
+										onOpen(candidate);
+									},
 									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: statusLabel(candidate.status) }),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [candidate.documentCount, " 份文档"] }),
-										candidate.issueCount > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [candidate.issueCount, " 个问题"] })
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: ProjectControlPlaceholder_module_css_default.candidateTopline,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: candidate.suggestedName }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												"data-level": candidate.evidenceLevel,
+												children: evidenceLabel(candidate.evidenceLevel)
+											})]
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: ProjectControlPlaceholder_module_css_default.candidatePath,
+											title: candidate.rootPath,
+											children: candidate.rootPath
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: ProjectControlPlaceholder_module_css_default.candidateMeta,
+											children: [
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: candidateStatusLabel(view, candidate) }),
+												/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [candidate.documentCount, " 份文档"] }),
+												candidate.issueCount > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [candidate.issueCount, " 个问题"] })
+											]
+										})
 									]
+								}),
+								selectable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+									className: ProjectControlPlaceholder_module_css_default.ignoreButton,
+									type: "button",
+									disabled: candidateMutation !== void 0,
+									"aria-label": candidate.ignored ? `恢复 ${candidate.suggestedName}` : `忽略 ${candidate.suggestedName}`,
+									onClick: () => {
+										onToggleIgnored(candidate);
+									},
+									children: candidateMutation === candidate.candidateId ? "处理中…" : candidate.ignored ? "恢复" : "忽略"
 								})
 							]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-							className: ProjectControlPlaceholder_module_css_default.ignoreButton,
+						}, candidate.candidateId))
+					}),
+					(hasPreviousPage || nextCursor !== null) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: ProjectControlPlaceholder_module_css_default.candidatePagination,
+						"aria-label": "候选分页",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
 							type: "button",
-							disabled: candidateMutation !== void 0 || candidate.status === "imported",
-							"aria-label": candidate.ignored ? `恢复 ${candidate.suggestedName}` : `忽略 ${candidate.suggestedName}`,
-							onClick: () => {
-								onToggleIgnored(candidate);
-							},
-							children: candidateMutation === candidate.candidateId ? "处理中…" : candidate.status === "imported" ? "已登记" : candidate.ignored ? "恢复" : "忽略"
+							disabled: !hasPreviousPage,
+							onClick: onPreviousPage,
+							children: "上一页"
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectControlPlaceholder_module_css_default.smallButton,
+							type: "button",
+							disabled: nextCursor === null,
+							onClick: onNextPage,
+							children: "下一页"
 						})]
-					}, candidate.candidateId))
-				})]
+					})
+				]
 			});
 		}
 		function ProjectSection({ list, error, documentsProjectId, onOpenDocuments, pinnedProjectIds, onOpenConsole, onTogglePin }) {
@@ -4001,6 +4323,13 @@ window.__ModuleLoader__.load({
 			if (status === "imported") return "已登记";
 			if (status === "relocation_candidate") return "位置待重绑";
 			return status;
+		}
+		function candidateStatusLabel(view, candidate) {
+			if (view === "history" && candidate.historyReason === "superseded") return "已被新扫描取代";
+			return statusLabel(candidate.status);
+		}
+		function candidatePathPreview(path) {
+			return path.length <= 160 ? path : `${path.slice(0, 157)}…`;
 		}
 		function errorMessage(error, fallback) {
 			return error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;

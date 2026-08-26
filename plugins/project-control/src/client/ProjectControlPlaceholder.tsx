@@ -4,6 +4,8 @@ import type { ProjectControlPlaceholderProps } from './contract.ts'
 import {
   createProjectControlApi,
   documentRoleLabel,
+  type CandidateCenterView,
+  type IntakeCandidateList,
   type IntakeScanResult,
   type IntakeScanMode,
   type PrepareCreateResult,
@@ -52,7 +54,7 @@ interface ReadyLoadState {
   status: ProjectControlStatus
   list?: ProjectList
   listError?: string
-  candidates: readonly ProjectCandidate[]
+  candidatePage: IntakeCandidateList
   candidateError?: string
 }
 
@@ -106,6 +108,12 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
   const [scanState, setScanState] = useState<ScanState>({ kind: 'idle' })
   const [createState, setCreateState] = useState<CreateState>({ kind: 'idle' })
   const [candidateMutation, setCandidateMutation] = useState<string | undefined>()
+  const [candidateView, setCandidateView] = useState<CandidateCenterView | 'projects'>('projects')
+  const [candidateSearchInput, setCandidateSearchInput] = useState('')
+  const [candidateSearch, setCandidateSearch] = useState('')
+  const [candidateCursor, setCandidateCursor] = useState<string | undefined>()
+  const [candidateCursorHistory, setCandidateCursorHistory] = useState<Array<string | undefined>>([])
+  const [selectedCandidates, setSelectedCandidates] = useState<Record<string, number>>({})
   const [documentPanel, setDocumentPanel] = useState<DocumentPanelState>({ kind: 'idle' })
   const [documentMutation, setDocumentMutation] = useState<string | undefined>()
   const [rebindChoices, setRebindChoices] = useState<Record<string, string>>({})
@@ -129,7 +137,12 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
     api.getStatus(controller.signal).then(async status => {
       const [listResult, candidateResult] = await Promise.allSettled([
         api.listProjects(controller.signal),
-        api.listCandidates(undefined, controller.signal),
+        api.listCandidates({
+          view: candidateView === 'projects' ? 'review' : candidateView,
+          limit: 25,
+          ...(candidateView === 'projects' || candidateSearch === '' ? {} : { search: candidateSearch }),
+          ...(candidateCursor === undefined ? {} : { afterCandidateId: candidateCursor }),
+        }, controller.signal),
       ])
       if (controller.signal.aborted) return
       setLoadState({
@@ -138,7 +151,9 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
         ...(listResult.status === 'fulfilled'
           ? { list: listResult.value }
           : { listError: errorMessage(listResult.reason, '项目列表暂时无法读取。') }),
-        candidates: candidateResult.status === 'fulfilled' ? candidateResult.value.candidates : [],
+        candidatePage: candidateResult.status === 'fulfilled'
+          ? candidateResult.value
+          : { candidates: [], total: 0, counts: { review: 0, ignored: 0, history: 0 }, nextCursor: null },
         ...(candidateResult.status === 'fulfilled'
           ? {}
           : { candidateError: errorMessage(candidateResult.reason, '扫描候选暂时无法读取。') }),
@@ -148,7 +163,7 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
       setLoadState({ kind: 'error', message: errorMessage(error, '项目控制台状态读取失败。') })
     })
     return () => { controller.abort() }
-  }, [reloadKey])
+  }, [candidateCursor, candidateSearch, candidateView, reloadKey])
 
   const reload = useCallback(() => { setReloadKey(value => value + 1) }, [])
 
@@ -167,16 +182,11 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
     setScanState({ kind: 'scanning', mode, path: outcome.selection.path })
     try {
       const result = await api.scan(mode, outcome.selection)
-      const refreshed = await api.listCandidates()
-      setLoadState(current => {
-        if (current.kind !== 'ready') return current
-        const next: ReadyLoadState = {
-          ...current,
-          candidates: refreshed.candidates,
-        }
-        delete next.candidateError
-        return next
-      })
+      setCandidateView('review')
+      setCandidateCursor(undefined)
+      setCandidateCursorHistory([])
+      setSelectedCandidates({})
+      reload()
       setScanState({
         kind: 'success',
         path: result.sourceRoot.path,
@@ -199,18 +209,91 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
         !candidate.ignored,
         candidate.revision,
       )
-      setLoadState(current => current.kind === 'ready'
-        ? {
-            ...current,
-            candidates: current.candidates.map(item =>
-              item.candidateId === updated.candidateId ? updated : item),
-          }
-        : current)
+      if (updated.candidateId === candidate.candidateId) reload()
     } catch (error) {
       setScanState({ kind: 'error', message: errorMessage(error, '候选状态没有更新。') })
     } finally {
       setCandidateMutation(undefined)
     }
+  }
+
+  const chooseCandidateView = (view: CandidateCenterView | 'projects'): void => {
+    setCandidateView(view)
+    setCandidateCursor(undefined)
+    setCandidateCursorHistory([])
+    setSelectedCandidates({})
+  }
+
+  const applyCandidateSearch = (): void => {
+    setCandidateSearch(candidateSearchInput.trim())
+    setCandidateCursor(undefined)
+    setCandidateCursorHistory([])
+    setSelectedCandidates({})
+  }
+
+  const selectCandidate = (candidate: ProjectCandidate, selected: boolean): void => {
+    setSelectedCandidates(current => {
+      const next = { ...current }
+      if (selected) next[candidate.candidateId] = candidate.revision
+      else delete next[candidate.candidateId]
+      return next
+    })
+  }
+
+  const selectCandidatePage = (candidates: readonly ProjectCandidate[], selected: boolean): void => {
+    setSelectedCandidates(current => {
+      const next = { ...current }
+      for (const candidate of candidates) {
+        if (selected) next[candidate.candidateId] = candidate.revision
+        else delete next[candidate.candidateId]
+      }
+      return next
+    })
+  }
+
+  const mutateSelectedCandidates = async (): Promise<void> => {
+    if (loadState.kind !== 'ready' || !['review', 'ignored'].includes(candidateView)) return
+    const selectedCandidatesOnPage = loadState.candidatePage.candidates
+      .filter(candidate => selectedCandidates[candidate.candidateId] === candidate.revision)
+    const selected = selectedCandidatesOnPage
+      .map(candidate => ({ candidateId: candidate.candidateId, expectedRevision: candidate.revision }))
+    if (selected.length === 0 || candidateMutation !== undefined) return
+    const ignored = candidateView === 'review'
+    const action = ignored ? '忽略' : '恢复'
+    const preview = selectedCandidatesOnPage.slice(0, 10)
+      .map(candidate => `- ${statusLabel(candidate.status)}：${candidatePathPreview(candidate.rootPath)}`)
+      .join('\n')
+    const remaining = selectedCandidatesOnPage.length > 10
+      ? `\n- 另有 ${String(selectedCandidatesOnPage.length - 10)} 项未展开`
+      : ''
+    if (!globalThis.confirm(
+      `即将${action}当前页选中的 ${String(selected.length)} 个候选。\n\n${preview}${remaining}\n\n该操作保留历史且可恢复，是否继续？`,
+    )) return
+    setCandidateMutation('batch')
+    try {
+      await api.setCandidatesIgnored(selected, ignored)
+      setSelectedCandidates({})
+      reload()
+    } catch (error) {
+      setScanState({ kind: 'error', message: errorMessage(error, `批量${action}没有完成；本批次未部分生效。`) })
+    } finally {
+      setCandidateMutation(undefined)
+    }
+  }
+
+  const nextCandidatePage = (): void => {
+    if (loadState.kind !== 'ready' || loadState.candidatePage.nextCursor === null) return
+    setCandidateCursorHistory(current => [...current, candidateCursor])
+    setCandidateCursor(loadState.candidatePage.nextCursor)
+    setSelectedCandidates({})
+  }
+
+  const previousCandidatePage = (): void => {
+    if (candidateCursorHistory.length === 0) return
+    const previous = candidateCursorHistory[candidateCursorHistory.length - 1]
+    setCandidateCursorHistory(current => current.slice(0, -1))
+    setCandidateCursor(previous)
+    setSelectedCandidates({})
   }
 
   const openCandidate = (candidate: ProjectCandidate): void => {
@@ -417,6 +500,18 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
             createState={createState}
             bridgeAvailable={hasProjectControlDirectoryBridge()}
             candidateMutation={candidateMutation}
+            candidateView={candidateView}
+            candidateSearchInput={candidateSearchInput}
+            selectedCandidates={selectedCandidates}
+            hasPreviousCandidatePage={candidateCursorHistory.length > 0}
+            onChooseCandidateView={chooseCandidateView}
+            onCandidateSearchInput={setCandidateSearchInput}
+            onApplyCandidateSearch={applyCandidateSearch}
+            onSelectCandidate={selectCandidate}
+            onSelectCandidatePage={selectCandidatePage}
+            onMutateSelectedCandidates={() => { void mutateSelectedCandidates() }}
+            onNextCandidatePage={nextCandidatePage}
+            onPreviousCandidatePage={previousCandidatePage}
             onScan={mode => { void beginScan(mode) }}
             onOpenCandidate={openCandidate}
             onToggleIgnored={candidate => { void toggleIgnored(candidate) }}
@@ -497,6 +592,18 @@ function ReadyState({
   createState,
   bridgeAvailable,
   candidateMutation,
+  candidateView,
+  candidateSearchInput,
+  selectedCandidates,
+  hasPreviousCandidatePage,
+  onChooseCandidateView,
+  onCandidateSearchInput,
+  onApplyCandidateSearch,
+  onSelectCandidate,
+  onSelectCandidatePage,
+  onMutateSelectedCandidates,
+  onNextCandidatePage,
+  onPreviousCandidatePage,
   onScan,
   onOpenCandidate,
   onToggleIgnored,
@@ -523,6 +630,18 @@ function ReadyState({
   createState: CreateState
   bridgeAvailable: boolean
   candidateMutation: string | undefined
+  candidateView: CandidateCenterView | 'projects'
+  candidateSearchInput: string
+  selectedCandidates: Readonly<Record<string, number>>
+  hasPreviousCandidatePage: boolean
+  onChooseCandidateView(view: CandidateCenterView | 'projects'): void
+  onCandidateSearchInput(value: string): void
+  onApplyCandidateSearch(): void
+  onSelectCandidate(candidate: ProjectCandidate, selected: boolean): void
+  onSelectCandidatePage(candidates: readonly ProjectCandidate[], selected: boolean): void
+  onMutateSelectedCandidates(): void
+  onNextCandidatePage(): void
+  onPreviousCandidatePage(): void
   onScan(mode: IntakeScanMode): void
   onOpenCandidate(candidate: ProjectCandidate): void
   onToggleIgnored(candidate: ProjectCandidate): void
@@ -546,8 +665,6 @@ function ReadyState({
 }): ReactNode {
   const descriptor = storageDescriptor(state.status.storage.state)
   const scanning = scanState.kind === 'selecting' || scanState.kind === 'scanning'
-  const visibleCandidates = state.candidates.filter(candidate => !candidate.ignored)
-  const ignoredCandidates = state.candidates.filter(candidate => candidate.ignored)
   const activeDocumentsProjectId = documentPanel.kind === 'loading' || documentPanel.kind === 'ready'
     ? documentPanel.kind === 'loading' ? documentPanel.projectId : documentPanel.index.projectId
     : undefined
@@ -619,34 +736,46 @@ function ReadyState({
         onCancel={onCancelCreate}
       />
 
-      <CandidateSection
-        title="待审阅候选"
-        candidates={visibleCandidates}
-        {...(state.candidateError === undefined ? {} : { error: state.candidateError })}
-        candidateMutation={candidateMutation}
-        onOpen={onOpenCandidate}
-        onToggleIgnored={onToggleIgnored}
+      <CandidateCenterNavigation
+        activeView={candidateView}
+        projectCount={state.list?.total ?? 0}
+        counts={state.candidatePage.counts}
+        {...(state.candidateError === undefined ? {} : { candidateError: state.candidateError })}
+        searchInput={candidateSearchInput}
+        onChooseView={onChooseCandidateView}
+        onSearchInput={onCandidateSearchInput}
+        onApplySearch={onApplyCandidateSearch}
       />
 
-      {ignoredCandidates.length > 0 && (
+      {candidateView === 'projects' ? (
+        <ProjectSection
+          {...(state.list === undefined ? {} : { list: state.list })}
+          {...(state.listError === undefined ? {} : { error: state.listError })}
+          {...(activeDocumentsProjectId === undefined ? {} : { documentsProjectId: activeDocumentsProjectId })}
+          onOpenDocuments={onOpenDocuments}
+          pinnedProjectIds={pinnedProjectIds}
+          onOpenConsole={onOpenConsole}
+          onTogglePin={onTogglePin}
+        />
+      ) : (
         <CandidateSection
-          title="已忽略"
-          candidates={ignoredCandidates}
+          view={candidateView}
+          candidates={state.candidatePage.candidates}
+          total={state.candidatePage.total}
+          nextCursor={state.candidatePage.nextCursor}
+          hasPreviousPage={hasPreviousCandidatePage}
+          selectedCandidates={selectedCandidates}
+          {...(state.candidateError === undefined ? {} : { error: state.candidateError })}
           candidateMutation={candidateMutation}
           onOpen={onOpenCandidate}
           onToggleIgnored={onToggleIgnored}
+          onSelect={onSelectCandidate}
+          onSelectPage={onSelectCandidatePage}
+          onMutateSelected={onMutateSelectedCandidates}
+          onNextPage={onNextCandidatePage}
+          onPreviousPage={onPreviousCandidatePage}
         />
       )}
-
-      <ProjectSection
-        {...(state.list === undefined ? {} : { list: state.list })}
-        {...(state.listError === undefined ? {} : { error: state.listError })}
-        {...(activeDocumentsProjectId === undefined ? {} : { documentsProjectId: activeDocumentsProjectId })}
-        onOpenDocuments={onOpenDocuments}
-        pinnedProjectIds={pinnedProjectIds}
-        onOpenConsole={onOpenConsole}
-        onTogglePin={onTogglePin}
-      />
 
       <DocumentIndexPanel
         panel={documentPanel}
@@ -920,35 +1049,168 @@ function ScanNotice({ state }: { state: ScanState }): ReactNode {
   )
 }
 
+function CandidateCenterNavigation({
+  activeView,
+  projectCount,
+  counts,
+  candidateError,
+  searchInput,
+  onChooseView,
+  onSearchInput,
+  onApplySearch,
+}: {
+  activeView: CandidateCenterView | 'projects'
+  projectCount: number
+  counts: IntakeCandidateList['counts']
+  candidateError?: string
+  searchInput: string
+  onChooseView(view: CandidateCenterView | 'projects'): void
+  onSearchInput(value: string): void
+  onApplySearch(): void
+}): ReactNode {
+  const views: Array<{ id: CandidateCenterView | 'projects'; label: string; count: number }> = [
+    { id: 'projects', label: '项目', count: projectCount },
+    { id: 'review', label: '待审阅', count: counts.review },
+    { id: 'ignored', label: '已忽略', count: counts.ignored },
+    { id: 'history', label: '历史记录', count: counts.history },
+  ]
+  return (
+    <section className={css.candidateCenter} aria-labelledby="candidate-center-heading" data-candidate-center-view={activeView}>
+      <div className={css.sectionHeading}>
+        <div>
+          <h2 id="candidate-center-heading">候选中心</h2>
+          <p>正式项目、待处理项、已忽略项和历史证据彼此分开。</p>
+        </div>
+      </div>
+      <div className={css.candidateTabs} role="tablist" aria-label="候选中心视图">
+        {views.map(view => (
+          <button
+            key={view.id}
+            className={css.candidateTab}
+            type="button"
+            role="tab"
+            aria-selected={activeView === view.id}
+            onClick={() => { onChooseView(view.id) }}
+          >
+            <span>{view.label}</span><strong>{String(view.count)}</strong>
+          </button>
+        ))}
+      </div>
+      {activeView === 'projects' && candidateError !== undefined && (
+        <p className={css.scanError} role="alert">候选计数暂时无法读取：{candidateError}</p>
+      )}
+      {activeView !== 'projects' && (
+        <form
+          className={css.candidateSearch}
+          role="search"
+          onSubmit={event => { event.preventDefault(); onApplySearch() }}
+        >
+          <input
+            type="search"
+            value={searchInput}
+            maxLength={200}
+            placeholder="搜索名称、路径、候选 ID 或项目 ID"
+            aria-label="搜索候选"
+            onChange={event => { onSearchInput(event.currentTarget.value) }}
+          />
+          <button className={css.smallButton} type="submit">搜索</button>
+        </form>
+      )}
+    </section>
+  )
+}
+
 function CandidateSection({
-  title,
+  view,
   candidates,
+  total,
+  nextCursor,
+  hasPreviousPage,
+  selectedCandidates,
   error,
   candidateMutation,
   onOpen,
   onToggleIgnored,
+  onSelect,
+  onSelectPage,
+  onMutateSelected,
+  onNextPage,
+  onPreviousPage,
 }: {
-  title: string
+  view: CandidateCenterView
   candidates: readonly ProjectCandidate[]
+  total: number
+  nextCursor: string | null
+  hasPreviousPage: boolean
+  selectedCandidates: Readonly<Record<string, number>>
   error?: string
   candidateMutation: string | undefined
   onOpen(candidate: ProjectCandidate): void
   onToggleIgnored(candidate: ProjectCandidate): void
+  onSelect(candidate: ProjectCandidate, selected: boolean): void
+  onSelectPage(candidates: readonly ProjectCandidate[], selected: boolean): void
+  onMutateSelected(): void
+  onNextPage(): void
+  onPreviousPage(): void
 }): ReactNode {
+  const title = view === 'review' ? '待审阅候选' : view === 'ignored' ? '已忽略' : '历史记录'
+  const selectable = view !== 'history'
+  const selectedCount = candidates.filter(candidate => selectedCandidates[candidate.candidateId] === candidate.revision).length
+  const allSelected = selectable && candidates.length > 0 && selectedCount === candidates.length
+  const emptyMessage = view === 'review'
+    ? '当前没有需要处理的候选。已登记、已忽略和旧扫描不会占用这里的位置。'
+    : view === 'ignored'
+      ? '当前没有已忽略候选。'
+      : '当前没有候选历史记录。'
   return (
-    <section className={css.candidateSection} aria-labelledby={`candidate-section-${title}`}>
+    <section className={css.candidateSection} aria-labelledby={`candidate-section-${view}`}>
       <div className={css.sectionHeading}>
-        <div><h2 id={`candidate-section-${title}`}>{title}</h2></div>
-        <span>{candidates.length} 项</span>
+        <div><h2 id={`candidate-section-${view}`}>{title}</h2></div>
+        <span>本页 {String(candidates.length)} / 共 {String(total)} 项</span>
       </div>
+      {selectable && candidates.length > 0 && (
+        <div className={css.candidateBatchBar}>
+          <label>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={event => { onSelectPage(candidates, event.currentTarget.checked) }}
+            />
+            选择本页
+          </label>
+          <span>已选 {String(selectedCount)} 项</span>
+          <button
+            className={css.smallButton}
+            type="button"
+            disabled={selectedCount === 0 || candidateMutation !== undefined}
+            onClick={onMutateSelected}
+          >
+            {candidateMutation === 'batch' ? '处理中…' : view === 'review' ? '批量忽略' : '批量恢复'}
+          </button>
+        </div>
+      )}
       {error !== undefined ? (
         <p className={css.emptyCopy} role="alert">{error}</p>
       ) : candidates.length === 0 ? (
-        <p className={css.emptyCopy}>暂无候选。选择来源目录或单个项目后，识别结果会显示在这里。</p>
+        <p className={css.emptyCopy}>{emptyMessage}</p>
       ) : (
         <ul className={css.candidateList}>
           {candidates.map(candidate => (
-            <li className={css.candidateCard} key={candidate.candidateId} data-ignored={candidate.ignored || undefined}>
+            <li
+              className={css.candidateCard}
+              key={candidate.candidateId}
+              data-ignored={candidate.ignored || undefined}
+              data-selectable={selectable || undefined}
+            >
+              {selectable && (
+                <label className={css.candidateSelect} aria-label={`选择 ${candidate.suggestedName}`}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCandidates[candidate.candidateId] === candidate.revision}
+                    onChange={event => { onSelect(candidate, event.currentTarget.checked) }}
+                  />
+                </label>
+              )}
               <button className={css.candidateMain} type="button" onClick={() => { onOpen(candidate) }}>
                 <span className={css.candidateTopline}>
                   <strong>{candidate.suggestedName}</strong>
@@ -956,27 +1218,33 @@ function CandidateSection({
                 </span>
                 <span className={css.candidatePath} title={candidate.rootPath}>{candidate.rootPath}</span>
                 <span className={css.candidateMeta}>
-                  <span>{statusLabel(candidate.status)}</span>
+                  <span>{candidateStatusLabel(view, candidate)}</span>
                   <span>{candidate.documentCount} 份文档</span>
                   {candidate.issueCount > 0 && <span>{candidate.issueCount} 个问题</span>}
                 </span>
               </button>
-              <button
-                className={css.ignoreButton}
-                type="button"
-                disabled={candidateMutation !== undefined || candidate.status === 'imported'}
-                aria-label={candidate.ignored ? `恢复 ${candidate.suggestedName}` : `忽略 ${candidate.suggestedName}`}
-                onClick={() => { onToggleIgnored(candidate) }}
-              >
-                {candidateMutation === candidate.candidateId
-                  ? '处理中…'
-                  : candidate.status === 'imported'
-                    ? '已登记'
+              {selectable && (
+                <button
+                  className={css.ignoreButton}
+                  type="button"
+                  disabled={candidateMutation !== undefined}
+                  aria-label={candidate.ignored ? `恢复 ${candidate.suggestedName}` : `忽略 ${candidate.suggestedName}`}
+                  onClick={() => { onToggleIgnored(candidate) }}
+                >
+                  {candidateMutation === candidate.candidateId
+                    ? '处理中…'
                     : candidate.ignored ? '恢复' : '忽略'}
-              </button>
+                </button>
+              )}
             </li>
           ))}
         </ul>
+      )}
+      {(hasPreviousPage || nextCursor !== null) && (
+        <div className={css.candidatePagination} aria-label="候选分页">
+          <button className={css.smallButton} type="button" disabled={!hasPreviousPage} onClick={onPreviousPage}>上一页</button>
+          <button className={css.smallButton} type="button" disabled={nextCursor === null} onClick={onNextPage}>下一页</button>
+        </div>
       )}
     </section>
   )
@@ -1283,6 +1551,15 @@ function statusLabel(status: string): string {
   if (status === 'imported') return '已登记'
   if (status === 'relocation_candidate') return '位置待重绑'
   return status
+}
+
+function candidateStatusLabel(view: CandidateCenterView, candidate: ProjectCandidate): string {
+  if (view === 'history' && candidate.historyReason === 'superseded') return '已被新扫描取代'
+  return statusLabel(candidate.status)
+}
+
+function candidatePathPreview(path: string): string {
+  return path.length <= 160 ? path : `${path.slice(0, 157)}…`
 }
 
 function errorMessage(error: unknown, fallback: string): string {
