@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-project-control",
   "description": "项目控制台：扫描、审阅并只读关联现有项目，保留真实数据库状态与项目列表。",
-  "version": "0.1.0-rc.11",
+  "version": "0.1.0-rc.12",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -126,9 +126,9 @@
         "templates/software-standard/2.0.0/template.json"
       ],
       "sha256": {
-        "lib/client.js": "1b5bcc4e90ae7339f8833fa6a93f9fcf6a56d7960b7826f67ef0ec5a30541692",
-        "lib/client.js.map": "2c923db86677a9f82a297ffc484468e51b4cc5786691433e69235428dfdccd02",
-        "lib/index.js": "c9c13ea1cd7437504e6bb5c4c20e299b1c91c3b895265ceaf86371f2015d8e4c",
+        "lib/client.js": "3ce5fec97f2e866d23da363c4f244a0cb0e9ad1b406d7b9f95d92748ba89fd7e",
+        "lib/client.js.map": "d01fbc109c1b52c1e44d93436aec964a86823d20c5879e999f215f9167218a0c",
+        "lib/index.js": "54caec2e82da3cfc8d26c383c915507ebd36a0889507a09448f29d75b58c2b09",
         "lib/runtime-schemas/external-command-envelope.schema.json": "1eca3c79b90dbb4c9a313ab8e004eb1c8d87ffa2daeaa1698e06fb33c080f638",
         "lib/runtime-schemas/lifecycle-command-envelope.schema.json": "7ab0598a141df3337a86a9f23e4eaec906b333012a2999c77fba3a9c1b77d954",
         "lib/runtime-schemas/lifecycle-command-result.schema.json": "fc812375b2bc5655f02f1a4d699f9ec0b013d243e570ccb953b85a4c1f340b2f",
@@ -154,7 +154,7 @@
       }
     },
     "release": {
-      "batch": "B-G4-CANDIDATE-CENTER-FIRST-BATCH",
+      "batch": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH",
       "source": "a-line-generation-channel"
     }
   }

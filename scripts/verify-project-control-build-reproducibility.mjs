@@ -81,7 +81,7 @@ function copyProjectControlSource(source, target) {
 
 function copyBundledHostDependencies(targetNodeModules) {
   mkdirSync(targetNodeModules, { recursive: true })
-  const sourceNodeModules = join(projectRoot, 'node_modules')
+  const sourceNodeModules = realpathSync(join(projectRoot, 'node_modules'))
   const projectRequire = createRequire(pathToFileURL(join(projectRoot, projectControlRelative, 'package.json')))
   const ajvManifest = projectRequire.resolve('ajv/package.json')
   const ajvRequire = createRequire(pathToFileURL(ajvManifest))
@@ -126,7 +126,7 @@ function assertOwnedTemporary(path, container, token) {
   }
   const marker = join(normalized, '.task-owner.json')
   const parsed = JSON.parse(readFileSync(marker, 'utf8'))
-  if (parsed.token !== token || parsed.task !== 'B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE') {
+  if (parsed.token !== token || parsed.task !== 'B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE') {
     throw new Error(`Task ownership marker mismatch: ${marker}`)
   }
 }
@@ -138,12 +138,12 @@ if (alternateValue === undefined) {
 const alternateWorktree = resolve(alternateValue)
 assertRegisteredWorktree(alternateWorktree)
 
-const taskContainer = join(alternateWorktree, '.dsh-task-temp', 'b-g4-rc11-build-reproducibility')
+const taskContainer = join(alternateWorktree, '.dsh-task-temp', 'b-g4-project-lifecycle-rc12-local-candidate')
 mkdirSync(taskContainer, { recursive: true })
 const temporaryRoot = mkdtempSync(join(taskContainer, 'run-'))
 const token = randomUUID()
 writeFileSync(join(temporaryRoot, '.task-owner.json'), JSON.stringify({
-  task: 'B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE',
+  task: 'B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE',
   token,
 }, null, 2), { encoding: 'utf8', flag: 'wx' })
 
@@ -181,12 +181,12 @@ try {
   }
   const result = {
     schemaVersion: 1,
-    task: 'B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE',
+    task: 'B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE',
     status: 'passed',
     checkedAt: new Date().toISOString(),
-    canonicalWorkspace: projectRoot,
-    alternateWorktree,
-    alternateBuildRoot,
+    canonicalWorkspace: alternateWorktree,
+    candidateWorktree: projectRoot,
+    canonicalTemporaryBuildRoot: alternateBuildRoot,
     artifacts,
     buildLogs: {
       canonicalStdoutBytes: Buffer.byteLength(canonicalBuild.stdout),
