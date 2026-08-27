@@ -1,5 +1,12 @@
 # Progress
 
+## 2026-08-28：Project Control rc.12 Stable 安装与非写入验收完成
+
+- Cyrus 已通过更新中心安装 Project Control `0.1.0-rc.12` 并重启 Stable。当前 generation=`pending-1787848154807`、source tag=`plugins-v2026.08.27.1`、tgz SHA-256=`7d3e75adf9e691e69e15bf7b397ac017cfd9eee424d65b765710531187e78302`；25 个安装文件逐一复算，缺失/不符均为 0，pending/activating 指针不存在。
+- Live Host storage=`ready`、schemaVersion=9；active 项目 4、archived 项目 0，候选视图为待审阅 1 / 已忽略 3 / 历史 10；`projects.archive`、`projects.unarchive` 和唯一 lifecycle submit 能力可见。Cyrus 确认“归档”和“更换工作区”入口正常，但没有点击，因此没有真实项目状态变化。
+- 搜索实测：`亚马逊`=1、`亚马`=1、`Amazon`=0。源码合同只对 `project_id` 与当前项目名称做不区分大小写的字面子串匹配；中英文别名、翻译和拼音不在 rc.12 已实现范围，登记为后续体验改进而非本轮阻断。
+- 验收 receipt=`../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json`，SHA-256=`51f254b303900580befe5ee2b35e15ac058c44d5d59df43915a7f14d42033f37`。未归档/恢复/换绑任何真实项目，未直接写 Stable 数据库或 userData，未迁移项目、push、发布、修改 `release-staging/` 或进入 B1b。下一任务为 `G4-DSH-CANONICAL-REBIND`，当前只允许只读预检。
+
 ## 2026-08-28：Project Control rc.12 已精确提交、push 并发布单插件 Release
 
 - rc.12 候选提交 `4052ae90559c9ba206344a31be1cc380b37b68f2` 仅包含 `plugin-set.lock.json`、Project Control `package.json` 和两份 rc.12 验收脚本；20 insertions / 20 deletions，`release-staging/` 未进入提交。canonical 从 `c2659a9` ff-only 前进，远端 `codex/governance-alignment` 从 `9d8c1a7` 线性前进到 `4052ae9`，无 force。

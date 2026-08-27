@@ -1,11 +1,11 @@
 # Next Development
 
-状态：**Project Control rc.12 已精确提交、push 并发布单插件 Release；下一门为 Stable 安装与人工验收**
-当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.11 active；Amazon revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；项目生命周期第二批已进入线性历史，rc.12 候选提交=`4052ae90559c9ba206344a31be1cc380b37b68f2`，远端分支与 tag `plugins-v2026.08.27.1` 均精确指向该提交。Release 只含 Project Control `0.1.0-rc.12` 四项资产；禁止把“已发布”误报为“Stable 已安装”，也禁止 force 或覆盖旧历史
+状态：**Project Control rc.12 已在 Stable 激活、重启并完成非写入人工/机器验收；下一任务为 DSH canonical rebind**
+当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.12 active；4 个 active / 0 个 archived 项目；Amazon revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`**
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；项目生命周期第二批已进入线性历史并由 `plugins-v2026.08.27.1` 安装到 Stable。当前 generation=`pending-1787848154807`，25 个安装文件 SHA-256 全部一致；禁止把入口可见误报为已对真实项目执行归档/恢复/换绑
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-28 当前唯一执行顺序**：① 项目生命周期第二批、rc.12 本地候选、精确 commit/push 和单插件 Release 已完成；② 当前只等待另行授权的 Stable 安装、重启和人工/机器验收；③ Stable 验收通过后，才单独授权 DSH 正式换绑，再依次处理量化与食溯。
+> **2026-08-28 当前唯一执行顺序**：① 项目生命周期第二批、rc.12 本地候选、精确 commit/push、单插件 Release、Stable 安装与非写入验收已完成；② 当前只对 DSH 正式 binding 做只读预检；③ 真实 DSH 换绑仍须单独授权，通过后再依次处理量化与食溯。
 
 ## 已完成：G4-K3-CANONICAL-CONTEXT-ALIGNMENT
 
@@ -66,9 +66,17 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 - 单插件 Release：[plugins-v2026.08.27.1](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.27.1)，ID=`377962312`，仅四项 Project Control `0.1.0-rc.12` 资产；四项均重新公开下载，大小、SHA-256 与 GitHub digest 三方一致。
 - 发布 receipt：`../local/receipts/op_b_g4_project_lifecycle_rc12_commit_push_release_20260828_01.json`，SHA-256=`49fddb1a7412f382cced754bb0e9491df7a0bd11b3556987785ec5fbcef7f77b`。未安装或写 Stable，未迁移/换绑真实项目，未进入 B1b。
 
-## 当前唯一任务：B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE
+## 已完成：B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE
 
-经 Cyrus 另行授权后，只通过现有 Stable 插件更新通道安装 Project Control `0.1.0-rc.12` 并重启；先核对 generation、安装文件哈希和 Host 状态，再由 Cyrus 人工验收项目归档/恢复及主动“更换工作区”入口。不得归档、换绑或迁移任何真实项目，不得直接修改 Stable 数据库，不得构建客户端 package-set，也不得进入 B1b；安装完成后先暂停报告。
+- Stable generation=`pending-1787848154807`，Project Control `0.1.0-rc.12` 来自 `plugins-v2026.08.27.1`；25 个安装文件无缺失/不符，pending/activating 指针不存在。
+- Host storage=`ready`、schemaVersion=9、active 项目 4、archived 项目 0；候选视图计数保持 `1 / 3 / 10`，归档/恢复和 lifecycle 能力存在。
+- Cyrus 确认“归档”和“更换工作区”入口显示正常，但按失败关闭纪律没有点击；没有对任何真实项目执行归档、恢复或换绑。
+- 搜索只对 `project_id` 与当前项目名称做字面子串匹配：`亚马逊`、`亚马` 命中，`Amazon` 不命中；别名/翻译/拼音支持作为独立体验改进，不算 rc.12 回归。
+- 验收 receipt：`../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json`，SHA-256=`51f254b303900580befe5ee2b35e15ac058c44d5d59df43915a7f14d42033f37`。
+
+## 当前唯一任务：G4-DSH-CANONICAL-REBIND
+
+当前只读预检正式项目 `prj_01a0082e-fea8-7d6f-b6c2-08a259fba389`：核对 Stable 现有 active binding=`D:\Deepseek Harness Personal`，目标 canonical workspace=`F:\Projects\deepseek-harness-personal\workspace`，并验证 marker、manifest、project_id、scanner 生成的 relocation candidate 和唯一 `project.rebindLocation` 预览链。任何真实换绑、归档、迁移、Stable 数据写入均未授权，预检完成后必须暂停报告。
 
 ## 权威后续任务队列（可随时查阅）
 
@@ -78,11 +86,11 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 2 | `B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE` | 清除 bundle 对 checkout 绝对路径的依赖，并做双路径同 SHA 验收 | 已完成 |
 | 3 | `B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION` | 精确提交 rc.11 候选、push 合并历史并发布单插件 Release | 已完成：`e67e501` / `.3` / Release `377215143` |
 | 4 | `B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE` | 通过现有插件更新通道安装 Stable，人工验收四类视图、批量操作和陈旧候选关闭 | 已完成；receipt `93903384...a555e` |
-| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 已完成源码、测试和发布；尚未安装 Stable |
+| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 已完成源码、测试、发布和 Stable 非写入验收 |
 | 6 | `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE` | rc.12 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 已完成；receipt `2df7c657...35279` |
 | 7 | `B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE` | 精确提交候选、无 force push、发布单插件 Release | 已完成：`4052ae9` / `.1` / Release `377962312` |
-| 8 | `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` | Stable 安装 rc.12，并人工验收归档/恢复和主动换工作区入口 | 当前下一门；需单独 Stable 安装/验收授权 |
-| 9 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 依赖 8；单项目授权 |
+| 8 | `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` | Stable 安装 rc.12，并人工验收归档/恢复和主动换工作区入口 | 已完成；receipt `51f254b3...33f37` |
+| 9 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 当前只读预检；真实换绑需单项目授权 |
 | 10 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 9；需迁移与换绑授权 |
 | 11 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 10；需单独方案与授权 |
 | 12 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
