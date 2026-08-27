@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-26T17:53:29.980Z",
+  "generatedAt": "2026-08-27T16:17:53.388Z",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -37,12 +37,12 @@
     "publishPolicy": "explicit-user-authorization",
     "standingAuthorization": {
       "id": "governance-development-continuous-v1",
-      "status": "consumed-through-project-lifecycle-post-commit-alignment",
+      "status": "consumed-through-project-lifecycle-rc12-release-and-state-alignment",
       "localValidatedCommits": true,
       "taskOwnedTemporaryCleanup": true,
       "push": false,
       "publish": false,
-      "scopeEnd": "pause-before-project-lifecycle-rc12-local-candidate-authorization"
+      "scopeEnd": "pause-before-project-lifecycle-rc12-stable-install-acceptance-authorization"
     }
   },
   "packedTestPolicy": {
@@ -174,7 +174,7 @@
       "releaseReceiptSha256": "8f0ce54f5d2fa19e765e4346d0a32fdfb77e100e97e3b5f14d76632ebf5cd0fc",
       "stateAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
       "formalFullTests": "826/826 isolated-runnable-suite; project-control 186/186",
-      "next": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE",
+      "next": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE",
       "forbidden": ["migration-or-database-schema", "b1b", "direct-stable-database-write", "repeat-amazon-rebind", "other-project-rebind-before-candidate-center", "push-publish-delete-without-new-authorization"]
     },
     "candidateCenterFirstBatch": {
@@ -195,7 +195,7 @@
       "machineGates": "dual-path three-artifact same-SHA check-plugins build tsc checkout launch governance lock diff passed",
       "requiredOrder": ["server-filter-before-pagination", "candidate-counts-and-separated-views", "bulk-ignore-and-restore-with-fingerprint", "stale-relocation-duplicate-closure", "120-candidate-machine-acceptance"],
       "laterLifecycle": ["project-archive-and-unarchive", "user-initiated-rebind-reusing-one-transaction", "instance-detach-only-after-separate-decision"],
-      "next": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE",
+      "next": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE",
       "productionInstalled": true,
       "stableAcceptanceReceipt": "../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json",
       "stableAcceptanceReceiptSha256": "9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e",
@@ -228,7 +228,7 @@
       }
     },
     "projectLifecycleSecondBatch": {
-      "status": "local-product-committed-history-fast-forwarded-governance-aligned-rc12-local-candidate-next",
+      "status": "rc12-local-candidate-passed-committed-pushed-published-stable-install-acceptance-next",
       "branch": "codex/project-lifecycle-second-batch",
       "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_project_lifecycle_second_batch_20260827",
       "baseCommit": "f594627e7d997debefb7356248134683be70f8c2",
@@ -249,7 +249,25 @@
       "scope": ["project-archive-unarchive", "server-filtered-project-search-and-pagination", "all-active-project-workspace-index", "scanner-backed-user-initiated-relocation-candidate", "single-existing-rebind-transaction"],
       "excluded": ["physical-delete", "instance-detach", "migration", "database-schema", "second-rebind-transaction", "stable-write", "real-project-rebind", "b1b"],
       "productionInstalled": false,
-      "next": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE"
+      "rc12Delivery": {
+        "version": "0.1.0-rc.12",
+        "localCandidateReceipt": "../local/receipts/op_b_g4_project_lifecycle_rc12_local_candidate_20260827_01.json",
+        "localCandidateReceiptSha256": "2df7c657edb02b53f73bb38f7d6af415ec68094b85ba494c54890085ce235279",
+        "commit": "4052ae90559c9ba206344a31be1cc380b37b68f2",
+        "remoteBranch": "codex/governance-alignment",
+        "remoteBranchCommitAtRelease": "4052ae90559c9ba206344a31be1cc380b37b68f2",
+        "releaseTag": "plugins-v2026.08.27.1",
+        "releaseTagCommit": "4052ae90559c9ba206344a31be1cc380b37b68f2",
+        "releaseId": 377962312,
+        "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.27.1",
+        "assetCount": 4,
+        "packageSha256": "7d3e75adf9e691e69e15bf7b397ac017cfd9eee424d65b765710531187e78302",
+        "releaseReceipt": "../local/receipts/op_b_g4_project_lifecycle_rc12_commit_push_release_20260828_01.json",
+        "releaseReceiptSha256": "49fddb1a7412f382cced754bb0e9491df7a0bd11b3556987785ec5fbcef7f77b",
+        "remoteAssetsVerified": true,
+        "stableInstalled": false
+      },
+      "next": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE"
     },
     "g1ProjectHome": {
       "status": "committed-and-pushed-as-ancestor-not-separately-published",
@@ -294,7 +312,7 @@
       "cleanupReceipt": "../local/receipts/op-g2-p2-superseded-496b-cleanup-20260826-01-cleanup-receipt.json",
       "unknownOrUnmanagedObjects": 0,
       "deletionPerformed": true,
-      "next": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE"
+      "next": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE"
     },
     "g3CrossHarness": {
       "status": "main-commit-pushed-as-ancestor-toolbox-and-memory-repositories-local-not-published",
@@ -339,7 +357,7 @@
       "kimiCompatibilityState": "new-canonical-workspace-required-old-workspace-history-only-no-junction",
       "identityAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_identity_alignment_20260825_01.json",
       "postRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
-      "next": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE"
+      "next": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE"
     }
   },
   "futureTasks": [
@@ -347,9 +365,9 @@
     {"order": 2, "id": "B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE", "status": "completed", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-LOCAL-CANDIDATE"], "authorizationGate": "completed-local-only"},
     {"order": 3, "id": "B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION", "status": "completed", "dependsOn": ["B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE"], "authorizationGate": "completed-e67e501-plugins-v2026.08.26.3-release-377215143"},
     {"order": 4, "id": "B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION"], "authorizationGate": "completed-stable-installed-restarted-and-accepted", "receipt": "../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json", "receiptSha256": "9390338401662aee317eb503f17530c50841d26daad7c1b74ad5abe3d19a555e"},
-    {"order": 5, "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH", "status": "completed-local", "dependsOn": ["candidate-center-stable-acceptance"], "authorizationGate": "completed-0daac278-213e553-local-only", "scope": ["project-archive-unarchive", "user-initiated-rebind-reusing-one-transaction"], "excluded": ["physical-delete", "instance-detach"]},
-    {"order": 6, "id": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "separate-local-candidate-authorization"},
-    {"order": 7, "id": "B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE"], "authorizationGate": "separate-commit-push-release-authorization"},
+    {"order": 5, "id": "B-G4-PROJECT-LIFECYCLE-SECOND-BATCH", "status": "completed-source-published-not-installed", "dependsOn": ["candidate-center-stable-acceptance"], "authorizationGate": "completed-0daac278-213e553-4052ae9-plugins-v2026.08.27.1", "scope": ["project-archive-unarchive", "user-initiated-rebind-reusing-one-transaction"], "excluded": ["physical-delete", "instance-detach"]},
+    {"order": 6, "id": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "completed-local-reproducible-candidate-receipt-2df7c657"},
+    {"order": 7, "id": "B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE"], "authorizationGate": "completed-4052ae9-plugins-v2026.08.27.1-release-377962312"},
     {"order": 8, "id": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE"], "authorizationGate": "separate-stable-install-and-human-acceptance"},
     {"order": 9, "id": "G4-DSH-CANONICAL-REBIND", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "single-project-rebind-authorization"},
     {"order": 10, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-DSH-CANONICAL-REBIND"], "authorizationGate": "migration-and-rebind-authorization"},

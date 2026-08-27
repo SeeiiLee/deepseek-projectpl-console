@@ -1,11 +1,11 @@
 # Next Development
 
-状态：**项目位置生命周期第二批已本地提交并进入 canonical 线性历史；下一门为 Project Control rc.12 本地候选**
+状态：**Project Control rc.12 已精确提交、push 并发布单插件 Release；下一门为 Stable 安装与人工验收**
 当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.11 active；Amazon revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；本地 HEAD 已按 `f594627 → 0daac278 → 213e553` ff-only 前进，包含 checkout 前置修复及项目生命周期第二批。远端仍停在既有 rc.11 发布历史，禁止把本地事实误报为已 push/发布/安装，也禁止 force 或覆盖旧历史
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；项目生命周期第二批已进入线性历史，rc.12 候选提交=`4052ae90559c9ba206344a31be1cc380b37b68f2`，远端分支与 tag `plugins-v2026.08.27.1` 均精确指向该提交。Release 只含 Project Control `0.1.0-rc.12` 四项资产；禁止把“已发布”误报为“Stable 已安装”，也禁止 force 或覆盖旧历史
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-27 当前唯一执行顺序**：① 项目生命周期第二批已完成本地代码、隔离验收和本地提交，并以 ff-only 进入 canonical；② 另行授权制作 Project Control rc.12 本地单插件候选；③ 候选通过后另行授权精确 commit/push/单插件 Release；④ Release 完成后另行授权 Stable 安装与人工验收；⑤ 三道交付门全部通过后，才单独授权 DSH 正式换绑，再依次处理量化与食溯。
+> **2026-08-28 当前唯一执行顺序**：① 项目生命周期第二批、rc.12 本地候选、精确 commit/push 和单插件 Release 已完成；② 当前只等待另行授权的 Stable 安装、重启和人工/机器验收；③ Stable 验收通过后，才单独授权 DSH 正式换绑，再依次处理量化与食溯。
 
 ## 已完成：G4-K3-CANONICAL-CONTEXT-ALIGNMENT
 
@@ -54,9 +54,21 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 - 验收：Project Control `199/199`；正式 `npm test` 为 `840/841`，唯一失败是受保护 packed Stable E2E 在非 canonical 任务 worktree 中于创建 package-set/run 前按合同拒绝；其余安全仓库套件、build、typecheck、插件、双路径 bundle SHA、checkout、launch、governance、diff 门禁通过。
 - 明确未做：物理删除、instance detach、migration/DB schema、第二套 rebind、Stable 写入、真实项目换绑、B1b、push、发布和安装。复核提交 receipt：`../local/receipts/op_b_g4_project_lifecycle_second_batch_review_commit_20260827_01.json`，SHA-256=`2f9e5b22302848ace4a4461de0c07bbe870dc1aef5e0c6789e14a73b5e15759a`。
 
-## 当前唯一任务：B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE
+## 已完成：B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE
 
-经 Cyrus 单独授权后，从本次治理收口后的 canonical HEAD 创建 task-owned worktree，只把 Project Control 从 rc.11 版本化为 rc.12，更新精确的单插件发布元数据与 lock，证明 canonical/task-worktree bundle 同 SHA，并在隔离 profile 中完成 generation 激活与回滚。不得制作客户端安装包或第二套 packed package-set，不得 commit、push、Release、安装/写 Stable、换绑真实项目或进入 B1b；正式 `npm test` 中受保护 packed E2E 的结果必须如实记录，不能把排除它的安全套件冒充正式全绿。
+- 候选包 `cyrus-dsh-project-control-0.1.0-rc.12.tgz` 为 297,592 bytes，SHA-256=`7d3e75adf9e691e69e15bf7b397ac017cfd9eee424d65b765710531187e78302`；canonical/task worktree 三份 bundle 同 SHA，隔离 generation 激活与 builtin 回滚通过。
+- Project Control `199/199`；正式 `npm test` `840/841`，唯一失败是受保护 packed Stable E2E 在非 canonical 任务 worktree 创建 package-set/run 前失败关闭；安全仓库套件 `840/840`，未创建客户端 package-set。
+- 本地候选 receipt：`../local/receipts/op_b_g4_project_lifecycle_rc12_local_candidate_20260827_01.json`，SHA-256=`2df7c657edb02b53f73bb38f7d6af415ec68094b85ba494c54890085ce235279`。
+
+## 已完成：B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE
+
+- 精确提交 `4052ae90559c9ba206344a31be1cc380b37b68f2` 仅包含 4 个 rc.12 版本/lock/验收脚本文件；`release-staging/` 未进入提交。canonical 与远端均普通 fast-forward，无 force。
+- 单插件 Release：[plugins-v2026.08.27.1](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.27.1)，ID=`377962312`，仅四项 Project Control `0.1.0-rc.12` 资产；四项均重新公开下载，大小、SHA-256 与 GitHub digest 三方一致。
+- 发布 receipt：`../local/receipts/op_b_g4_project_lifecycle_rc12_commit_push_release_20260828_01.json`，SHA-256=`49fddb1a7412f382cced754bb0e9491df7a0bd11b3556987785ec5fbcef7f77b`。未安装或写 Stable，未迁移/换绑真实项目，未进入 B1b。
+
+## 当前唯一任务：B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE
+
+经 Cyrus 另行授权后，只通过现有 Stable 插件更新通道安装 Project Control `0.1.0-rc.12` 并重启；先核对 generation、安装文件哈希和 Host 状态，再由 Cyrus 人工验收项目归档/恢复及主动“更换工作区”入口。不得归档、换绑或迁移任何真实项目，不得直接修改 Stable 数据库，不得构建客户端 package-set，也不得进入 B1b；安装完成后先暂停报告。
 
 ## 权威后续任务队列（可随时查阅）
 
@@ -66,10 +78,10 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 2 | `B-G4-RC11-BUILD-REPRODUCIBILITY-CLOSURE` | 清除 bundle 对 checkout 绝对路径的依赖，并做双路径同 SHA 验收 | 已完成 |
 | 3 | `B-G4-CANDIDATE-CENTER-RC11-COMMIT-PUSH-RELEASE-AUTHORIZATION` | 精确提交 rc.11 候选、push 合并历史并发布单插件 Release | 已完成：`e67e501` / `.3` / Release `377215143` |
 | 4 | `B-G4-CANDIDATE-CENTER-STABLE-INSTALL-ACCEPTANCE` | 通过现有插件更新通道安装 Stable，人工验收四类视图、批量操作和陈旧候选关闭 | 已完成；receipt `93903384...a555e` |
-| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 已完成本地提交：`0daac278` + `213e553`；未发布/安装 |
-| 6 | `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE` | rc.12 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 当前下一门；需单独本地候选授权 |
-| 7 | `B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE` | 精确提交候选、无 force push、发布单插件 Release | 依赖 6；需单独 commit/push/发布授权 |
-| 8 | `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` | Stable 安装 rc.12，并人工验收归档/恢复和主动换工作区入口 | 依赖 7；需单独 Stable 安装/验收授权 |
+| 5 | `B-G4-PROJECT-LIFECYCLE-SECOND-BATCH` | 项目归档/恢复；主动更换工作区复用唯一 rebind 事务 | 已完成源码、测试和发布；尚未安装 Stable |
+| 6 | `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE` | rc.12 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 已完成；receipt `2df7c657...35279` |
+| 7 | `B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE` | 精确提交候选、无 force push、发布单插件 Release | 已完成：`4052ae9` / `.1` / Release `377962312` |
+| 8 | `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` | Stable 安装 rc.12，并人工验收归档/恢复和主动换工作区入口 | 当前下一门；需单独 Stable 安装/验收授权 |
 | 9 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 依赖 8；单项目授权 |
 | 10 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 9；需迁移与换绑授权 |
 | 11 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 10；需单独方案与授权 |

@@ -1,6 +1,6 @@
 # Blocked
 
-## 当前阻断（2026-08-27，项目生命周期第二批已本地提交，rc.12 三道交付门待完成）
+## 当前阻断（2026-08-28，rc.12 已发布，Stable 安装与人工验收待完成）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
@@ -8,10 +8,10 @@
 - **Candidate Center 第一批代码、构建、发布与生产验收阻断已关闭**：Stable 已激活 Project Control `0.1.0-rc.11`；25 个安装文件 hash 一致，四类视图和计数经 Cyrus 人工确认，唯一 `docs` 候选完成一次受控忽略/恢复，其他 13 条候选未变。验收 receipt=`../local/receipts/op_b_g4_candidate_center_rc11_stable_acceptance_20260826_01.json`，SHA-256=`93903384...a555e`。
 - **rc.11 构建可复现性阻断已关闭**：物理路径现在只用于 CSS 文件读取和 watch，lightningcss/Rolldown 使用稳定包内相对身份；`index.js`、`client.js`、`client.js.map` 在 canonical 与 task-owned worktree 逐字节一致。旧 `.2` staging 经 Cyrus 授权和精确哈希复核后已由新 `.3` 替代并删除，不再保留“只发布冻结 canonical bundle”的例外债务。
 - **陈旧 relocation 默认队列阻断已关闭，历史证据继续保留**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 的原始状态行未物理删除，但已以 `historyReason=superseded` 只进入历史视图；禁止重复 rebind 或直接改库。
-- **项目生命周期第二批的本地代码阻断已关闭，但生产门仍未通过**：checkout 前置提交 `0daac278` 与产品提交 `213e553` 已以 ff-only 进入 canonical；归档/恢复、全部 active 项目的 workspace 索引及 scanner 同口径主动换工作区入口已通过隔离复核。当前 Stable 仍是 Project Control rc.11，必须依次完成 rc.12 本地候选、发布、Stable 安装与人工验收，不能把本地 commit 外推为生产可用。
+- **项目生命周期第二批的源码、候选和发布阻断已关闭，但生产门仍未通过**：checkout 前置提交 `0daac278`、产品提交 `213e553` 和 rc.12 候选提交 `4052ae9` 已进入 canonical/远端线性历史；单插件 Release `plugins-v2026.08.27.1` 的四项资产已独立下载验资。当前 Stable 仍是 Project Control rc.11，必须完成 rc.12 安装、重启和人工/机器验收，不能把“已发布”外推为“生产可用”。
 - **DSH 自身及其他项目换绑继续暂停**：DSH 正式项目仍指向 `D:\Deepseek Harness Personal`；量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。三者必须等待 rc.12 Stable 验收后，再按 DSH → 量化 → 食溯逐项获得授权。
 - **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
-- **本轮 post-commit 治理对齐授权在 docs-only commit 后即用完**：本轮只允许 ff-only 合入 `0daac278`/`213e553`、更新权威链和提交治理文档；未 push、发布、安装、写 Stable 或换绑项目。下一步 `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE` 必须另行授权；后续发布、Stable 安装、真实项目换绑/迁移也各自是独立授权门，物理删除、instance detach 与 B1b 仍不在范围内。
+- **本轮 rc.12 commit/push/Release 与 docs-only 状态对齐授权在本提交后即用完**：未安装或写 Stable，未换绑/迁移真实项目。下一步 `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` 必须另行授权；真实 DSH 换绑、量化/食溯迁移、物理删除、instance detach 与 B1b 继续保持各自独立授权门。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 

@@ -1,5 +1,12 @@
 # Progress
 
+## 2026-08-28：Project Control rc.12 已精确提交、push 并发布单插件 Release
+
+- rc.12 候选提交 `4052ae90559c9ba206344a31be1cc380b37b68f2` 仅包含 `plugin-set.lock.json`、Project Control `package.json` 和两份 rc.12 验收脚本；20 insertions / 20 deletions，`release-staging/` 未进入提交。canonical 从 `c2659a9` ff-only 前进，远端 `codex/governance-alignment` 从 `9d8c1a7` 线性前进到 `4052ae9`，无 force。
+- 新 Release [plugins-v2026.08.27.1](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.27.1)（ID=`377962312`）仅含 Project Control `0.1.0-rc.12` 四项资产；tgz 297,592 bytes，SHA-256=`7d3e75adf9e691e69e15bf7b397ac017cfd9eee424d65b765710531187e78302`。远端 tag 精确指向 `4052ae9`，四项资产的正式 staging、GitHub digest 和公开下载 SHA-256 全部一致。
+- 发布复用现有单插件管线，先做 public dry-run；凭据只通过内存命名管道提供，没有写入文件、日志或 receipt。第一次 commit 因新 worktree 无提交者身份在写入前被 Git 拒绝，随后只用一次性 `git -c` 复用父提交身份，没有修改全局/仓库 Git 配置。
+- 发布 receipt=`../local/receipts/op_b_g4_project_lifecycle_rc12_commit_push_release_20260828_01.json`，SHA-256=`49fddb1a7412f382cced754bb0e9491df7a0bd11b3556987785ec5fbcef7f77b`。Stable 仍为 Project Control rc.11；未安装、直接写库、真实项目归档/换绑/迁移、客户端 package-set 或 B1b。下一门是另行授权的 rc.12 Stable 安装与人工验收。
+
 ## 2026-08-27：项目生命周期第二批完成本地提交并进入 canonical 线性历史
 
 - canonical `codex/governance-alignment` 从 `f594627e7d997debefb7356248134683be70f8c2` 以 ff-only 依次前进到 checkout 前置修复 `0daac278c0d99866ab24c576efda53fecb4adaf2` 和产品提交 `213e553e98bf6c0b2e8256d26f8246974a1a4ba5`，没有 merge commit；`release-staging/` 保持未跟踪且未进入提交。

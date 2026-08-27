@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。真实 Stable 客户端是 `0.4.6`、Project Control 仍是已验收的 `0.1.0-rc.11`。项目归档/恢复与主动“更换工作区”已在本地提交为 `213e553`，其 checkout 前置修复为 `0daac278`，两者已以 ff-only 进入 canonical 线性历史；这只是本地源码事实，尚未 push、发布或安装。当前唯一下一门是另行授权的 `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE`，之后还必须依次经过 rc.12 发布门和 Stable 安装验收门，才允许单独授权 DSH 正式换绑；完整队列可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。项目生命周期第二批已通过 rc.12 候选提交 `4052ae9` 进入远端线性历史，并以单插件 Release `plugins-v2026.08.27.1` 公开；四项资产已独立验资。真实 Stable 客户端仍是 `0.4.6`、Project Control 仍是已验收的 `0.1.0-rc.11`，所以当前唯一下一门是另行授权的 `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE`；通过后才允许单独授权 DSH 正式换绑。完整队列可随时从 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks` 查询。
 
 ## 权威链
 
