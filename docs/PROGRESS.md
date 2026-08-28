@@ -1,5 +1,13 @@
 # Progress
 
+## 2026-08-28：DSH canonical rebind 与原生工作区历史闭环已进入 canonical 线性历史
+
+- 外部一次性切换器 R3 已把旧目录原子改名为 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 并修复 linked worktree Git 指针；未复制、删除或建立 junction。runtime receipt=`../local/receipts/op_g4_dsh_canonical_rebind_20260828_06-external-switch-r3-runtime.json`，SHA-256=`1863568a5667c0841c2b865c1b92f9cee88efcde241d7f5bab5f9a391f300eac`。
+- 目录切换暴露的 Stable web profile 失效绝对 link 已通过官方离线插件流程修复；最终 receipt=`../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json`，SHA-256=`28da74b1fd21a5c6027257a37d9c49d41d13fc5a42e39e1b9ede202f6593ea67`。随后 Cyrus 在 Stable 使用唯一主动入口完成 DSH 正式项目换绑并确认 canonical 目标；本次治理对齐不直接读写 Stable 数据库，也不重复 rebind。
+- 换绑后发现 Project Control binding 与原生 Workspace/会话索引是两个事实面。`G4-NATIVE-WORKSPACE-HISTORY-CLOSURE` 现在在换绑前检查原生会话，在项目路径历史中只读显示“旧位置历史”，并通过公开 Workspace/Session 服务为 canonical 路径创建或复用新会话；不改写原始/压缩会话，不建 junction，不新增 migration/DB schema，不制造第二套 rebind。
+- 产品提交 `1d00c8fdb8748d89d2ec7b0b837d2c14d3a258d1` 已由 canonical `d858a25` 纯 fast-forward 合入；16 个产品/测试/bundle 文件，Project Control `206/206`，checkout `1280`、launch、governance `22/22`、diff、typecheck、build 均通过。实现 receipt=`../local/receipts/op_g4_native_workspace_history_closure_20260828_01.json`（SHA-256=`14472313...2cd0`），提交 receipt=`../local/receipts/op_g4_native_workspace_history_closure_20260828_01-commit.json`（SHA-256=`15068f5f...a1c6`）。
+- Stable 仍运行 Project Control `0.1.0-rc.12`，因此旧位置历史 UI 尚未进入生产。下一任务为 `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE`：只制作一份本地单插件候选；commit/push/Release、Stable 安装、量化/食溯迁移与旧目录清理均需后续独立授权。既有 `release-staging/` 未纳入本轮提交。
+
 ## 2026-08-28：Project Control rc.12 Stable 安装与非写入验收完成
 
 - Cyrus 已通过更新中心安装 Project Control `0.1.0-rc.12` 并重启 Stable。当前 generation=`pending-1787848154807`、source tag=`plugins-v2026.08.27.1`、tgz SHA-256=`7d3e75adf9e691e69e15bf7b397ac017cfd9eee424d65b765710531187e78302`；25 个安装文件逐一复算，缺失/不符均为 0，pending/activating 指针不存在。

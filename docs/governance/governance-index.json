@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-28T00:40:35+08:00",
+  "generatedAt": "2026-08-28T15:51:56+08:00",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -37,12 +37,12 @@
     "publishPolicy": "explicit-user-authorization",
     "standingAuthorization": {
       "id": "governance-development-continuous-v1",
-      "status": "consumed-through-project-lifecycle-rc12-stable-acceptance-closure",
+      "status": "consumed-through-native-workspace-history-post-commit-alignment",
       "localValidatedCommits": true,
       "taskOwnedTemporaryCleanup": true,
       "push": false,
       "publish": false,
-      "scopeEnd": "pause-before-real-dsh-canonical-rebind-authorization"
+      "scopeEnd": "pause-before-rc13-local-candidate-authorization"
     }
   },
   "packedTestPolicy": {
@@ -272,7 +272,25 @@
         "stableAcceptanceReceipt": "../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json",
         "stableAcceptanceReceiptSha256": "51f254b303900580befe5ee2b35e15ac058c44d5d59df43915a7f14d42033f37"
       },
-      "next": "G4-DSH-CANONICAL-REBIND"
+      "next": "completed"
+    },
+    "nativeWorkspaceHistoryClosure": {
+      "status": "reviewed-committed-and-ff-only-integrated-local-source-not-built-or-installed",
+      "branch": "codex/native-workspace-history-closure",
+      "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_native_workspace_history_closure_20260828",
+      "baseCommit": "d858a25f4c7840c3c6e74ab4cbaa7949493b33e7",
+      "productCommit": "1d00c8fdb8748d89d2ec7b0b837d2c14d3a258d1",
+      "historyIntegration": "ff-only-into-codex-governance-alignment",
+      "implementationReceipt": "../local/receipts/op_g4_native_workspace_history_closure_20260828_01.json",
+      "implementationReceiptSha256": "1447231330fd9faeb7080ed6104721927c6b80abb4dfb7faba6df777a4376cd0",
+      "commitReceipt": "../local/receipts/op_g4_native_workspace_history_closure_20260828_01-commit.json",
+      "commitReceiptSha256": "15068f5f0306d3fba73510b5a598104fa722c7b5d49f26a514fa4b199b24a1c6",
+      "projectControlTests": "206/206; fail=0; skipped=0; todo=0",
+      "machineGates": "typecheck build checkout launch governance diff passed",
+      "scope": ["native-rebind-preflight", "read-only-old-location-session-history", "canonical-new-session-continuation", "single-existing-project-rebind-transaction"],
+      "excluded": ["session-log-rewrite", "compressed-session-rewrite", "junction", "migration", "database-schema", "stable-write", "real-project-rebind", "second-rebind-transaction", "b1b"],
+      "productionInstalled": false,
+      "next": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE"
     },
     "g1ProjectHome": {
       "status": "committed-and-pushed-as-ancestor-not-separately-published",
@@ -337,7 +355,7 @@
       "next": "G4-AMAZON-MIGRATION-PILOT"
     },
     "g4AmazonFilesystemPilot": {
-      "status": "stable-binding-k3-context-candidate-center-and-project-lifecycle-rc12-stable-accepted-dsh-rebind-next",
+      "status": "amazon-and-dsh-stable-bindings-aligned-native-history-source-committed-rc13-local-candidate-next",
       "projectHome": "F:\\Projects\\amazon-store",
       "canonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
       "copyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -362,7 +380,15 @@
       "kimiCompatibilityState": "new-canonical-workspace-required-old-workspace-history-only-no-junction",
       "identityAlignmentReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_identity_alignment_20260825_01.json",
       "postRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
-      "next": "G4-DSH-CANONICAL-REBIND"
+      "dshProjectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
+      "dshCanonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
+      "dshStableBindingState": "user-confirmed-canonical-after-single-project-rebind",
+      "dshLegacyDirectory": "D:\\Deepseek Harness Personal.legacy-pre-rebind-20260828",
+      "dshLegacyDirectoryDeleted": false,
+      "dshJunctionCreated": false,
+      "dshNativeHistoryCommit": "1d00c8fdb8748d89d2ec7b0b837d2c14d3a258d1",
+      "dshNativeHistoryProductionInstalled": false,
+      "next": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE"
     }
   },
   "futureTasks": [
@@ -374,14 +400,18 @@
     {"order": 6, "id": "B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-SECOND-BATCH"], "authorizationGate": "completed-local-reproducible-candidate-receipt-2df7c657"},
     {"order": 7, "id": "B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE"], "authorizationGate": "completed-4052ae9-plugins-v2026.08.27.1-release-377962312"},
     {"order": 8, "id": "B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE"], "authorizationGate": "completed-stable-installed-restarted-and-nonmutating-ui-accepted", "receipt": "../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json", "receiptSha256": "51f254b303900580befe5ee2b35e15ac058c44d5d59df43915a7f14d42033f37"},
-    {"order": 9, "id": "G4-DSH-CANONICAL-REBIND", "status": "pending", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "single-project-rebind-authorization"},
-    {"order": 10, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-DSH-CANONICAL-REBIND"], "authorizationGate": "migration-and-rebind-authorization"},
-    {"order": 11, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
-    {"order": 12, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
-    {"order": 13, "id": "B2-GOVERNANCE-VIEW", "status": "pending", "dependsOn": ["B1B-APPROVAL-INBOX-MVP", "ADR-005"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 14, "id": "B3-AUTHORIZATION-SESSION-CALENDAR", "status": "pending", "dependsOn": ["B2-GOVERNANCE-VIEW"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 15, "id": "G3-CROSS-HARNESS-ACTIVATION", "status": "pending", "dependsOn": ["per-harness-discovery"], "authorizationGate": "per-harness-authorization"},
-    {"order": 16, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
+    {"order": 9, "id": "G4-DSH-CANONICAL-REBIND", "status": "completed-user-confirmed", "dependsOn": ["B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "completed-single-project-rebind; no direct database write"},
+    {"order": 10, "id": "G4-NATIVE-WORKSPACE-HISTORY-CLOSURE", "status": "completed-source-committed-and-integrated", "dependsOn": ["G4-DSH-CANONICAL-REBIND"], "authorizationGate": "completed-1d00c8f-local-only", "receipt": "../local/receipts/op_g4_native_workspace_history_closure_20260828_01-commit.json", "receiptSha256": "15068f5f0306d3fba73510b5a598104fa722c7b5d49f26a514fa4b199b24a1c6"},
+    {"order": 11, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE", "status": "pending", "dependsOn": ["G4-NATIVE-WORKSPACE-HISTORY-CLOSURE"], "authorizationGate": "new-local-build-authorization"},
+    {"order": 12, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE", "status": "pending", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE"], "authorizationGate": "new-commit-push-publish-authorization"},
+    {"order": 13, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE"], "authorizationGate": "new-stable-install-and-read-only-history-acceptance-authorization"},
+    {"order": 14, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "migration-and-rebind-authorization"},
+    {"order": 15, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
+    {"order": 16, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
+    {"order": 17, "id": "B2-GOVERNANCE-VIEW", "status": "pending", "dependsOn": ["B1B-APPROVAL-INBOX-MVP", "ADR-005"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 18, "id": "B3-AUTHORIZATION-SESSION-CALENDAR", "status": "pending", "dependsOn": ["B2-GOVERNANCE-VIEW"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 19, "id": "G3-CROSS-HARNESS-ACTIVATION", "status": "pending", "dependsOn": ["per-harness-discovery"], "authorizationGate": "per-harness-authorization"},
+    {"order": 20, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
   ],
   "g4MigrationOrder": [
     "amazon-store",
@@ -390,7 +420,7 @@
     "meal-tracker"
   ],
   "g4MigrationGate": {
-    "mode": "amazon-and-project-lifecycle-stable-accepted-dsh-canonical-rebind-read-only-preflight-next",
+    "mode": "amazon-and-dsh-canonical-rebind-complete-native-history-source-committed-rc13-local-candidate-next",
     "amazonStatus": "stable-rebind-complete-k3-canonical-context-verified",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -402,7 +432,12 @@
     "amazonCanonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
     "amazonKimiCompatibility": "new-workspace-required-old-workspace-history-only-no-junction",
     "pauseAfterAmazonVerification": true,
-    "dshCanonicalRebind": "read-only-preflight-authorized-real-rebind-not-authorized",
+    "dshCanonicalRebind": "completed-user-confirmed-canonical-no-direct-database-write",
+    "dshExternalSwitchReceipt": "../local/receipts/op_g4_dsh_canonical_rebind_20260828_06-external-switch-r3-runtime.json",
+    "dshExternalSwitchReceiptSha256": "1863568a5667c0841c2b865c1b92f9cee88efcde241d7f5bab5f9a391f300eac",
+    "dshWebProfileRepairReceipt": "../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json",
+    "dshWebProfileRepairReceiptSha256": "28da74b1fd21a5c6027257a37d9c49d41d13fc5a42e39e1b9ede202f6593ea67",
+    "nextTask": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE",
     "laterProjectsRequireNewCyrusDecision": true
   },
   "externalEvidence": {

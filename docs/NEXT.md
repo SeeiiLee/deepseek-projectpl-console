@@ -1,11 +1,11 @@
 # Next Development
 
-状态：**Project Control rc.12 已在 Stable 激活、重启并完成非写入人工/机器验收；下一任务为 DSH canonical rebind**
-当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.12 active；4 个 active / 0 个 archived 项目；Amazon revision 2，唯一 active location=`F:\Projects\amazon-store\workspace`**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；项目生命周期第二批已进入线性历史并由 `plugins-v2026.08.27.1` 安装到 Stable。当前 generation=`pending-1787848154807`，25 个安装文件 SHA-256 全部一致；禁止把入口可见误报为已对真实项目执行归档/恢复/换绑
+状态：**DSH canonical rebind 已完成；原生工作区/旧会话连续性源码已复核、提交并合入 canonical，下一任务为 rc.13 本地候选**
+当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.12 active；DSH 正式 binding 已由 Cyrus 确认指向 `F:\Projects\deepseek-harness-personal\workspace`；rc.12 尚不包含旧位置历史 UI**
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；canonical 源码已 ff-only 合入 `1d00c8fdb8748d89d2ec7b0b837d2c14d3a258d1`。旧目录 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 保留，未删除、未复制、未建 junction；`release-staging/` 继续作为既有未跟踪目录排除在治理提交外
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-28 当前唯一执行顺序**：① 项目生命周期第二批、rc.12 本地候选、精确 commit/push、单插件 Release、Stable 安装与非写入验收已完成；② 当前只对 DSH 正式 binding 做只读预检；③ 真实 DSH 换绑仍须单独授权，通过后再依次处理量化与食溯。
+> **2026-08-28 当前唯一执行顺序**：① DSH 目录切换、Stable web profile 自包含修复和单次 Project Control rebind 已完成；② 原生工作区历史闭环源码 `1d00c8f` 已合入 canonical；③ 下一门只制作一份 rc.13 本地单插件候选并隔离验收；commit/push/Release、Stable 安装和量化/食溯迁移继续分门授权。
 
 ## 已完成：G4-K3-CANONICAL-CONTEXT-ALIGNMENT
 
@@ -74,9 +74,21 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 - 搜索只对 `project_id` 与当前项目名称做字面子串匹配：`亚马逊`、`亚马` 命中，`Amazon` 不命中；别名/翻译/拼音支持作为独立体验改进，不算 rc.12 回归。
 - 验收 receipt：`../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json`，SHA-256=`51f254b303900580befe5ee2b35e15ac058c44d5d59df43915a7f14d42033f37`。
 
-## 当前唯一任务：G4-DSH-CANONICAL-REBIND
+## 已完成：G4-DSH-CANONICAL-REBIND
 
-当前只读预检正式项目 `prj_01a0082e-fea8-7d6f-b6c2-08a259fba389`：核对 Stable 现有 active binding=`D:\Deepseek Harness Personal`，目标 canonical workspace=`F:\Projects\deepseek-harness-personal\workspace`，并验证 marker、manifest、project_id、scanner 生成的 relocation candidate 和唯一 `project.rebindLocation` 预览链。任何真实换绑、归档、迁移、Stable 数据写入均未授权，预检完成后必须暂停报告。
+- 外部一次性切换器 R3 已把旧目录原子改名为 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 并修复 linked worktree Git 指针；runtime receipt=`../local/receipts/op_g4_dsh_canonical_rebind_20260828_06-external-switch-r3-runtime.json`，SHA-256=`1863568a...00eac`。旧目录未复制、未删除，未建 junction。
+- 目录切换后暴露的 Stable web profile 绝对路径 link 已通过官方离线插件流程修复；最终 receipt=`../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json`，SHA-256=`28da74b1...ea67`。
+- Cyrus 已在 Stable 使用唯一主动“更换工作区”入口完成 DSH 正式项目换绑，并确认目标为 `F:\Projects\deepseek-harness-personal\workspace`。本次治理对齐不直接读写 Stable 数据库，也不重复 rebind。
+
+## 已完成：G4-NATIVE-WORKSPACE-HISTORY-CLOSURE
+
+- 换绑后发现原生 Workspace 不随 Project Control binding 自动变化、旧会话在新入口不可见。窄幅实现现增加换绑前原生会话预检、按 Project Control 不可变路径历史投影“旧位置历史”、旧会话只读打开，以及在 canonical 原生工作区创建/复用新会话的“在新工作区继续”入口。
+- 不改写原始日志或压缩会话，不建 junction，不直接写 Stable 存储，不新增 migration/DB schema，不制造第二套 Project Control rebind；候选准备与 lifecycle submit 仍复用唯一 `project.rebindLocation`。
+- 产品提交 `1d00c8fdb8748d89d2ec7b0b837d2c14d3a258d1` 已从 `d858a25` 线性合入 canonical。Project Control `206/206`，checkout、launch、governance 22/22、diff、typecheck、build 均通过。实现 receipt=`../local/receipts/op_g4_native_workspace_history_closure_20260828_01.json`；提交 receipt=`../local/receipts/op_g4_native_workspace_history_closure_20260828_01-commit.json`，SHA-256=`15068f5f...a1c6`。
+
+## 当前唯一任务：B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE
+
+从 canonical `1d00c8f` 开始，只制作一份 Project Control `0.1.0-rc.13` 本地单插件候选；必须证明 canonical/task worktree 三份 bundle 同 SHA、隔离 generation 激活/回滚、旧位置历史投影和“在新工作区继续”合同。不得 commit、push、发布、安装 Stable、操作真实项目、清理既有 staging 或进入 B1b；开工仍需 Cyrus 单独授权。
 
 ## 权威后续任务队列（可随时查阅）
 
@@ -90,14 +102,18 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 6 | `B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE` | rc.12 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 已完成；receipt `2df7c657...35279` |
 | 7 | `B-G4-PROJECT-LIFECYCLE-RC12-COMMIT-PUSH-RELEASE` | 精确提交候选、无 force push、发布单插件 Release | 已完成：`4052ae9` / `.1` / Release `377962312` |
 | 8 | `B-G4-PROJECT-LIFECYCLE-RC12-STABLE-INSTALL-ACCEPTANCE` | Stable 安装 rc.12，并人工验收归档/恢复和主动换工作区入口 | 已完成；receipt `51f254b3...33f37` |
-| 9 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 当前只读预检；真实换绑需单项目授权 |
-| 10 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 9；需迁移与换绑授权 |
-| 11 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 10；需单独方案与授权 |
-| 12 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
-| 13 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
-| 14 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
-| 15 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
-| 16 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
+| 9 | `G4-DSH-CANONICAL-REBIND` | 将 DSH 正式 Stable binding 从旧 D 盘路径换到 canonical workspace | 已完成；Cyrus Stable 人工确认 |
+| 10 | `G4-NATIVE-WORKSPACE-HISTORY-CLOSURE` | 保留旧位置会话历史，并让 canonical 原生工作区承接未来新会话 | 已完成源码与 canonical 合入：`1d00c8f` |
+| 11 | `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE` | rc.13 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 当前；需本地构建授权 |
+| 12 | `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE` | 精确提交版本化文件、push 并发布单插件 Release | 依赖 11；需新授权 |
+| 13 | `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE` | 安装 rc.13，验收旧位置历史和新工作区继续入口 | 依赖 12；需 Stable 授权 |
+| 14 | `G4-QUANT-MIGRATION-REBIND` | 量化项目迁移并去除路径中的 U+200C，再单次换绑 | 依赖 13；需迁移与换绑授权 |
+| 15 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 14；需单独方案与授权 |
+| 16 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
+| 17 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
+| 18 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
+| 19 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
+| 20 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
 
 这张表是当前后续任务的人工总表；同一队列也写入 `docs/governance/current-state.json::futureTasks`，Harness 应以机器指针和本表交叉核对，不以聊天摘要替代。
 
@@ -130,7 +146,7 @@ G0.5、G1、G2、G3 与 B-G4-0/G2-P2 已成为 Git 可重建且可从远端追�
 - **G2 Local 生命周期（P0/P1 已本地全量验收）**：`boot-error.log` 位于各实例 `userData\logs`；完整 `win-unpacked` 受 hash 守护；package set/run 创建即登记；`recommended-v1` policy、20 GiB 登记配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 和中断 journal 已实现。相同包体的不同来源证明写外部 provenance，不复制第二套 0.8 GiB 包。Windows 计划任务仍未创建；逾期时大任务入口失败关闭并要求补跑。
 - **G2-P2 已关闭并提交**：人工/packed E2E 只从 F 盘 canonical 生成；logical task ID 必须与权威 `current-state.nextTask.id` 一致。同任务 append-only claim 最多允许一次物理构建尝试；相同来源只能复用，来源变化或失败后重试均失败关闭并要求先登记新任务。正式测试复用 `f515424f...`，没有新增第四套；当前物理包为 `58adf7b2...` RETIRED + `f515424f...` ACTIVE；实现随 `2400410` 推送为当前远端 branch/tag 祖先，生命周期脚本不作为本次 Project Control 单插件 Release 的独立发布物。
 - **G3 跨 Harness（候选已验证）**：Toolbox 规范源已对 DSH Dev/Codex 完成可回滚 `applied_shadow` 投影；memory-host status/recall 单 host 双端结果一致、显式 `project_id`、leak=0。真实宿主 discovery、真实 Stable/binding 与记忆数据迁移未做，不能声称 active。
-- **G4 存量迁移（Amazon、K3 与 Candidate Center 第一批生产验收均已对齐）**：顺序仍为 Amazon Store → DSH 自身 → 量化 → meal_tracker/食溯。第二批位置生命周期已本地提交；必须先依次完成 rc.12 本地候选、发布和 Stable 安装验收三道门，再逐项目授权迁移/换绑。旧源目录删除不在这些任务授权内。
+- **G4 存量迁移**：Amazon 与 DSH 正式 binding 已对齐；DSH 旧原生会话连续性源码已合入但尚未进入 Stable。必须先完成 rc.13 本地候选、发布、Stable 安装验收三道独立门，再处理量化 → meal_tracker/食溯。旧源目录删除不在这些任务授权内。
 
 ## 历史计划（以下内容不再是当前执行指针）
 
