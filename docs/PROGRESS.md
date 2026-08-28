@@ -1,5 +1,13 @@
 # Progress
 
+## 2026-08-28：空文档 managed upgrade 修复已提交并合入 canonical
+
+- 旧项目没有任何文档 binding 时，升级器原先生成裸 YAML `entries:`；解析后为 `null`，因此官方 `project.upgradeManaged` 路径被 schema 以 409 `MANIFEST_INVALID` 拒绝。修复后空列表明确输出 `entries: []`，非空 block list 的既有序列化保持不变。
+- 红测先稳定复现 `6 tests / 5 pass / 1 fail` 与 409；修复后定向 `6/6`、Project Control `207/207`、安全仓库套件 `848/848`，skipped/todo=0。正式全量 `846/849` 中，受保护 packed Stable E2E 在非 canonical Project Home worktree 按合同失败关闭；另两项 Windows 并发波动定向复跑 `7/7` 通过。
+- typecheck、直接 build、18 插件门禁、checkout `1280`、launch、governance `22/22`、diff 均通过；双路径构建仅产生预期窄幅 bundle 差异。实现 receipt=`../local/receipts/op_b_g4_empty_document_managed_upgrade_closure_20260828_01.json`，SHA-256=`af7c0ec82126d4d47b778389322d56f51173b86c6f2c6c3e6a6c50cd2f82ad1f`。
+- 产品提交 `613f53588bcd3585b7298db323f682c46d6129df` 精确包含 3 个文件，并从 `7594834fe1e7ff8b5c596ff330c25c073d176985` 严格 ff-only 合入 `codex/governance-alignment`。未 push、发布、安装或写 Stable，未操作量化项目，既有 `release-staging/` 未纳入提交。
+- Stable 仍运行 Project Control rc.13；下一任务为 `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE`，只制作一份本地单插件候选。commit/push/Release、Stable 安装验收与量化预检继续分门授权。
+
 ## 2026-08-28：Project Control rc.13 Stable 验收与原生工作区历史治理收口完成
 
 - rc.13 候选提交 `3780d159efc3a294b4fd01bb92ff4fe7942e7c82` 已无 force 推送并发布为 [plugins-v2026.08.28.1](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.28.1)（Release `378348305`）；仅 Project Control `0.1.0-rc.13`，tgz 310,006 bytes，SHA-256=`e97b60323d0c26bf90f2db5ea250c55d39a3ee1bec9c47d56f93e46257bd3afe`。
