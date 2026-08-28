@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "preset": "personal-desktop",
-  "generatedAt": "2026-08-27T15:47:15.607Z",
+  "generatedAt": "2026-08-28T08:09:52.033Z",
   "compatibleHarness": {
     "version": "0.1.1-rc.2",
     "commit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e"
@@ -78,8 +78,8 @@
       "bundle": false
     },
     "@cyrus/dsh-project-control": {
-      "version": "0.1.0-rc.12",
-      "integrity": "7d3e75adf9e691e69e15bf7b397ac017cfd9eee424d65b765710531187e78302",
+      "version": "0.1.0-rc.13",
+      "integrity": "e97b60323d0c26bf90f2db5ea250c55d39a3ee1bec9c47d56f93e46257bd3afe",
       "source": "tgz",
       "role": "core",
       "bundle": false,

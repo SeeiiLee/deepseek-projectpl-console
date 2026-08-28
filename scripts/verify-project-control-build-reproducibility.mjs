@@ -126,7 +126,7 @@ function assertOwnedTemporary(path, container, token) {
   }
   const marker = join(normalized, '.task-owner.json')
   const parsed = JSON.parse(readFileSync(marker, 'utf8'))
-  if (parsed.token !== token || parsed.task !== 'B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE') {
+  if (parsed.token !== token || parsed.task !== 'B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE') {
     throw new Error(`Task ownership marker mismatch: ${marker}`)
   }
 }
@@ -138,12 +138,12 @@ if (alternateValue === undefined) {
 const alternateWorktree = resolve(alternateValue)
 assertRegisteredWorktree(alternateWorktree)
 
-const taskContainer = join(alternateWorktree, '.dsh-task-temp', 'b-g4-project-lifecycle-rc12-local-candidate')
+const taskContainer = join(alternateWorktree, '.dsh-task-temp', 'b-g4-native-workspace-history-rc13-local-candidate')
 mkdirSync(taskContainer, { recursive: true })
 const temporaryRoot = mkdtempSync(join(taskContainer, 'run-'))
 const token = randomUUID()
 writeFileSync(join(temporaryRoot, '.task-owner.json'), JSON.stringify({
-  task: 'B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE',
+  task: 'B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE',
   token,
 }, null, 2), { encoding: 'utf8', flag: 'wx' })
 
@@ -181,7 +181,7 @@ try {
   }
   const result = {
     schemaVersion: 1,
-    task: 'B-G4-PROJECT-LIFECYCLE-RC12-LOCAL-CANDIDATE',
+    task: 'B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE',
     status: 'passed',
     checkedAt: new Date().toISOString(),
     canonicalWorkspace: alternateWorktree,
