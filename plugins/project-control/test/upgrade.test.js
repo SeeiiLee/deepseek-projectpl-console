@@ -22,7 +22,7 @@ function sha256(content) {
   return `sha256:${createHash('sha256').update(content).digest('hex')}`
 }
 
-async function registerLegacyFixture(t) {
+async function registerLegacyFixture(t, options = {}) {
   const tempRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-upgrade-'))
   const projectRoot = join(tempRoot, 'Legacy Project')
   await mkdir(projectRoot)
@@ -59,7 +59,7 @@ async function registerLegacyFixture(t) {
     registrationMode: 'linked_legacy',
     name: 'Legacy Project',
     expectedRevision: candidate.revision,
-    documentBindings: [
+    documentBindings: options.documentBindings ?? [
       { role: 'readme', relativePath: 'README.md', contentHash: sha256(readmeContent) },
       { role: 'prd', relativePath: 'PRD.md', contentHash: sha256(prdContent) },
     ],
@@ -139,6 +139,8 @@ test('preparing and executing an upgrade adds only managed metadata and preserve
   assert.equal(await readFile(join(projectRoot, 'README.md'), 'utf8'), readmeContent)
   assert.equal(await readFile(join(projectRoot, 'PRD.md'), 'utf8'), prdContent)
   const manifestText = await readFile(join(projectRoot, '.dsh-project', 'project.yaml'), 'utf8')
+  assert.match(manifestText, /\n    entries:\n      - role:/)
+  assert.doesNotMatch(manifestText, /\n    entries: \[\]\n/)
   const manifest = parseYamlSubset(manifestText)
   assert.equal(manifest.metadata.projectId, project.projectId)
   assert.equal(manifest.spec.documents.docsRoot, '.')
@@ -147,6 +149,32 @@ test('preparing and executing an upgrade adds only managed metadata and preserve
   assert.equal(events.at(-1).eventType, 'project.managed.upgraded')
   const replay = await post(origin, '/lifecycle', preview.command)
   assert.equal(replay.payload.data.status, 'replayed')
+})
+
+test('a zero-document legacy project upgrades with a valid empty manifest without inventing bindings', async t => {
+  const { projectRoot, storage, origin, project } = await registerLegacyFixture(t, {
+    documentBindings: [],
+  })
+  assert.deepEqual(project.documentBindings, [])
+
+  const preview = await prepareUpgrade(origin, project.projectId, project.revision)
+  assert.equal(Number(preview.documentCount), 0)
+
+  const submitted = await post(origin, '/lifecycle', preview.command)
+  assert.equal(submitted.payload.ok, true, JSON.stringify(submitted.payload))
+  assert.equal(submitted.payload.data.status, 'accepted', JSON.stringify(submitted.payload))
+  assert.equal(submitted.payload.data.outcome, 'managed_upgraded')
+
+  const upgraded = storage.getProject(project.projectId)
+  assert.equal(upgraded.mode, 'managed')
+  assert.deepEqual(upgraded.documentBindings, [])
+  assert.deepEqual(upgraded.manifestMirror.documentBindings, [])
+
+  const manifestText = await readFile(join(projectRoot, '.dsh-project', 'project.yaml'), 'utf8')
+  assert.match(manifestText, /\n    entries: \[\]\n/)
+  const manifest = parseYamlSubset(manifestText)
+  assert.deepEqual(manifest.spec.documents.entries, [])
+  assert.equal(validateProjectManifest(manifest).valid, true)
 })
 
 test('a document changing after preparation rejects the upgrade and keeps the project legacy', async t => {

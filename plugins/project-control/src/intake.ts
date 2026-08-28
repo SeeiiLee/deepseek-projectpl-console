@@ -840,12 +840,16 @@ function buildUpgradeManifestYaml(options: {
     'spec:',
     '  documents:',
     '    docsRoot: .',
-    '    entries:',
-    ...options.documentBindings.flatMap(binding => [
-      `      - role: ${binding.role}`,
-      `        path: ${binding.relativePath}`,
-      ...(binding.required ? ['        required: true'] : []),
-    ]),
+    ...(options.documentBindings.length === 0
+      ? ['    entries: []']
+      : [
+          '    entries:',
+          ...options.documentBindings.flatMap(binding => [
+            `      - role: ${binding.role}`,
+            `        path: ${binding.relativePath}`,
+            ...(binding.required ? ['        required: true'] : []),
+          ]),
+        ]),
     '    standardOutputs:',
     '      updatesRoot: .dsh-project/updates',
     '      decisionsRoot: .dsh-project/decisions',
