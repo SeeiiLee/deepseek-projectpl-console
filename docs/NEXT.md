@@ -1,24 +1,26 @@
 # Next Development
 
-状态：**空文档项目升级修复已提交并合入 canonical；下一任务只制作 Project Control rc.14 本地单插件候选，量化迁移继续暂停**
-当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.13 active；DSH 正式 binding 与未来原生新会话均指向 `F:\Projects\deepseek-harness-personal\workspace`；旧会话继续作为“旧位置历史”只读可见**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；空文档升级产品提交为 `613f53588bcd3585b7298db323f682c46d6129df`，已从 `7594834` 严格 ff-only 合入。Stable 仍是 rc.13，尚不包含该修复。旧目录 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 保留，未删除、未复制、未建 junction；`release-staging/` 继续作为既有未跟踪目录排除在治理提交外
+状态：**Project Control rc.14 已安装重启并完成精确产物机器验收；下一任务为量化项目 canonical 迁移只读预检，真实迁移继续暂停**
+当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.14 active；DSH 正式 binding 与未来原生新会话均指向 `F:\Projects\deepseek-harness-personal\workspace`；旧会话继续作为“旧位置历史”只读可见**
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；空文档升级产品源码提交为 `613f53588bcd3585b7298db323f682c46d6129df`，rc.14 交付提交为 `6e2a1d0c09bb78140a4f99929acf2242a9635bfa`，Stable 当前 generation=`pending-1787924242823`。旧目录 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 保留，未删除、未复制、未建 junction；`release-staging/` 继续作为既有未跟踪目录排除在治理提交外
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-28 当前唯一执行顺序**：① 空文档升级源码与 canonical 历史已闭环；② 下一门只制作一份 rc.14 本地单插件候选；③ 候选通过后，commit/push/Release 与 Stable 安装验收仍是两道独立授权门；④ rc.14 生产验收关闭后，才恢复量化项目只读预检。真实建目录、移动/复制、Stable 换绑和食溯迁移继续分门授权。
+> **2026-08-28 当前唯一执行顺序**：① 空文档升级的源码、rc.14 候选、commit/push/Release 与 Stable 精确产物机器验收已闭环；② 下一门恢复量化项目 canonical 迁移只读预检，刷新既有身份、路径、U+200C、目录占用和回滚方案；③ 预检不调用 `prepare-upgrade`，不写 Stable，也不创建或搬动量化目录。真实迁移/rebind、食溯和 B1b 继续分门授权。
 
-## 已完成：B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT
+## 已完成：B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14 生产链
 
 - 根因修复：空文档旧项目升级时不再输出 YAML `entries:` 空值，而是输出 `entries: []`；已有文档的非空 block list 输出保持不变。
-- 产品提交 `613f53588bcd3585b7298db323f682c46d6129df` 精确包含 `intake.ts`、`upgrade.test.js` 和编译产物 `lib/index.js` 三个文件，已从 canonical `7594834` 严格 ff-only 合入，没有 merge commit。
+- 产品源码提交 `613f53588bcd3585b7298db323f682c46d6129df` 精确包含 `intake.ts`、`upgrade.test.js` 和编译产物 `lib/index.js` 三个文件，已从 canonical `7594834` 严格 ff-only 合入，没有 merge commit。
 - 机器证据：红测为官方 `project.upgradeManaged` 返回 409 `MANIFEST_INVALID`；修复后 Project Control `207/207`、安全仓库套件 `848/848`，typecheck/build/plugins/checkout/launch/governance/diff 均通过。正式全量的受保护 packed E2E 在非 Project Home worktree 失败关闭；另两项 Windows 并发波动定向复跑 `7/7`。
-- 实现 receipt：`../local/receipts/op_b_g4_empty_document_managed_upgrade_closure_20260828_01.json`，SHA-256=`af7c0ec82126d4d47b778389322d56f51173b86c6f2c6c3e6a6c50cd2f82ad1f`。未 push、发布、安装 Stable 或操作量化项目。
+- rc.14 交付提交 `6e2a1d0c09bb78140a4f99929acf2242a9635bfa` 已无 force push 并发布为 `plugins-v2026.08.28.2`（Release `378493785`）；唯一 Project Control tgz 为 310,029 bytes，SHA-256=`7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21`。
+- Cyrus 已手动安装并重启。Stable 当前 generation=`pending-1787924242823`，上一 rc.13 generation=`pending-1787905720701`；25 个安装文件无缺失/哈希不符，pending/activating 指针不存在，最新启动到 `harness-ready` 与 `page-ready`。
+- Stable 验收 receipt：`../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json`，SHA-256=`e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc`。该验收只证明精确 rc.14 包及其已测试修复进入 Stable；没有对真实量化项目调用 `prepare-upgrade` 或 `project.upgradeManaged`。
 
-## 下一任务：B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE
+## 下一任务：G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT
 
-- 只从 canonical `613f53588bcd3585b7298db323f682c46d6129df` 制作一份 Project Control `0.1.0-rc.14` 本地单插件候选。
-- 必须验证双路径 bundle/package 身份、离线隔离安装→激活→回滚、空文档官方升级路径和非空回归，并写本地 receipt。
-- 本任务不含 commit、push、Release、Stable 安装/写入、客户端 package-set、量化/食溯操作、B1b 或 `release-staging/` 清理；开始前需要 Cyrus 新授权。
+- 在 rc.14 已验收的前提下，刷新此前暂停的量化项目只读预检：核对正式 `project_id`、Stable 当前 binding 与路径历史、旧 Kimi/Codex Workspace 路径（含 U+200C）、文件结构、目标路径占用与迁移/回滚方案。
+- 只允许 Host API 只读查询和文件系统只读盘点；不得直接读 Stable 数据库，不得调用会创建计划/引用的 `prepare-upgrade`，不得创建量化 Project Home、移动/复制/删除文件、修改 Kimi、执行 rebind、处理食溯或进入 B1b。
+- 这是下一任务指针，不代表已授权开工；开始前仍需 Cyrus 对该只读范围的新授权。
 
 ## 已完成：G4-K3-CANONICAL-CONTEXT-ALIGNMENT
 
@@ -106,9 +108,9 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 - Cyrus 人工确认“旧位置历史”可见、旧会话可打开、“在新工作区继续”成功落到 `F:\Projects\deepseek-harness-personal\workspace`，且原旧会话仍存在、未被改写。
 - Stable 验收 receipt：`../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json`，SHA-256=`b52c7738aaeb517c333bfb6d18a427a33081b7aa4061f0ecd11a5d6362711b00`。
 
-## 当前唯一任务：B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE
+## 当前唯一任务：G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT
 
-从 canonical `613f53588bcd3585b7298db323f682c46d6129df` 只制作一份 Project Control `0.1.0-rc.14` 本地单插件候选，验证双路径可复现、离线隔离安装/激活/回滚和空文档升级回归并写 receipt。不得 commit、push、发布、安装或写 Stable，不得创建客户端 package-set、清理既有 `release-staging/`、操作量化/食溯或进入 B1b；开工仍需 Cyrus 新授权。
+刷新此前暂停的量化项目只读预检：只核对正式身份、Stable 当前 binding/路径历史、旧 Kimi/Codex 路径与 U+200C、文件结构、目标占用和可回滚迁移方案。不得创建 Project Home、移动/复制/删除文件、修改 Kimi、直接读写 Stable 数据库、调用 `prepare-upgrade`、执行 rebind、处理食溯或进入 B1b；开工仍需 Cyrus 新授权。
 
 ## 权威后续任务队列（可随时查阅）
 
@@ -128,10 +130,10 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 12 | `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE` | 精确提交版本化文件、push 并发布单插件 Release | 已完成：`3780d15` / `.1` / Release `378348305` |
 | 13 | `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE` | 安装 rc.13，验收旧位置历史和新工作区继续入口 | 已完成；receipt `b52c7738...11b00` |
 | 14 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT` | 精确提交三文件修复并 ff-only 合入 canonical，更新治理链 | 已完成：`613f535`；未 push/publish/install |
-| 15 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE` | rc.14 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 当前；需新的本地候选授权 |
-| 16 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE` | 精确提交版本化文件、无 force push、发布单插件 Release | 依赖 15；需单独外部动作授权 |
-| 17 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE` | 安装 rc.14 并人工验收空文档 managed upgrade | 依赖 16；需单独 Stable 授权 |
-| 18 | `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT` | 只读核对量化身份、旧路径、文件与治理状态并形成迁移/回滚计划 | 暂缓到 17 完成；之后仍需新授权 |
+| 15 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE` | rc.14 本地单插件候选、双路径同 SHA 与隔离激活/回滚 | 已完成 |
+| 16 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE` | 精确提交版本化文件、无 force push、发布单插件 Release | 已完成：`6e2a1d0` / `.2` / Release `378493785` |
+| 17 | `B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE` | 安装 rc.14 并验收精确产物进入 Stable | 已完成；receipt `e7081341...2c7dc`；真实量化升级未执行 |
+| 18 | `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT` | 只读核对量化身份、旧路径、文件与治理状态并形成迁移/回滚计划 | 当前；需新的只读预检授权 |
 | 19 | `G4-QUANT-MIGRATION-REBIND` | 按已批准计划迁移量化项目、处理 U+200C 并单次换绑 | 依赖 18；需迁移与换绑授权 |
 | 20 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 最后处理复杂的 meal-tracker/食溯项目 | 依赖 19；需单独方案与授权 |
 | 21 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；继续暂停到 G4 收口 |
@@ -157,7 +159,7 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 11. [x] Cyrus 单独授权并完成 B-G4-0/G2-P2 28 文件精确提交：`2400410ca10e4a8e792d276bcde89faeb778e1e6`；blob 集与冻结候选一致，现已作为远端 branch/tag 祖先推送，仍未安装 Stable、未 rebind。
 12. [x] Cyrus 单独授权并完成现有 Draft Release `376569643` 的 digest 复核与公开：tag=`plugins-v2026.08.25.1`，四项资产，Project Control `0.1.0-rc.9` 包 SHA-256=`01e0a7785a13227422d6e5e5c3677c2b9cf50bc146e4821718c4b3cc598902ca`；没有重传、第二个 Release 或 branch/tag 改写。
 
-G0.5、G1、G2、G3 与 B-G4-0/G2-P2 已成为 Git 可重建且可从远端追溯的历史基线；Toolbox 与 Memory 自身仓库仍是各自本地提交、没有 remote。其后的生产事实是：Stable 客户端已升级到 0.4.6，Project Control 0.1.0-rc.11 已安装并验收；Amazon 已在同一正式 project_id 下从旧 Kimi 路径换绑到 `F:\Projects\amazon-store\workspace`，revision 2，旧路径 inactive，path history 非空。旧候选 `can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 的原始 `relocation_candidate` 行仍作为历史证据保留，但已按 `superseded` 从默认待审阅视图关闭；imported 终态同样只进入历史视图。
+G0.5、G1、G2、G3 与 B-G4-0/G2-P2 已成为 Git 可重建且可从远端追溯的历史基线；Toolbox 与 Memory 自身仓库仍是各自本地提交、没有 remote。其后的生产事实是：Stable 客户端为 0.4.6，Project Control `0.1.0-rc.14` 已安装重启并完成精确产物机器验收；Amazon 已在同一正式 project_id 下从旧 Kimi 路径换绑到 `F:\Projects\amazon-store\workspace`，revision 2，旧路径 inactive，path history 非空。旧候选 `can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 的原始 `relocation_candidate` 行仍作为历史证据保留，但已按 `superseded` 从默认待审阅视图关闭；imported 终态同样只进入历史视图。
 
 ### B-G4-0 边界
 
@@ -171,7 +173,7 @@ G0.5、G1、G2、G3 与 B-G4-0/G2-P2 已成为 Git 可重建且可从远端追�
 - **G2 Local 生命周期（P0/P1 已本地全量验收）**：`boot-error.log` 位于各实例 `userData\logs`；完整 `win-unpacked` 受 hash 守护；package set/run 创建即登记；`recommended-v1` policy、20 GiB 登记配额、5 GiB 磁盘底线、24h+12h 调度健康、cleanup plan/apply/verify/receipt 和中断 journal 已实现。相同包体的不同来源证明写外部 provenance，不复制第二套 0.8 GiB 包。Windows 计划任务仍未创建；逾期时大任务入口失败关闭并要求补跑。
 - **G2-P2 已关闭并提交**：人工/packed E2E 只从 F 盘 canonical 生成；logical task ID 必须与权威 `current-state.nextTask.id` 一致。同任务 append-only claim 最多允许一次物理构建尝试；相同来源只能复用，来源变化或失败后重试均失败关闭并要求先登记新任务。正式测试复用 `f515424f...`，没有新增第四套；当前物理包为 `58adf7b2...` RETIRED + `f515424f...` ACTIVE；实现随 `2400410` 推送为当前远端 branch/tag 祖先，生命周期脚本不作为本次 Project Control 单插件 Release 的独立发布物。
 - **G3 跨 Harness（候选已验证）**：Toolbox 规范源已对 DSH Dev/Codex 完成可回滚 `applied_shadow` 投影；memory-host status/recall 单 host 双端结果一致、显式 `project_id`、leak=0。真实宿主 discovery、真实 Stable/binding 与记忆数据迁移未做，不能声称 active。
-- **G4 存量迁移**：Amazon 与 DSH 正式 binding 已对齐；DSH 旧原生会话连续性源码已合入但尚未进入 Stable。必须先完成 rc.13 本地候选、发布、Stable 安装验收三道独立门，再处理量化 → meal_tracker/食溯。旧源目录删除不在这些任务授权内。
+- **G4 存量迁移**：Amazon 与 DSH 正式 binding 已对齐，原生会话连续性与空文档升级分别随 rc.13/rc.14 完成生产验收；下一门只恢复量化只读预检，再按独立授权处理量化 → meal_tracker/食溯。旧源目录删除不在这些任务授权内。
 
 ## 历史计划（以下内容不再是当前执行指针）
 

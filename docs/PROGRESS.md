@@ -1,6 +1,14 @@
 # Progress
 
-## 2026-08-28：空文档 managed upgrade 修复已提交并合入 canonical
+## 2026-08-28：Project Control rc.14 Stable 验收与空文档升级生产治理收口完成
+
+- rc.14 交付提交 `6e2a1d0c09bb78140a4f99929acf2242a9635bfa` 已无 force 推送并发布为 [plugins-v2026.08.28.2](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.28.2)（Release `378493785`）；仅 Project Control `0.1.0-rc.14`，tgz 310,029 bytes，SHA-256=`7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21`。
+- Cyrus 已完成手动安装并重启。Stable 当前 generation=`pending-1787924242823`，上一 rc.13 generation=`pending-1787905720701` 继续保留；pending/activating 指针不存在，25 个安装文件逐一复算为 0 缺失/不符，最新启动到 `harness-ready` 与 `page-ready`。
+- 验收把“Release 精确包 → Stable 当前 generation → 已安装文件”的身份链闭合，并用既有 rc.14 空文档回归测试证明修复代码位于该包中。没有调用会写计划/引用的 `prepare-upgrade`，也没有对真实量化项目执行 `project.upgradeManaged`，因此真实量化迁移仍不是已验收事实。
+- Stable 验收 receipt=`../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json`，SHA-256=`e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc`。本轮治理提交只含 7 份权威文档，`release-staging/` 继续排除，未再次安装/写 Stable，未操作量化、食溯或 B1b。
+- 下一任务为 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`：刷新量化正式身份、Stable binding/路径历史、旧 Kimi/Codex 路径与 U+200C、文件结构、目标占用和迁移/回滚方案；开工仍需新的只读授权。
+
+## 2026-08-28：空文档 managed upgrade 修复已提交并合入 canonical（rc.14 发布前快照）
 
 - 旧项目没有任何文档 binding 时，升级器原先生成裸 YAML `entries:`；解析后为 `null`，因此官方 `project.upgradeManaged` 路径被 schema 以 409 `MANIFEST_INVALID` 拒绝。修复后空列表明确输出 `entries: []`，非空 block list 的既有序列化保持不变。
 - 红测先稳定复现 `6 tests / 5 pass / 1 fail` 与 409；修复后定向 `6/6`、Project Control `207/207`、安全仓库套件 `848/848`，skipped/todo=0。正式全量 `846/849` 中，受保护 packed Stable E2E 在非 canonical Project Home worktree 按合同失败关闭；另两项 Windows 并发波动定向复跑 `7/7` 通过。

@@ -3,7 +3,7 @@
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
   "projectSlug": "deepseek-harness-personal",
   "canonicalWorkspace": "F:\\Projects\\deepseek-harness-personal\\workspace",
-  "generatedAt": "2026-08-28T18:08:44.0424210+08:00",
+  "generatedAt": "2026-08-28T21:50:27.4157596+08:00",
   "precedence": [
     "cyrus_decision",
     "effective_adr",
@@ -37,12 +37,12 @@
     "publishPolicy": "explicit-user-authorization",
     "standingAuthorization": {
       "id": "governance-development-continuous-v1",
-      "status": "consumed-through-empty-document-upgrade-commit-and-canonical-alignment",
+      "status": "consumed-through-rc14-stable-acceptance-and-governance-closure",
       "localValidatedCommits": true,
       "taskOwnedTemporaryCleanup": true,
       "push": false,
       "publish": false,
-      "scopeEnd": "pause-before-rc14-local-candidate-authorization"
+      "scopeEnd": "pause-before-quant-read-only-preflight-authorization"
     }
   },
   "packedTestPolicy": {
@@ -313,7 +313,7 @@
       "next": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"
     },
     "emptyDocumentManagedUpgradeClosure": {
-      "status": "source-reviewed-committed-and-ff-only-integrated-rc14-local-candidate-next",
+      "status": "source-reviewed-committed-integrated-rc14-candidate-committed-pushed-published-stable-installed-and-machine-accepted",
       "taskId": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT",
       "branch": "codex/project-control-empty-document-upgrade-closure",
       "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_project_control_empty_document_upgrade_20260828",
@@ -330,8 +330,29 @@
       "machineGates": "project-control typecheck build plugins checkout launch governance diff passed",
       "scope": ["empty-document-managed-upgrade-yaml", "official-project-upgradeManaged-regression", "non-empty-rendering-preserved"],
       "excluded": ["migration", "database-schema", "stable-write", "quant-project-operation", "push", "publish", "install", "b1b"],
-      "productionInstalled": false,
-      "next": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"
+      "productionInstalled": true,
+      "rc14Delivery": {
+        "version": "0.1.0-rc.14",
+        "candidateCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+        "releaseTag": "plugins-v2026.08.28.2",
+        "releaseTagCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+        "releaseId": 378493785,
+        "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.28.2",
+        "assetCount": 4,
+        "assetBytes": 310029,
+        "packageSha256": "7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21",
+        "localCandidateReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_local_candidate_20260828_01.json",
+        "releaseReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_commit_push_release_20260828_01.json",
+        "releaseReceiptSha256": "d8a7a3d1ee84aed5fe238a79e551f822242083c5497692b4dd2899b47c52d9cd",
+        "stableGenerationId": "pending-1787924242823",
+        "previousGenerationId": "pending-1787905720701",
+        "installedFileCount": 25,
+        "missingOrHashMismatchedFiles": 0,
+        "stableAcceptanceReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json",
+        "stableAcceptanceReceiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc",
+        "acceptance": "exact released package and installed files machine accepted after Cyrus installed and restarted; no real Quant prepare-upgrade or upgrade was executed"
+      },
+      "next": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"
     },
     "g1ProjectHome": {
       "status": "committed-and-pushed-as-ancestor-not-separately-published",
@@ -396,7 +417,7 @@
       "next": "G4-AMAZON-MIGRATION-PILOT"
     },
     "g4AmazonFilesystemPilot": {
-      "status": "amazon-and-dsh-stable-bindings-aligned-native-history-rc13-stable-accepted-empty-document-upgrade-source-integrated-rc14-candidate-next",
+      "status": "amazon-and-dsh-stable-bindings-aligned-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
       "projectHome": "F:\\Projects\\amazon-store",
       "canonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
       "copyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -431,8 +452,8 @@
       "dshNativeHistoryProductionInstalled": true,
       "dshNativeHistoryStableAcceptanceReceipt": "../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json",
       "emptyDocumentUpgradeCommit": "613f53588bcd3585b7298db323f682c46d6129df",
-      "emptyDocumentUpgradeProductionInstalled": false,
-      "next": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"
+      "emptyDocumentUpgradeProductionInstalled": true,
+      "next": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"
     }
   },
   "futureTasks": [
@@ -450,10 +471,10 @@
     {"order": 12, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE"], "authorizationGate": "completed-3780d15-plugins-v2026.08.28.1-release-378348305"},
     {"order": 13, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE"], "authorizationGate": "completed-stable-installed-restarted-native-history-and-canonical-continuation-accepted", "receipt": "../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json", "receiptSha256": "b52c7738aaeb517c333bfb6d18a427a33081b7aa4061f0ecd11a5d6362711b00"},
     {"order": 14, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT", "status": "completed", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "completed-613f535-ff-only-canonical-docs-only-alignment"},
-    {"order": 15, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE", "status": "pending", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT"], "authorizationGate": "new-local-single-plugin-candidate-authorization"},
-    {"order": 16, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE", "status": "pending", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"], "authorizationGate": "separate-commit-push-single-plugin-release-authorization"},
-    {"order": 17, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE"], "authorizationGate": "separate-stable-install-and-manual-acceptance-authorization"},
-    {"order": 18, "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "paused", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "resume-after-rc14-stable-acceptance-with-new-read-only-inventory-and-plan-authorization"},
+    {"order": 15, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT"], "authorizationGate": "completed-local-reproducible-candidate"},
+    {"order": 16, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"], "authorizationGate": "completed-6e2a1d0-plugins-v2026.08.28.2-release-378493785"},
+    {"order": 17, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE"], "authorizationGate": "completed-stable-installed-restarted-exact-artifact-machine-accepted-quant-untouched", "receipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json", "receiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc"},
+    {"order": 18, "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "current-awaiting-new-authorization", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "new-read-only-inventory-and-plan-authorization"},
     {"order": 19, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"], "authorizationGate": "migration-and-rebind-authorization"},
     {"order": 20, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
     {"order": 21, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
@@ -469,7 +490,7 @@
     "meal-tracker"
   ],
   "g4MigrationGate": {
-    "mode": "amazon-and-dsh-canonical-rebind-complete-native-history-rc13-stable-accepted-empty-document-upgrade-source-integrated-rc14-candidate-next",
+    "mode": "amazon-and-dsh-canonical-rebind-complete-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
     "amazonStatus": "stable-rebind-complete-k3-canonical-context-verified",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -487,7 +508,7 @@
     "dshWebProfileRepairReceipt": "../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json",
     "dshWebProfileRepairReceiptSha256": "28da74b1fd21a5c6027257a37d9c49d41d13fc5a42e39e1b9ede202f6593ea67",
     "dshNativeHistoryStableAcceptanceReceipt": "../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json",
-    "nextTask": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE",
+    "nextTask": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT",
     "laterProjectsRequireNewCyrusDecision": true
   },
   "externalEvidence": {

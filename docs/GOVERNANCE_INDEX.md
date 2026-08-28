@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。DSH 正式 Project Control binding 已切换到 canonical workspace；旧目录保留为可回滚历史且 Stable web profile 的失效绝对 link 已离线修复。原生 Workspace/旧会话连续性缺口已随 Project Control `0.1.0-rc.13` 发布、安装并由 Cyrus 人工验收：旧位置历史可见、旧会话可打开、新会话在 canonical workspace 继续且原旧会话不被改写。当前唯一下一任务为 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`，只读核对量化项目身份、旧路径和治理状态；真实迁移/rebind、食溯和 B1b 仍分门授权。项目搜索仍只支持 project_id 与已存名称的字面子串匹配。完整队列见 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks`。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。DSH 正式 Project Control binding 已切换到 canonical workspace；旧目录保留为可回滚历史且 Stable web profile 的失效绝对 link 已离线修复。原生 Workspace/旧会话连续性已随 Project Control `0.1.0-rc.13` 完成生产验收；空文档 managed upgrade 修复随后随 `0.1.0-rc.14` 发布，Stable 已重启并完成精确包与 25 个安装文件的机器验收。真实量化项目尚未调用 `prepare-upgrade` 或执行升级。当前唯一下一任务为 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`，只读刷新量化项目身份、路径历史、旧路径、U+200C、目录占用和回滚方案；真实迁移/rebind、食溯和 B1b 仍分门授权。项目搜索仍只支持 project_id 与已存名称的字面子串匹配。完整队列见 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks`。
 
 ## 权威链
 

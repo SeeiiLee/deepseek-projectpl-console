@@ -1,24 +1,24 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-28T18:08:44.0424210+08:00",
+  "recordedAt": "2026-08-28T21:50:27.4157596+08:00",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-dsh-rebound-native-workspace-history-rc13-stable-accepted-empty-document-upgrade-source-integrated-rc14-candidate-next",
+    "status": "canonical-dsh-rebound-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "613f53588bcd3585b7298db323f682c46d6129df",
-    "headAtRecord": "613f53588bcd3585b7298db323f682c46d6129df",
-    "workingTreeState": "single-authorized-docs-only-empty-document-upgrade-alignment-release-staging-preserved-untracked",
+    "approvedParentCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+    "headAtRecord": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+    "workingTreeState": "single-authorized-docs-only-rc14-stable-acceptance-closure-release-staging-preserved-untracked",
     "commitAuthorized": false,
-    "lastAuthorizedCommit": "613f53588bcd3585b7298db323f682c46d6129df",
+    "lastAuthorizedCommit": "docs-only-commit-created-by-current-closure",
     "lastCommitAuthorizationConsumed": true,
-    "selfCommitRecordPolicy": "the exact docs-only commit containing this state is recorded in ../local/receipts/op_b_g4_empty_document_managed_upgrade_commit_alignment_20260828_01.json to avoid a self-referential hash; push was not authorized",
+    "selfCommitRecordPolicy": "the exact docs-only commit containing this state and its non-force push result are recorded in ../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01-governance-commit.json to avoid a self-referential hash",
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
   "releaseBaseline": {
@@ -26,10 +26,10 @@
     "aLineStatus": "production-accepted-and-frozen",
     "clientReleaseCommit": "96f883efbaafee0febf57baed9b47c164417fd6a",
     "projectControlRc10Commit": "ef41ea4624347116a183294c1904c28cfa261b31",
-    "developmentParent": "613f53588bcd3585b7298db323f682c46d6129df"
+    "developmentParent": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa"
   },
   "governanceConvergence": {
-    "phase": "stable-v046-project-control-rc13-native-history-accepted-empty-document-upgrade-source-integrated-rc14-candidate-next",
+    "phase": "stable-v046-project-control-rc14-empty-document-upgrade-installed-and-machine-accepted-quant-read-only-preflight-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -73,16 +73,16 @@
     "latestProductionState": {
       "clientVersion": "0.4.6",
       "clientTagCommit": "96f883efbaafee0febf57baed9b47c164417fd6a",
-      "projectControlVersion": "0.1.0-rc.13",
-      "projectControlCommit": "3780d159efc3a294b4fd01bb92ff4fe7942e7c82",
-      "projectControlReleaseTag": "plugins-v2026.08.28.1",
-      "projectControlReleaseId": 378348305,
-      "projectControlAssetSha256": "e97b60323d0c26bf90f2db5ea250c55d39a3ee1bec9c47d56f93e46257bd3afe",
-      "stableInstallReceipt": "../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json",
-      "stableInstallReceiptSha256": "b52c7738aaeb517c333bfb6d18a427a33081b7aa4061f0ecd11a5d6362711b00",
+      "projectControlVersion": "0.1.0-rc.14",
+      "projectControlCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+      "projectControlReleaseTag": "plugins-v2026.08.28.2",
+      "projectControlReleaseId": 378493785,
+      "projectControlAssetSha256": "7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21",
+      "stableInstallReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json",
+      "stableInstallReceiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc",
       "amazonPostRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
       "governanceAlignmentReceipt": "../local/receipts/op_dsh_governance_alignment_20260826_01.json",
-      "candidateClosureStatus": "stable-installed-restarted-and-native-history-manually-accepted; dsh binding and future native sessions are canonical; old sessions remain readable as old-location history"
+      "candidateClosureStatus": "stable-installed-restarted-exact-rc14-artifact-and-25-installed-files-machine-accepted; empty-document regression is present in the accepted package; real Quant prepare-upgrade or upgrade was not executed"
     },
     "candidateCenterFirstBatch": {
       "status": "history-merged-rc11-build-reproducibility-closed-committed-pushed-published-stable-installed-and-accepted",
@@ -218,7 +218,7 @@
       "next": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"
     },
     "emptyDocumentManagedUpgradeClosure": {
-      "status": "source-reviewed-committed-and-ff-only-integrated-rc14-local-candidate-next",
+      "status": "source-reviewed-committed-integrated-rc14-candidate-committed-pushed-published-stable-installed-and-machine-accepted",
       "taskId": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT",
       "branch": "codex/project-control-empty-document-upgrade-closure",
       "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_project_control_empty_document_upgrade_20260828",
@@ -235,8 +235,30 @@
       "machineGates": "project-control typecheck build plugins checkout launch governance diff passed",
       "scope": ["empty-document-managed-upgrade-yaml", "official-project-upgradeManaged-regression", "non-empty-rendering-preserved"],
       "excluded": ["migration", "database-schema", "stable-write", "quant-project-operation", "push", "publish", "install", "b1b"],
-      "productionInstalled": false,
-      "next": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"
+      "productionInstalled": true,
+      "rc14Delivery": {
+        "version": "0.1.0-rc.14",
+        "candidateCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+        "releaseTag": "plugins-v2026.08.28.2",
+        "releaseTagCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
+        "releaseId": 378493785,
+        "releaseUrl": "https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.28.2",
+        "assetCount": 4,
+        "assetBytes": 310029,
+        "packageSha256": "7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21",
+        "stableGenerationId": "pending-1787924242823",
+        "stableGenerationCommittedAt": "2026-08-28T13:37:55.93Z",
+        "previousGenerationId": "pending-1787905720701",
+        "installedFileCount": 25,
+        "missingOrHashMismatchedFiles": 0,
+        "localCandidateReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_local_candidate_20260828_01.json",
+        "releaseReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_commit_push_release_20260828_01.json",
+        "releaseReceiptSha256": "d8a7a3d1ee84aed5fe238a79e551f822242083c5497692b4dd2899b47c52d9cd",
+        "stableAcceptanceReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json",
+        "stableAcceptanceReceiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc",
+        "acceptance": "exact released package and all 25 installed files accepted after Stable restart; real Quant prepare-upgrade and upgradeManaged were intentionally not executed"
+      },
+      "next": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"
     },
     "g0_5Commit": {
       "commit": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
@@ -421,7 +443,7 @@
       "stableMutation": false
     },
     "g4": {
-      "status": "amazon-and-dsh-stable-bindings-aligned-native-history-rc13-stable-accepted-empty-document-upgrade-source-integrated-rc14-candidate-next",
+      "status": "amazon-and-dsh-stable-bindings-aligned-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
       "projectHome": "F:\\Projects\\amazon-store",
       "canonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
       "workspaceFilesAfterGovernance": 5256,
@@ -461,7 +483,7 @@
       "dshNativeHistoryCommit": "1d00c8fdb8748d89d2ec7b0b837d2c14d3a258d1",
       "dshNativeHistoryProductionInstalled": true,
       "emptyDocumentUpgradeCommit": "613f53588bcd3585b7298db323f682c46d6129df",
-      "emptyDocumentUpgradeProductionInstalled": false,
+      "emptyDocumentUpgradeProductionInstalled": true,
       "legacySourceDeleted": false,
       "quantMigrationStarted": false,
       "mealTrackerMigrationStarted": false
@@ -519,7 +541,7 @@
   },
   "standingAuthorization": {
     "id": "governance-development-continuous-v1",
-    "status": "consumed-through-empty-document-upgrade-commit-and-canonical-alignment",
+    "status": "consumed-through-rc14-stable-acceptance-and-governance-closure",
     "grantedBy": "Cyrus",
     "grantedAt": "2026-08-25T06:27:48.385Z",
     "localValidatedCommits": true,
@@ -528,15 +550,15 @@
     "publish": false,
     "realStableOrDevCutover": false,
     "legacyProjectSourceDeletion": false,
-    "scopeEnd": "pause-before-rc14-local-candidate-authorization"
+    "scopeEnd": "pause-before-quant-read-only-preflight-authorization"
   },
   "currentAuthorization": {
-    "scope": "exact three-file empty-document upgrade commit, ff-only canonical integration and one docs-only governance commit; consumed at closure",
+    "scope": "rc14 Stable acceptance receipt, exact seven-file docs-only governance commit and non-force push; consumed at closure",
     "allowed": ["read-only status and planning after this closure"],
-    "forbidden": ["additional commit or push", "release or publish", "Stable install or write", "project archive unarchive or rebind", "Quant or meal-tracker file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
+    "forbidden": ["additional commit or push", "release or publish", "Stable install or write", "prepare-upgrade or project.upgradeManaged", "project archive unarchive or rebind", "Quant or meal-tracker file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
   },
   "g4MigrationGate": {
-    "mode": "amazon-and-dsh-canonical-rebind-complete-native-history-rc13-stable-accepted-empty-document-upgrade-source-integrated-rc14-candidate-next",
+    "mode": "amazon-and-dsh-canonical-rebind-complete-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
     "amazonStore": "stable-rebind-complete-k3-canonical-context-verified",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -551,12 +573,12 @@
     "amazonCanonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
     "amazonKimiCompatibility": "new-workspace-required-old-workspace-history-only-no-junction",
     "pauseAfterAmazonVerification": true,
-    "deepseekHarnessPersonal": "stable-binding-user-confirmed-canonical; legacy-directory-preserved; rc13-native-history-and-canonical-continuation-manually-accepted",
+    "deepseekHarnessPersonal": "stable-binding-user-confirmed-canonical; legacy-directory-preserved; rc13-native-history-manually-accepted; rc14-empty-document-upgrade-exact-artifact-machine-accepted",
     "deepseekHarnessExternalSwitchReceipt": "../local/receipts/op_g4_dsh_canonical_rebind_20260828_06-external-switch-r3-runtime.json",
     "deepseekHarnessExternalSwitchReceiptSha256": "1863568a5667c0841c2b865c1b92f9cee88efcde241d7f5bab5f9a391f300eac",
     "deepseekHarnessWebProfileRepairReceipt": "../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json",
     "deepseekHarnessWebProfileRepairReceiptSha256": "28da74b1fd21a5c6027257a37d9c49d41d13fc5a42e39e1b9ede202f6593ea67",
-    "cyrusQuantTrading": "paused-unchanged-until-rc14-stable-acceptance-then-read-only-preflight-requires-new-authorization",
+    "cyrusQuantTrading": "paused-unchanged; read-only-preflight-is-next-and-requires-new-authorization; no-prepare-upgrade-or-migration-executed",
     "mealTracker": "paused-until-quant-migration-rebind-complete"
   },
   "crossHarnessContext": {
@@ -601,7 +623,7 @@
     "windows_scheduled_task_not_created; overdue large-run and package-build preflights fail closed until maintenance catches up",
     "project_governance_context_script_not_projected_into_workspace; canonical toolbox skill source path was used for this alignment",
     "project_search_matches_only_literal_substrings_in_project_id_or_stored_name; aliases_translations_and_pinyin_are_not_supported",
-    "stable_project_control_rc13_still_rejects_empty_document_managed_upgrade_until_rc14_is_built_released_installed_and_accepted"
+    "real_quant_empty-document_upgrade_not_executed_under_rc14_acceptance; prepare-upgrade_and_project_mutation_require_separate_authorization"
   ],
   "protectedPaths": [
     "D:\\Deepseek Harness",
@@ -624,10 +646,10 @@
     {"order": 12, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE"], "authorizationGate": "completed-3780d15-plugins-v2026.08.28.1-release-378348305"},
     {"order": 13, "id": "B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-COMMIT-PUSH-RELEASE"], "authorizationGate": "completed-stable-installed-restarted-native-history-and-canonical-continuation-accepted", "receipt": "../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json", "receiptSha256": "b52c7738aaeb517c333bfb6d18a427a33081b7aa4061f0ecd11a5d6362711b00"},
     {"order": 14, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT", "status": "completed", "dependsOn": ["B-G4-NATIVE-WORKSPACE-HISTORY-RC13-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "completed-613f535-ff-only-canonical-docs-only-alignment"},
-    {"order": 15, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE", "status": "pending", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT"], "authorizationGate": "new-local-single-plugin-candidate-authorization"},
-    {"order": 16, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE", "status": "pending", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"], "authorizationGate": "separate-commit-push-single-plugin-release-authorization"},
-    {"order": 17, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE", "status": "pending", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE"], "authorizationGate": "separate-stable-install-and-manual-acceptance-authorization"},
-    {"order": 18, "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "paused", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "resume-after-rc14-stable-acceptance-with-new-read-only-inventory-and-plan-authorization"},
+    {"order": 15, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT"], "authorizationGate": "completed-local-reproducible-candidate"},
+    {"order": 16, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"], "authorizationGate": "completed-6e2a1d0-plugins-v2026.08.28.2-release-378493785"},
+    {"order": 17, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE"], "authorizationGate": "completed-stable-installed-restarted-exact-artifact-machine-accepted-quant-untouched", "receipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json", "receiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc"},
+    {"order": 18, "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "current-awaiting-new-authorization", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "new-read-only-inventory-and-plan-authorization"},
     {"order": 19, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"], "authorizationGate": "migration-and-rebind-authorization"},
     {"order": 20, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
     {"order": 21, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
@@ -637,7 +659,7 @@
     {"order": 25, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
   ],
   "nextTask": {
-    "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE",
-    "goal": "Build exactly one local Project Control 0.1.0-rc.14 single-plugin candidate from canonical commit 613f53588bcd3585b7298db323f682c46d6129df, verify reproducible bundle/package identity and isolated install-activate-rollback behavior, and write a receipt. Do not commit, push, publish, install or write Stable, operate Quant or meal-tracker, create a client package-set, delete release-staging, or enter B1b without new authorization."
+    "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT",
+    "goal": "Refresh the prior read-only Quant preflight after rc14 acceptance: verify the formal project_id, current Stable binding and path history through read-only Host API calls, old Kimi and Codex workspace paths including U+200C, file structure, target-path occupancy and the exact migration/rollback plan. Do not create a Quant Project Home, move copy delete or rewrite project files, modify Kimi, write Stable, read the Stable database directly, call prepare-upgrade or project.upgradeManaged, execute rebind, operate meal-tracker, or enter B1b without new authorization."
   }
 }
