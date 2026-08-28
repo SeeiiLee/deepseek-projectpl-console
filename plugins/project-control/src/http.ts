@@ -44,6 +44,23 @@ export interface ProjectControlProjectList {
   nextCursor?: string | null
 }
 
+export interface ProjectWorkspaceContinuityLocation {
+  locationId: string
+  root: string
+  kind: 'primary' | 'mirror' | 'archive'
+  active: boolean
+  revision: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectWorkspaceContinuity {
+  projectId: string
+  revision: number
+  activeRoot: string
+  locations: readonly ProjectWorkspaceContinuityLocation[]
+}
+
 /** Narrow boundary implemented by the Host adapter in index.ts. HTTP never imports storage directly. */
 export interface ProjectControlReadService {
   getStatus(): ProjectControlStorageStatus | Promise<ProjectControlStorageStatus>
@@ -55,6 +72,8 @@ export interface ProjectControlReadService {
   }): ProjectControlProjectList | Promise<ProjectControlProjectList>
   /** 已登记项目的活动工作区根（null = 项目不存在或无活动位置）。 */
   getProjectWorkspace(projectId: string): { projectId: string; root: string } | null | Promise<{ projectId: string; root: string } | null>
+  /** 活动位置 + 不可变路径历史；不向 Client 暴露 normalizedPath/pathKey。 */
+  getProjectWorkspaceContinuity(projectId: string): ProjectWorkspaceContinuity | null | Promise<ProjectWorkspaceContinuity | null>
   /** W1 Task D：一次返回全部已登记项目的工作区索引（消除 Client N+1）。 */
   listProjectWorkspaces(): Promise<{ projectId: string; root: string; updatedAt: string }[]> | { projectId: string; root: string; updatedAt: string }[]
 }
@@ -467,6 +486,7 @@ export function createProjectControlRequestHandler(
             capabilities: [
               'status.read',
               'projects.read',
+              'projects.workspace-continuity.read',
               ...(options.lifecycle === undefined ? [] : ['lifecycle.command.submit']),
               ...(options.intake === undefined ? [] : [
                 'intake.directory.scan',
@@ -938,6 +958,22 @@ export function createProjectControlRequestHandler(
           throw projectControlHttpError('PROJECT_WORKSPACE_UNAVAILABLE', '项目没有可用的活动工作区位置。', 404)
         }
         sendJson(response, 200, { ok: true, data: { projectId: workspace.projectId, root: workspace.root } })
+        return
+      }
+
+      const workspaceContinuityRoute = /^\/projects\/(prj_[0-9a-f-]+)\/workspace\/continuity$/u.exec(resource)
+      if (workspaceContinuityRoute !== null) {
+        requireGetWithoutBody(request)
+        const projectId = workspaceContinuityRoute[1]
+        if (projectId === undefined || !PROJECT_ID.test(projectId)) {
+          throw projectControlHttpError('NOT_FOUND', '项目不存在。', 404)
+        }
+        rejectUnexpectedQuery(parsed, new Set())
+        const continuity = await service.getProjectWorkspaceContinuity(projectId)
+        if (continuity === null) {
+          throw projectControlHttpError('PROJECT_WORKSPACE_UNAVAILABLE', '项目没有可用的工作区位置历史。', 404)
+        }
+        sendJson(response, 200, { ok: true, data: normalizeProjectWorkspaceContinuity(continuity) })
         return
       }
 
@@ -2959,6 +2995,43 @@ function normalizeProjectList(value: ProjectControlProjectList): ProjectControlP
     })),
     total: value.total,
     nextCursor: nextCursor ?? null,
+  }
+}
+
+function normalizeProjectWorkspaceContinuity(
+  value: ProjectWorkspaceContinuity,
+): ProjectWorkspaceContinuity {
+  if (!PROJECT_ID.test(value.projectId)
+    || !Array.isArray(value.locations)
+    || value.locations.length < 1
+    || value.locations.length > 128) {
+    throw new TypeError('storage returned an invalid project workspace continuity')
+  }
+  const locations = value.locations.map(location => {
+    if (!['primary', 'mirror', 'archive'].includes(location.kind)
+      || typeof location.active !== 'boolean') {
+      throw new TypeError('storage returned an invalid workspace location history')
+    }
+    return {
+      locationId: boundedText(location.locationId, 'locationId', 200),
+      root: boundedText(location.root, 'root', 32_767),
+      kind: location.kind,
+      active: location.active,
+      revision: requiredRevision(location.revision, 'location.revision', 1),
+      createdAt: responseTimestamp(location.createdAt, 'location.createdAt'),
+      updatedAt: responseTimestamp(location.updatedAt, 'location.updatedAt'),
+    }
+  })
+  const activeRoot = boundedText(value.activeRoot, 'activeRoot', 32_767)
+  const active = locations.filter(location => location.active)
+  if (active.length !== 1 || active[0]?.root !== activeRoot) {
+    throw new TypeError('storage returned ambiguous active workspace continuity')
+  }
+  return {
+    projectId: value.projectId,
+    revision: requiredRevision(value.revision, 'project.revision', 1),
+    activeRoot,
+    locations,
   }
 }
 

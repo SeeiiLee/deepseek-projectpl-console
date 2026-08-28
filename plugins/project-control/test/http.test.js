@@ -46,7 +46,11 @@ test('serves only bounded status and project DTOs to the personal client', async
   assert.equal(status.response.headers.get('x-content-type-options'), 'nosniff')
   assert.equal(status.payload.data.protocolVersion, 'project-control.dsh/v1alpha1')
   assert.deepEqual(status.payload.data.counts, { projects: 1 })
-  assert.deepEqual(status.payload.data.capabilities, ['status.read', 'projects.read'])
+  assert.deepEqual(status.payload.data.capabilities, [
+    'status.read',
+    'projects.read',
+    'projects.workspace-continuity.read',
+  ])
 
   const projects = await api(origin, '/projects')
   assert.equal(projects.payload.data.total, 1)

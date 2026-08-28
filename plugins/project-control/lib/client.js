@@ -68,6 +68,7 @@ window.__ModuleLoader__.load({
 				},
 				setProjectArchived: async (projectId, archived, expectedRevision, signal) => normalizeProjectListItem(await request("POST", `/projects/${encodeURIComponent(validateProjectId(projectId))}/${archived ? "archive" : "unarchive"}`, { expectedRevision: validateRevision(expectedRevision) }, signal)),
 				workspaceStatus: async (projectId, signal) => normalizeProjectWorkspaceStatus(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/status`, void 0, signal)),
+				getProjectWorkspaceContinuity: async (projectId, signal) => normalizeProjectWorkspaceContinuity(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/continuity`, void 0, signal)),
 				workspaceTree: async (projectId, path, signal) => normalizeProjectWorkspaceTree(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/tree?path=${encodeURIComponent(path)}`, void 0, signal)),
 				workspaceFile: async (projectId, path, signal) => normalizeProjectWorkspaceFile(await request("GET", `/projects/${encodeURIComponent(validateIdentifier(projectId, "项目"))}/workspace/file?path=${encodeURIComponent(path)}`, void 0, signal)),
 				scan: async (mode, selection, options = {}) => normalizeScanResult(await request("POST", "/intake/scan", {
@@ -298,6 +299,35 @@ window.__ModuleLoader__.load({
 			return {
 				projectId: validateIdentifier(requiredText(object.projectId, "项目 ID", 200), "项目"),
 				root: requiredText(object.root, "工作区根路径", 2048)
+			};
+		}
+		function normalizeProjectWorkspaceContinuity(value) {
+			const object = requiredRecord(value, "项目工作区历史");
+			const activeRoot = requiredText(object.activeRoot, "活动工作区根路径", 32767);
+			const locations = requiredArray(object.locations, "工作区位置历史");
+			if (locations.length < 1 || locations.length > 128) throw invalidResponse("工作区位置历史");
+			const normalized = locations.map((locationValue) => {
+				const location = requiredRecord(locationValue, "工作区位置历史");
+				const kindValue = requiredText(location.kind, "工作区位置类型", 20);
+				if (kindValue !== "primary" && kindValue !== "mirror" && kindValue !== "archive") throw invalidResponse("工作区位置类型");
+				const kind = kindValue;
+				return {
+					locationId: requiredText(location.locationId, "位置 ID", 200),
+					root: requiredText(location.root, "工作区位置", 32767),
+					kind,
+					active: requiredBoolean(location.active, "活动位置标记"),
+					revision: requiredInteger(location.revision, "位置修订号", 1),
+					createdAt: requiredText(location.createdAt, "位置创建时间", 80),
+					updatedAt: requiredText(location.updatedAt, "位置更新时间", 80)
+				};
+			});
+			const active = normalized.filter((location) => location.active);
+			if (active.length !== 1 || clientPathKey(active[0]?.root ?? "") !== clientPathKey(activeRoot)) throw invalidResponse("活动工作区位置");
+			return {
+				projectId: validateProjectId(requiredText(object.projectId, "项目 ID", 200)),
+				revision: requiredInteger(object.revision, "项目修订号", 1),
+				activeRoot,
+				locations: normalized
 			};
 		}
 		function normalizeProjectWorkspaceTree(value) {
@@ -972,6 +1002,185 @@ window.__ModuleLoader__.load({
 			for (const listener of [...listeners]) listener();
 		}
 		//#endregion
+		//#region src/client/nativeWorkspaceHistory.ts
+		var NativeWorkspaceHistoryError = class extends Error {
+			code;
+			constructor(code, message) {
+				super(message);
+				this.name = "NativeWorkspaceHistoryError";
+				this.code = code;
+			}
+		};
+		function nativePathKey(value) {
+			let path = value.trim().replace(/\//gu, "\\");
+			while (path.length > 3 && path.endsWith("\\")) path = path.slice(0, -1);
+			return path.toLocaleLowerCase("en-US");
+		}
+		function samePath(left, right) {
+			return left !== void 0 && nativePathKey(left) === nativePathKey(right);
+		}
+		function nonBlankSessionsAt(snapshot, root) {
+			return snapshot.sessions.filter((session) => session.blank === false && samePath(session.cwd, root));
+		}
+		/**
+		* Classify immutable historical sessions using Project Control's inactive
+		* location records. Exact path identity only: a sibling or descendant is not
+		* silently claimed as history for this project.
+		*/
+		function projectNativeWorkspaceHistory(continuity, snapshot) {
+			const issues = [];
+			const activeMatches = snapshot.workspaces.filter((workspace) => samePath(workspace.path, continuity.activeRoot));
+			if (activeMatches.length > 1) issues.push("ACTIVE_NATIVE_WORKSPACE_AMBIGUOUS");
+			const archived = new Set(snapshot.archivedSessionIds);
+			const legacySessions = [];
+			const legacyWorkspaces = [];
+			const seenLocations = /* @__PURE__ */ new Set();
+			const seenSessions = /* @__PURE__ */ new Set();
+			const activeKey = nativePathKey(continuity.activeRoot);
+			for (const location of continuity.locations) {
+				const key = nativePathKey(location.root);
+				if (location.active || key === activeKey || seenLocations.has(key)) continue;
+				seenLocations.add(key);
+				const nativeMatches = snapshot.workspaces.filter((workspace) => samePath(workspace.path, location.root));
+				if (nativeMatches.length > 1) issues.push("LEGACY_NATIVE_WORKSPACE_AMBIGUOUS");
+				const nativeWorkspace = nativeMatches.length === 1 ? nativeMatches[0] : void 0;
+				const sessions = nonBlankSessionsAt(snapshot, location.root);
+				legacyWorkspaces.push({
+					locationId: location.locationId,
+					root: location.root,
+					sessionCount: sessions.length,
+					...nativeWorkspace === void 0 ? {} : {
+						nativeWorkspaceId: nativeWorkspace.workspaceId,
+						...nativeWorkspace.title === void 0 ? {} : { title: nativeWorkspace.title }
+					}
+				});
+				for (const session of sessions) {
+					if (seenSessions.has(session.id) || session.cwd === void 0) continue;
+					seenSessions.add(session.id);
+					legacySessions.push({
+						sessionId: session.id,
+						title: session.title?.trim() || "未命名旧会话",
+						cwd: session.cwd,
+						...session.updatedAt === void 0 ? {} : { updatedAt: session.updatedAt },
+						archived: archived.has(session.id),
+						locationId: location.locationId,
+						locationRoot: location.root,
+						...nativeWorkspace === void 0 ? {} : { nativeWorkspaceId: nativeWorkspace.workspaceId }
+					});
+				}
+			}
+			legacySessions.sort((left, right) => String(right.updatedAt ?? "").localeCompare(String(left.updatedAt ?? "")) || left.sessionId.localeCompare(right.sessionId));
+			return {
+				activeRoot: continuity.activeRoot,
+				...activeMatches.length === 1 ? { activeNativeWorkspace: activeMatches[0] } : {},
+				legacyWorkspaces,
+				legacySessions,
+				issues: [...new Set(issues)]
+			};
+		}
+		/** Fail-closed client preflight run before either a user-initiated scan or final rebind submit. */
+		function assessNativeRebindPreflight(continuity, snapshot, targetRoot) {
+			const sourceRoot = continuity.activeRoot;
+			const sourceHistoryCount = nonBlankSessionsAt(snapshot, sourceRoot).length;
+			const targetMatches = snapshot.workspaces.filter((workspace) => samePath(workspace.path, targetRoot));
+			const base = {
+				sourceHistoryCount,
+				sourceRoot,
+				targetRoot,
+				targetWorkspaceExists: targetMatches.length === 1
+			};
+			if (samePath(sourceRoot, targetRoot)) return {
+				...base,
+				status: "blocked",
+				code: "TARGET_MATCHES_ACTIVE_ROOT"
+			};
+			if (snapshot.workspaces.filter((workspace) => samePath(workspace.path, sourceRoot)).length > 1) return {
+				...base,
+				status: "blocked",
+				code: "SOURCE_NATIVE_WORKSPACE_AMBIGUOUS"
+			};
+			if (targetMatches.length > 1) return {
+				...base,
+				status: "blocked",
+				code: "TARGET_NATIVE_WORKSPACE_AMBIGUOUS"
+			};
+			if (sourceHistoryCount > 0) return {
+				...base,
+				status: "warning",
+				code: "NATIVE_HISTORY_WILL_REMAIN_AT_OLD_PATH"
+			};
+			return {
+				...base,
+				status: "ready",
+				code: "NATIVE_WORKSPACE_READY"
+			};
+		}
+		function nativeRebindPreflightMessage(preflight) {
+			switch (preflight.code) {
+				case "NATIVE_HISTORY_WILL_REMAIN_AT_OLD_PATH": return `原生工作区里有 ${String(preflight.sourceHistoryCount)} 个旧会话。换绑只改变项目位置，不会搬迁或改写这些会话；它们会以“旧位置历史”继续显示。是否继续？`;
+				case "SOURCE_NATIVE_WORKSPACE_AMBIGUOUS": return "项目当前位置对应多个原生工作区，无法安全判断旧会话归属，已停止。";
+				case "TARGET_NATIVE_WORKSPACE_AMBIGUOUS": return "目标位置对应多个原生工作区，无法安全承接未来新会话，已停止。";
+				case "TARGET_MATCHES_ACTIVE_ROOT": return "选择的目标位置就是项目当前位置，没有需要执行的位置变更。";
+				case "NATIVE_WORKSPACE_READY": return "原生工作区连续性预检通过。";
+			}
+		}
+		/** Adapter over public client-runtime services; all writes stay on official native RPCs. */
+		function createNativeWorkspaceHistoryBridge(input) {
+			const { sessions, workspaces } = input;
+			const snapshot = () => {
+				const sessionState = sessions.list.getSnapshot();
+				const workspaceState = workspaces.list.getSnapshot();
+				return {
+					workspaces: workspaceState.items,
+					sessions: sessionState.ids.flatMap((id) => {
+						const value = sessionState.byId[id];
+						return value === void 0 ? [] : [{
+							...value,
+							id
+						}];
+					}),
+					archivedSessionIds: workspaceState.archivedSessionIds
+				};
+			};
+			return {
+				snapshot,
+				subscribe(listener) {
+					const offSessions = sessions.list.subscribe(listener);
+					const offWorkspaces = workspaces.list.subscribe(listener);
+					return () => {
+						offSessions();
+						offWorkspaces();
+					};
+				},
+				openLegacySession(sessionId) {
+					const current = snapshot();
+					if (current.sessions.find((item) => item.id === sessionId && item.blank === false) === void 0) throw new NativeWorkspaceHistoryError("LEGACY_SESSION_NOT_FOUND", "旧会话已不在原生会话索引中，已停止。");
+					if (current.archivedSessionIds.includes(sessionId)) throw new NativeWorkspaceHistoryError("LEGACY_SESSION_ARCHIVED", "该旧会话已归档，请先在原生会话列表恢复。");
+					sessions.open(sessionId);
+				},
+				async continueInActiveWorkspace(activeRoot, source) {
+					const before = snapshot();
+					if (source !== void 0 && !before.sessions.some((item) => item.id === source.sessionId && item.blank === false && samePath(item.cwd, source.expectedRoot))) throw new NativeWorkspaceHistoryError("LEGACY_SESSION_NOT_FOUND", "来源旧会话已不在原生会话索引中，已停止。");
+					const matches = before.workspaces.filter((workspace) => samePath(workspace.path, activeRoot));
+					if (matches.length > 1) throw new NativeWorkspaceHistoryError("TARGET_NATIVE_WORKSPACE_AMBIGUOUS", "当前项目位置对应多个原生工作区，已停止；没有创建或打开新会话。");
+					let workspace = matches[0];
+					let createdWorkspace = false;
+					if (workspace === void 0) {
+						workspace = await workspaces.create({ path: activeRoot });
+						if (!samePath(workspace.path, activeRoot)) throw new NativeWorkspaceHistoryError("TARGET_NATIVE_WORKSPACE_MISMATCH", "原生工作区返回的路径与项目当前位置不一致，已停止。");
+						createdWorkspace = true;
+					}
+					const sessionId = await workspaces.connectWorkspace(workspace.workspaceId);
+					sessions.open(sessionId);
+					return {
+						sessionId,
+						workspaceId: workspace.workspaceId,
+						createdWorkspace
+					};
+				}
+			};
+		}
+		//#endregion
 		//#region \0dsh-project-control-css:src/client/CandidateDetails.module.css.mjs
 		const css$2 = ".nZzFqa_details{overscroll-behavior:contain;min-width:0;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;display:flex;overflow-y:auto}.nZzFqa_header{border-bottom:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);padding:18px 18px 14px}.nZzFqa_headerRow,.nZzFqa_statusLine,.nZzFqa_sectionHeading,.nZzFqa_documentHeading,.nZzFqa_documentMeta,.nZzFqa_issueList div{align-items:center;display:flex}.nZzFqa_headerRow,.nZzFqa_sectionHeading,.nZzFqa_documentHeading,.nZzFqa_issueList div{justify-content:space-between;gap:10px}.nZzFqa_eyebrow{color:var(--dsw-alias-state-business-primary);letter-spacing:.05em;font-size:.857rem;font-weight:700}.nZzFqa_evidenceBadge,.nZzFqa_statusLine span,.nZzFqa_documentMeta span,.nZzFqa_issueList div span{color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover);border-radius:999px;padding:3px 7px;font-size:.786rem;line-height:14px}.nZzFqa_evidenceBadge[data-level=high]{color:var(--dsw-alias-state-success-primary,#4e9962)}.nZzFqa_evidenceBadge[data-level=low],.nZzFqa_evidenceBadge[data-level=unknown]{color:var(--dsw-alias-state-warning-primary,#b07a2e)}.nZzFqa_header h2{margin:10px 0 3px;font-size:1.357rem;line-height:24px}.nZzFqa_absolutePath{overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary);margin:0;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:.857rem;line-height:16px}.nZzFqa_statusLine{flex-wrap:wrap;gap:5px;margin-top:10px}.nZzFqa_section{border-bottom:1px solid var(--dsw-alias-border-l2);padding:15px 18px}.nZzFqa_section h3,.nZzFqa_sectionHeading h3{margin:0 0 10px;font-size:1rem;font-weight:650}.nZzFqa_sectionHeading h3{margin:0}.nZzFqa_sectionHeading>span{color:var(--dsw-alias-label-tertiary);font-size:.857rem}.nZzFqa_field{gap:5px;display:grid}.nZzFqa_field>span,.nZzFqa_summaryBox>span{color:var(--dsw-alias-label-secondary);font-size:.857rem;font-weight:600}.nZzFqa_field input,.nZzFqa_documentHeading select{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);font:inherit;border-radius:8px;font-size:.929rem}.nZzFqa_field input{width:100%;min-height:34px;padding:6px 9px}.nZzFqa_field input:focus-visible,.nZzFqa_documentHeading select:focus-visible,.nZzFqa_primaryButton:focus-visible,.nZzFqa_secondaryButton:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.nZzFqa_sourceLine{color:var(--dsw-alias-label-tertiary);grid-template-columns:auto minmax(0,1fr);gap:8px;margin:7px 0 0;font-size:.786rem;display:grid}.nZzFqa_sourceLine code{color:inherit;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;overflow:hidden}.nZzFqa_summaryBox{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 68%, transparent);border-radius:9px;margin-top:13px;padding:10px}.nZzFqa_summaryBox p{color:var(--dsw-alias-label-secondary);margin:5px 0 0;font-size:.929rem;line-height:17px}.nZzFqa_evidenceList,.nZzFqa_issueList,.nZzFqa_documentList{gap:7px;margin:10px 0 0;padding:0;list-style:none;display:grid}.nZzFqa_evidenceList li{color:var(--dsw-alias-label-secondary);padding-left:12px;font-size:.857rem;line-height:16px}.nZzFqa_evidenceList li:before{width:12px;color:var(--dsw-alias-state-business-primary);content:\"•\";margin-left:-12px;display:inline-block}.nZzFqa_issueList li{border:1px solid var(--dsw-alias-border-l2);border-left-width:3px;border-radius:8px;padding:9px}.nZzFqa_issueList li[data-severity=blocking],.nZzFqa_issueList li[data-severity=error]{border-left-color:var(--dsw-alias-state-error-primary,#bf5252)}.nZzFqa_issueList li[data-severity=warning]{border-left-color:var(--dsw-alias-state-warning-primary,#b07a2e)}.nZzFqa_issueList strong{font-size:.857rem}.nZzFqa_issueList p{color:var(--dsw-alias-label-secondary);margin:5px 0 0;font-size:.857rem;line-height:16px}.nZzFqa_issueList code{overflow-wrap:anywhere;color:var(--dsw-alias-label-tertiary);margin-top:5px;font-size:.786rem;display:block}.nZzFqa_documentCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 58%, transparent);border-radius:10px;min-width:0;padding:10px}.nZzFqa_documentHeading>div{min-width:0}.nZzFqa_documentHeading strong,.nZzFqa_documentHeading code{text-overflow:ellipsis;white-space:nowrap;display:block;overflow:hidden}.nZzFqa_documentHeading strong{font-size:.929rem}.nZzFqa_documentHeading code{color:var(--dsw-alias-label-tertiary);margin-top:2px;font-size:.786rem}.nZzFqa_documentHeading select{max-width:118px;min-height:30px;padding:4px 7px}.nZzFqa_lockedBinding{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);max-width:138px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent);text-align:center;border-radius:999px;padding:5px 8px;font-size:.786rem;line-height:14px}.nZzFqa_documentMeta{flex-wrap:wrap;gap:4px;margin-top:8px}.nZzFqa_preview{max-height:130px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:7px;margin:8px 0 0;padding:8px;font-family:ui-monospace,Cascadia Mono,Consolas,monospace;font-size:.786rem;line-height:15px;overflow:auto}.nZzFqa_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:10px 0 0;font-size:.857rem}.nZzFqa_actions{z-index:1;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);gap:9px;margin-top:auto;padding:16px 18px 20px;display:grid;position:sticky;bottom:0}.nZzFqa_impactNote{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 6%, transparent);border-radius:9px;gap:3px;padding:10px;display:grid}.nZzFqa_impactNote strong{font-size:.857rem}.nZzFqa_impactNote span{color:var(--dsw-alias-label-secondary);font-size:.786rem;line-height:15px}.nZzFqa_primaryButton,.nZzFqa_secondaryButton{min-height:34px;font:inherit;cursor:pointer;border:1px solid #0000;border-radius:8px;padding:7px 12px;font-size:.929rem;font-weight:600}.nZzFqa_primaryButton{color:var(--dsw-alias-label-on-color,#fff);background:var(--dsw-alias-state-business-primary)}.nZzFqa_primaryButton:disabled{opacity:.48;cursor:default}.nZzFqa_secondaryButton{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover);margin-top:10px}.nZzFqa_validation,.nZzFqa_submitError,.nZzFqa_submitStatus{margin:0;font-size:.857rem;line-height:16px}.nZzFqa_validation,.nZzFqa_submitError{color:var(--dsw-alias-state-error-primary,#bf5252)}.nZzFqa_submitStatus{color:var(--dsw-alias-state-success-primary,#4e9962)}.nZzFqa_message{text-align:center;place-content:center;min-height:260px;padding:24px;display:grid}.nZzFqa_message h2{margin:0;font-size:1.143rem}.nZzFqa_message p{max-width:280px;color:var(--dsw-alias-label-secondary);margin:7px 0 0;font-size:.929rem;line-height:18px}.nZzFqa_visuallyHidden{clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}.nZzFqa_sectionHeadingTools{align-items:center;gap:8px;display:flex}.nZzFqa_autoResolveButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 45%, transparent);color:var(--dsw-alias-state-warning-primary,#b07a2e);font:inherit;cursor:pointer;background:0 0;border-radius:999px;padding:4px 9px;font-size:.857rem;font-weight:600}.nZzFqa_autoResolveButton:hover{background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 10%, transparent)}.nZzFqa_documentCard.nZzFqa_roleConflict{border-left:3px solid var(--dsw-alias-state-warning-primary,#b07a2e)}.nZzFqa_conflictBadge{color:var(--dsw-alias-state-warning-primary,#b07a2e);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,#b07a2e) 12%, transparent);border-radius:999px;flex:none;padding:3px 7px;font-size:.786rem;line-height:14px}.nZzFqa_conflictBadge[data-kind=primary]{color:var(--dsw-alias-state-success-primary,#4e9962);background:color-mix(in srgb, var(--dsw-alias-state-success-primary,#4e9962) 12%, transparent)}@media (width<=420px){.nZzFqa_header,.nZzFqa_section,.nZzFqa_actions{padding-left:12px;padding-right:12px}.nZzFqa_documentHeading{flex-direction:column;align-items:stretch}.nZzFqa_documentHeading select{width:100%;max-width:none}.nZzFqa_lockedBinding{max-width:none}}";
 		const tagId$2 = "@cyrus/dsh-project-control/CandidateDetails.module.css";
@@ -1021,7 +1230,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region src/client/CandidateDetails.tsx
 		const api$3 = createProjectControlApi();
-		function CandidateDetails({ candidateId }) {
+		function CandidateDetails({ candidateId, nativeHistory }) {
 			const [reloadKey, setReloadKey] = (0, react.useState)(0);
 			const [state, setState] = (0, react.useState)({ kind: "loading" });
 			const [displayName, setDisplayName] = (0, react.useState)("");
@@ -1140,9 +1349,22 @@ window.__ModuleLoader__.load({
 				});
 				setSubmitState({
 					kind: "working",
-					message: "正在生成只关联指令…"
+					message: "正在复核工作区与原生会话连续性…"
 				});
 				try {
+					if (candidate.status === "relocation_candidate") {
+						if (candidate.manifestProjectId === void 0) throw new Error("位置变更候选缺少既有 project_id，已停止。");
+						const nativePreflight = assessNativeRebindPreflight(await api$3.getProjectWorkspaceContinuity(candidate.manifestProjectId), nativeHistory.snapshot(), candidate.rootPath);
+						if (nativePreflight.status === "blocked") throw new Error(nativeRebindPreflightMessage(nativePreflight));
+						if (nativePreflight.status === "warning" && !globalThis.confirm(nativeRebindPreflightMessage(nativePreflight))) {
+							setSubmitState({ kind: "idle" });
+							return;
+						}
+					}
+					setSubmitState({
+						kind: "working",
+						message: "正在生成只关联指令…"
+					});
 					const command = await api$3.prepareCandidate(candidate.candidateId, {
 						registrationMode: candidate.detectedMode === "managed" ? "managed" : "linked_legacy",
 						name: displayName.trim(),
@@ -1535,7 +1757,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-project-control-css:src/client/ProjectConsole.module.css.mjs
-		const css$1 = ".Za-ZGq_console{width:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;display:flex}.Za-ZGq_header{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:10px;display:flex}.Za-ZGq_headerMain{flex-direction:column;gap:4px;min-width:0;display:flex}.Za-ZGq_headerMain h2{margin:0;font-size:17px;line-height:24px}.Za-ZGq_projectId{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:12px;overflow:hidden}.Za-ZGq_headerActions{flex:none;gap:8px;display:flex}.Za-ZGq_backButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;background:0 0;border-radius:8px;align-self:flex-start;padding:2px 8px;font-size:12px}.Za-ZGq_backButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.Za-ZGq_smallButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);font:inherit;cursor:pointer;border-radius:8px;padding:4px 10px;font-size:12px}.Za-ZGq_smallButton:hover:not(:disabled){border-color:var(--dsw-alias-border-l3)}.Za-ZGq_smallButton:disabled{opacity:.45;cursor:not-allowed}.Za-ZGq_smallButton[data-pinned=true]{border-color:var(--dsw-alias-state-business-primary)}.Za-ZGq_confirmButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent);color:#fff;background:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:650}.Za-ZGq_confirmButton:hover:not(:disabled){filter:brightness(1.08)}.Za-ZGq_confirmButton:disabled{opacity:.45;cursor:not-allowed}.Za-ZGq_iconButton{border:1px solid var(--dsw-alias-border-l2);width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border-radius:8px;place-items:center;font-size:15px;display:grid}.Za-ZGq_iconButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.Za-ZGq_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;gap:4px;display:flex;overflow-x:auto}.Za-ZGq_tab{color:var(--dsw-alias-label-secondary);font:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:0;border-bottom:2px solid #0000;align-items:center;gap:6px;padding:8px 14px;font-size:13px;display:flex;position:relative}.Za-ZGq_tab:hover{color:var(--dsw-alias-label-primary)}.Za-ZGq_tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:650}.Za-ZGq_countBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:0 6px;font-size:11px}.Za-ZGq_tabPanel{min-height:0;overflow:auto}.Za-ZGq_errorBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 45%, transparent);color:var(--dsw-alias-state-danger-primary,#e5484d);border-radius:8px;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;font-size:12px;display:flex}.Za-ZGq_tabNotice{color:var(--dsw-alias-label-tertiary);text-align:center;padding:28px 16px;font-size:13px}.Za-ZGq_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:4px 0;font-size:12px}.Za-ZGq_overview{flex-direction:column;gap:14px;display:flex}.Za-ZGq_statGrid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;display:grid}.Za-ZGq_statCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 4%, transparent);border-radius:10px;flex-direction:column;gap:2px;padding:12px;display:flex}.Za-ZGq_statCard strong{font-size:22px;line-height:28px}.Za-ZGq_statCard span{color:var(--dsw-alias-label-secondary);font-size:12px}.Za-ZGq_statCard small{color:var(--dsw-alias-label-tertiary);font-size:11px}.Za-ZGq_overviewFacts{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;padding:12px;display:flex}.Za-ZGq_overviewFacts h3{margin:0;font-size:13px}.Za-ZGq_overviewFacts dl{flex-direction:column;gap:4px;margin:0;font-size:12px;display:flex}.Za-ZGq_overviewFacts dl>div{gap:10px;display:flex}.Za-ZGq_overviewFacts dt{color:var(--dsw-alias-label-tertiary);min-width:72px}.Za-ZGq_overviewFacts dd{margin:0}.Za-ZGq_sectionBar{justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;display:flex}.Za-ZGq_sectionBar h3{margin:0;font-size:14px}.Za-ZGq_itemList{flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;display:flex}.Za-ZGq_itemCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Za-ZGq_itemMain{min-width:0;color:inherit;font:inherit;text-align:left;cursor:default;background:0 0;border:0;flex-direction:column;gap:4px;padding:0;display:flex}button.Za-ZGq_itemMain{cursor:pointer}button.Za-ZGq_itemMain:hover strong{text-decoration:underline}.Za-ZGq_itemTopline{justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.Za-ZGq_itemTopline strong{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.Za-ZGq_priorityBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;flex:none;padding:1px 7px;font-size:11px}.Za-ZGq_itemInstruction{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.Za-ZGq_acceptanceList{color:var(--dsw-alias-label-secondary);margin:2px 0 0;padding-left:16px;font-size:12px}.Za-ZGq_itemMeta{color:var(--dsw-alias-label-tertiary);flex-wrap:wrap;align-items:center;gap:10px;font-size:11px;display:flex}.Za-ZGq_itemActions{flex-wrap:wrap;gap:8px;display:flex}.Za-ZGq_statusBadge{border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:1px 8px;font-size:11px}.Za-ZGq_statusBadge[data-value=running],.Za-ZGq_statusBadge[data-value=pending],.Za-ZGq_statusBadge[data-value=requested],.Za-ZGq_statusBadge[data-value=in_review]{color:var(--dsw-alias-state-business-primary);border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent)}.Za-ZGq_statusBadge[data-value=blocked],.Za-ZGq_statusBadge[data-value=failed],.Za-ZGq_statusBadge[data-value=rejected]{color:var(--dsw-alias-state-danger-primary,#e5484d);border-color:color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 40%, transparent)}.Za-ZGq_statusBadge[data-value=completed],.Za-ZGq_statusBadge[data-value=approved]{color:var(--dsw-alias-state-success-primary,#46a758);border-color:color-mix(in srgb, var(--dsw-alias-state-success-primary,#46a758) 40%, transparent)}.Za-ZGq_createItemForm{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;margin-bottom:12px;padding:12px;display:flex}.Za-ZGq_createItemForm label{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:4px;font-size:12px;display:flex}.Za-ZGq_createItemForm input,.Za-ZGq_createItemForm textarea,.Za-ZGq_reviewDecide textarea{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-background-panel,transparent);font:inherit;border-radius:8px;padding:6px 8px;font-size:12px}.Za-ZGq_formActions{flex-wrap:wrap;gap:8px;display:flex}.Za-ZGq_reviewDetail{border-top:1px dashed var(--dsw-alias-border-l2);flex-direction:column;gap:10px;padding-top:8px;display:flex}.Za-ZGq_actionList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.Za-ZGq_actionList li{align-items:baseline;gap:8px;font-size:12px;display:flex}.Za-ZGq_actionList li strong{flex:none;min-width:56px}.Za-ZGq_actionList li small{color:var(--dsw-alias-label-tertiary);margin-left:auto}.Za-ZGq_reviewDecide{flex-direction:column;gap:8px;display:flex}.Za-ZGq_reviewDecide textarea{resize:vertical;width:100%}.Za-ZGq_updateList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.Za-ZGq_updateList>li{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;overflow:hidden}.Za-ZGq_updateMain{box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:0;flex-direction:column;gap:4px;padding:8px 10px;display:flex}.Za-ZGq_updateMain:hover{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent)}.Za-ZGq_updateKindBadge{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.Za-ZGq_updateKindBadge[data-kind=blocker]{color:var(--dsw-alias-state-danger-primary,#e5484d)}.Za-ZGq_updateKindBadge[data-kind=completion_declared]{color:var(--dsw-alias-state-success-primary,#46a758)}.Za-ZGq_eventList{flex-direction:column;gap:4px;margin:8px 0 0;padding:0;list-style:none;display:flex}.Za-ZGq_eventList>li{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:flex-start;gap:10px;padding:6px 0;display:flex}.Za-ZGq_eventDot{background:var(--dsw-alias-state-business-primary);border-radius:999px;flex:none;width:7px;height:7px;margin-top:5px}.Za-ZGq_eventMain{flex-direction:column;gap:2px;min-width:0;display:flex}.Za-ZGq_eventMain strong{font-size:12px}.Za-ZGq_eventAggregate{color:var(--dsw-alias-label-tertiary);font-size:11px}.Za-ZGq_eventData{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;display:block;overflow:hidden}.Za-ZGq_eventTime{color:var(--dsw-alias-label-tertiary);flex:none;margin-left:auto;font-size:11px}.Za-ZGq_documentPath{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.Za-ZGq_followBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);color:var(--dsw-alias-state-business-primary);border-radius:8px;padding:8px 12px;font-size:12px}.Za-ZGq_currentBadge{color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.Za-ZGq_itemCard[data-current-session=true]{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent)}";
+		const css$1 = ".Za-ZGq_console{width:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;display:flex}.Za-ZGq_header{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:10px;display:flex}.Za-ZGq_headerMain{flex-direction:column;gap:4px;min-width:0;display:flex}.Za-ZGq_headerMain h2{margin:0;font-size:17px;line-height:24px}.Za-ZGq_projectId{color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:12px;overflow:hidden}.Za-ZGq_headerActions{flex:none;gap:8px;display:flex}.Za-ZGq_backButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;background:0 0;border-radius:8px;align-self:flex-start;padding:2px 8px;font-size:12px}.Za-ZGq_backButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.Za-ZGq_smallButton{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);font:inherit;cursor:pointer;border-radius:8px;padding:4px 10px;font-size:12px}.Za-ZGq_smallButton:hover:not(:disabled){border-color:var(--dsw-alias-border-l3)}.Za-ZGq_smallButton:disabled{opacity:.45;cursor:not-allowed}.Za-ZGq_smallButton[data-pinned=true]{border-color:var(--dsw-alias-state-business-primary)}.Za-ZGq_confirmButton{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent);color:#fff;background:var(--dsw-alias-state-business-primary);font:inherit;cursor:pointer;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:650}.Za-ZGq_confirmButton:hover:not(:disabled){filter:brightness(1.08)}.Za-ZGq_confirmButton:disabled{opacity:.45;cursor:not-allowed}.Za-ZGq_iconButton{border:1px solid var(--dsw-alias-border-l2);width:30px;height:30px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border-radius:8px;place-items:center;font-size:15px;display:grid}.Za-ZGq_iconButton:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l3)}.Za-ZGq_tabs{border-bottom:1px solid var(--dsw-alias-border-l2);flex:none;gap:4px;display:flex;overflow-x:auto}.Za-ZGq_tab{color:var(--dsw-alias-label-secondary);font:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:0;border-bottom:2px solid #0000;align-items:center;gap:6px;padding:8px 14px;font-size:13px;display:flex;position:relative}.Za-ZGq_tab:hover{color:var(--dsw-alias-label-primary)}.Za-ZGq_tab[aria-selected=true]{color:var(--dsw-alias-label-primary);border-bottom-color:var(--dsw-alias-state-business-primary);font-weight:650}.Za-ZGq_countBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:0 6px;font-size:11px}.Za-ZGq_tabPanel{min-height:0;overflow:auto}.Za-ZGq_errorBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 45%, transparent);color:var(--dsw-alias-state-danger-primary,#e5484d);border-radius:8px;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;font-size:12px;display:flex}.Za-ZGq_tabNotice{color:var(--dsw-alias-label-tertiary);text-align:center;padding:28px 16px;font-size:13px}.Za-ZGq_emptyCopy{color:var(--dsw-alias-label-tertiary);margin:4px 0;font-size:12px}.Za-ZGq_overview{flex-direction:column;gap:14px;display:flex}.Za-ZGq_statGrid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;display:grid}.Za-ZGq_statCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 4%, transparent);border-radius:10px;flex-direction:column;gap:2px;padding:12px;display:flex}.Za-ZGq_statCard strong{font-size:22px;line-height:28px}.Za-ZGq_statCard span{color:var(--dsw-alias-label-secondary);font-size:12px}.Za-ZGq_statCard small{color:var(--dsw-alias-label-tertiary);font-size:11px}.Za-ZGq_overviewFacts{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;padding:12px;display:flex}.Za-ZGq_overviewFacts h3{margin:0;font-size:13px}.Za-ZGq_overviewFacts dl{flex-direction:column;gap:4px;margin:0;font-size:12px;display:flex}.Za-ZGq_overviewFacts dl>div{gap:10px;display:flex}.Za-ZGq_overviewFacts dt{color:var(--dsw-alias-label-tertiary);min-width:72px}.Za-ZGq_overviewFacts dd{margin:0}.Za-ZGq_sectionBar{justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;display:flex}.Za-ZGq_sectionBar h3{margin:0;font-size:14px}.Za-ZGq_itemList{flex-direction:column;gap:8px;margin:0;padding:0;list-style:none;display:flex}.Za-ZGq_itemCard{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent);border-radius:10px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.Za-ZGq_itemMain{min-width:0;color:inherit;font:inherit;text-align:left;cursor:default;background:0 0;border:0;flex-direction:column;gap:4px;padding:0;display:flex}button.Za-ZGq_itemMain{cursor:pointer}button.Za-ZGq_itemMain:hover strong{text-decoration:underline}.Za-ZGq_itemTopline{justify-content:space-between;align-items:center;gap:10px;min-width:0;display:flex}.Za-ZGq_itemTopline strong{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.Za-ZGq_priorityBadge{color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;flex:none;padding:1px 7px;font-size:11px}.Za-ZGq_itemInstruction{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px}.Za-ZGq_acceptanceList{color:var(--dsw-alias-label-secondary);margin:2px 0 0;padding-left:16px;font-size:12px}.Za-ZGq_itemMeta{color:var(--dsw-alias-label-tertiary);flex-wrap:wrap;align-items:center;gap:10px;font-size:11px;display:flex}.Za-ZGq_itemActions{flex-wrap:wrap;gap:8px;display:flex}.Za-ZGq_statusBadge{border:1px solid var(--dsw-alias-border-l2);border-radius:999px;padding:1px 8px;font-size:11px}.Za-ZGq_statusBadge[data-value=running],.Za-ZGq_statusBadge[data-value=pending],.Za-ZGq_statusBadge[data-value=requested],.Za-ZGq_statusBadge[data-value=in_review]{color:var(--dsw-alias-state-business-primary);border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent)}.Za-ZGq_statusBadge[data-value=blocked],.Za-ZGq_statusBadge[data-value=failed],.Za-ZGq_statusBadge[data-value=rejected]{color:var(--dsw-alias-state-danger-primary,#e5484d);border-color:color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 40%, transparent)}.Za-ZGq_statusBadge[data-value=completed],.Za-ZGq_statusBadge[data-value=approved]{color:var(--dsw-alias-state-success-primary,#46a758);border-color:color-mix(in srgb, var(--dsw-alias-state-success-primary,#46a758) 40%, transparent)}.Za-ZGq_createItemForm{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;flex-direction:column;gap:8px;margin-bottom:12px;padding:12px;display:flex}.Za-ZGq_createItemForm label{color:var(--dsw-alias-label-secondary);flex-direction:column;gap:4px;font-size:12px;display:flex}.Za-ZGq_createItemForm input,.Za-ZGq_createItemForm textarea,.Za-ZGq_reviewDecide textarea{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-background-panel,transparent);font:inherit;border-radius:8px;padding:6px 8px;font-size:12px}.Za-ZGq_formActions{flex-wrap:wrap;gap:8px;display:flex}.Za-ZGq_reviewDetail{border-top:1px dashed var(--dsw-alias-border-l2);flex-direction:column;gap:10px;padding-top:8px;display:flex}.Za-ZGq_actionList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.Za-ZGq_actionList li{align-items:baseline;gap:8px;font-size:12px;display:flex}.Za-ZGq_actionList li strong{flex:none;min-width:56px}.Za-ZGq_actionList li small{color:var(--dsw-alias-label-tertiary);margin-left:auto}.Za-ZGq_reviewDecide{flex-direction:column;gap:8px;display:flex}.Za-ZGq_reviewDecide textarea{resize:vertical;width:100%}.Za-ZGq_updateList{flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}.Za-ZGq_updateList>li{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;overflow:hidden}.Za-ZGq_updateMain{box-sizing:border-box;width:100%;color:inherit;font:inherit;text-align:left;cursor:pointer;background:0 0;border:0;flex-direction:column;gap:4px;padding:8px 10px;display:flex}.Za-ZGq_updateMain:hover{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent)}.Za-ZGq_updateKindBadge{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.Za-ZGq_updateKindBadge[data-kind=blocker]{color:var(--dsw-alias-state-danger-primary,#e5484d)}.Za-ZGq_updateKindBadge[data-kind=completion_declared]{color:var(--dsw-alias-state-success-primary,#46a758)}.Za-ZGq_eventList{flex-direction:column;gap:4px;margin:8px 0 0;padding:0;list-style:none;display:flex}.Za-ZGq_eventList>li{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:flex-start;gap:10px;padding:6px 0;display:flex}.Za-ZGq_eventDot{background:var(--dsw-alias-state-business-primary);border-radius:999px;flex:none;width:7px;height:7px;margin-top:5px}.Za-ZGq_eventMain{flex-direction:column;gap:2px;min-width:0;display:flex}.Za-ZGq_eventMain strong{font-size:12px}.Za-ZGq_eventAggregate{color:var(--dsw-alias-label-tertiary);font-size:11px}.Za-ZGq_eventData{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;display:block;overflow:hidden}.Za-ZGq_eventTime{color:var(--dsw-alias-label-tertiary);flex:none;margin-left:auto;font-size:11px}.Za-ZGq_documentPath{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:12px;overflow:hidden}.Za-ZGq_followBanner{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);color:var(--dsw-alias-state-business-primary);border-radius:8px;padding:8px 12px;font-size:12px}.Za-ZGq_currentBadge{color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);border-radius:999px;padding:1px 7px;font-size:11px}.Za-ZGq_itemCard[data-current-session=true]{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent)}.Za-ZGq_sessions{flex-direction:column;gap:14px;display:flex}.Za-ZGq_sessionSection{flex-direction:column;gap:8px;display:flex}.Za-ZGq_nativeContinuation{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);border-radius:10px;justify-content:space-between;align-items:center;gap:14px;padding:12px;display:flex}.Za-ZGq_nativeContinuation>div{flex-direction:column;gap:4px;min-width:0;display:flex}.Za-ZGq_nativeContinuation strong{font-size:13px}.Za-ZGq_nativeContinuation code{color:var(--dsw-alias-label-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:11px;overflow:hidden}.Za-ZGq_nativeContinuation p{color:var(--dsw-alias-label-tertiary);margin:0;font-size:11px}.Za-ZGq_historyBadge{border:1px solid color-mix(in srgb, var(--dsw-alias-state-warning-primary,#f5a623) 40%, transparent);color:var(--dsw-alias-state-warning-primary,#f5a623);border-radius:999px;flex:none;padding:1px 7px;font-size:11px}.Za-ZGq_historyWarning{border:1px solid color-mix(in srgb, var(--dsw-alias-state-danger-primary,#e5484d) 40%, transparent);color:var(--dsw-alias-state-danger-primary,#e5484d);border-radius:8px;margin:0;padding:8px 12px;font-size:12px}@media (width<=720px){.Za-ZGq_nativeContinuation{flex-direction:column;align-items:stretch}}";
 		const tagId$1 = "@cyrus/dsh-project-control/ProjectConsole.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -1567,6 +1789,8 @@ window.__ModuleLoader__.load({
 			"header": "Za-ZGq_header",
 			"headerActions": "Za-ZGq_headerActions",
 			"headerMain": "Za-ZGq_headerMain",
+			"historyBadge": "Za-ZGq_historyBadge",
+			"historyWarning": "Za-ZGq_historyWarning",
 			"iconButton": "Za-ZGq_iconButton",
 			"itemActions": "Za-ZGq_itemActions",
 			"itemCard": "Za-ZGq_itemCard",
@@ -1575,6 +1799,7 @@ window.__ModuleLoader__.load({
 			"itemMain": "Za-ZGq_itemMain",
 			"itemMeta": "Za-ZGq_itemMeta",
 			"itemTopline": "Za-ZGq_itemTopline",
+			"nativeContinuation": "Za-ZGq_nativeContinuation",
 			"overview": "Za-ZGq_overview",
 			"overviewFacts": "Za-ZGq_overviewFacts",
 			"priorityBadge": "Za-ZGq_priorityBadge",
@@ -1582,6 +1807,8 @@ window.__ModuleLoader__.load({
 			"reviewDecide": "Za-ZGq_reviewDecide",
 			"reviewDetail": "Za-ZGq_reviewDetail",
 			"sectionBar": "Za-ZGq_sectionBar",
+			"sessionSection": "Za-ZGq_sessionSection",
+			"sessions": "Za-ZGq_sessions",
 			"smallButton": "Za-ZGq_smallButton",
 			"statCard": "Za-ZGq_statCard",
 			"statGrid": "Za-ZGq_statGrid",
@@ -1660,12 +1887,16 @@ window.__ModuleLoader__.load({
 				label: "会话"
 			}
 		];
-		function ProjectConsole({ project, workbench, currentSessionId, pinned, onTogglePin, onBack }) {
+		function ProjectConsole({ project, workbench, nativeHistory, currentSessionId, pinned, onTogglePin, onBack }) {
 			const [tab, setTab] = (0, react.useState)("overview");
 			const [data, setData] = (0, react.useState)({});
 			const [error, setError] = (0, react.useState)();
 			const [mutation, setMutation] = (0, react.useState)();
 			const [reloadKey, setReloadKey] = (0, react.useState)(0);
+			const [, setNativeRevision] = (0, react.useState)(0);
+			(0, react.useEffect)(() => nativeHistory.subscribe(() => {
+				setNativeRevision((value) => value + 1);
+			}), [nativeHistory]);
 			(0, react.useEffect)(() => {
 				const controller = new AbortController();
 				setError(void 0);
@@ -1727,11 +1958,12 @@ window.__ModuleLoader__.load({
 						}));
 					},
 					sessions: async () => {
-						const bindings = await api$2.listSessions(project.projectId, controller.signal);
+						const [bindings, continuity] = await Promise.all([api$2.listSessions(project.projectId, controller.signal), api$2.getProjectWorkspaceContinuity(project.projectId, controller.signal)]);
 						if (controller.signal.aborted) return;
 						setData((current) => ({
 							...current,
-							bindings
+							bindings,
+							continuity
 						}));
 					}
 				}[tab];
@@ -1894,7 +2126,10 @@ window.__ModuleLoader__.load({
 							tab === "sessions" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SessionsTab, {
 								data,
 								currentSessionId,
-								followSession: loadConsolePreferences().followSession
+								followSession: loadConsolePreferences().followSession,
+								nativeHistory,
+								mutation,
+								onMutate: mutate
 							})
 						]
 					})
@@ -2587,54 +2822,181 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		function SessionsTab({ data, currentSessionId, followSession }) {
+		function SessionsTab({ data, currentSessionId, followSession, nativeHistory, mutation, onMutate }) {
 			const bindings = data.bindings;
-			if (bindings === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TabNotice, {
+			const continuity = data.continuity;
+			if (bindings === void 0 || continuity === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TabNotice, {
 				kind: "loading",
-				copy: "正在读取会话绑定…"
+				copy: "正在读取会话绑定与旧位置历史…"
 			});
-			if (bindings.items.length === 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TabNotice, {
-				kind: "empty",
-				copy: "还没有会话绑定。Agent 管线绑定 run→thread 后会出现这里。"
-			});
+			const history = projectNativeWorkspaceHistory(continuity, nativeHistory.snapshot());
+			const activeWorkspaceAmbiguous = history.issues.includes("ACTIVE_NATIVE_WORKSPACE_AMBIGUOUS");
+			const legacyWorkspaceAmbiguous = history.issues.includes("LEGACY_NATIVE_WORKSPACE_AMBIGUOUS");
 			const current = bindings.items.filter((binding) => binding.sessionId === currentSessionId);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: ProjectConsole_module_css_default.sessions,
-				children: [followSession && currentSessionId !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: ProjectConsole_module_css_default.followBanner,
-					role: "status",
-					children: current.length === 0 ? "跟随当前会话：该项目还没有绑定当前会话。" : "跟随当前会话：" + String(current.length) + " 个绑定与当前会话一致。"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-					className: ProjectConsole_module_css_default.itemList,
-					children: bindings.items.map((binding) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-						className: ProjectConsole_module_css_default.itemCard,
-						"data-current-session": binding.sessionId === currentSessionId || void 0,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: ProjectConsole_module_css_default.itemMain,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: ProjectConsole_module_css_default.itemTopline,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "线程 " + binding.threadId }), binding.sessionId === currentSessionId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: ProjectConsole_module_css_default.currentBadge,
-									children: "当前会话"
-								})]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: ProjectConsole_module_css_default.itemMeta,
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										title: binding.runId,
-										children: "run " + binding.runId.slice(0, 18) + "…"
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "session " + binding.sessionId }),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: binding.harnessInstanceRef })
-								]
-							})]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: ProjectConsole_module_css_default.eventTime,
-							children: binding.createdAt
+				children: [
+					followSession && currentSessionId !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectConsole_module_css_default.followBanner,
+						role: "status",
+						children: current.length === 0 ? "跟随当前会话：该项目还没有绑定当前会话。" : "跟随当前会话：" + String(current.length) + " 个绑定与当前会话一致。"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: ProjectConsole_module_css_default.nativeContinuation,
+						"aria-label": "原生工作区连续性",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "未来新会话位置" }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", {
+								title: continuity.activeRoot,
+								children: continuity.activeRoot
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: "这里会创建或复用 canonical 原生工作区，并打开一个新的空白会话；不会复制或改写旧会话内容。" })
+						] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							className: ProjectConsole_module_css_default.confirmButton,
+							type: "button",
+							disabled: mutation !== void 0 || activeWorkspaceAmbiguous,
+							"data-continue-in-active-workspace": true,
+							onClick: () => {
+								onMutate("在新工作区继续", () => nativeHistory.continueInActiveWorkspace(continuity.activeRoot));
+							},
+							children: "在新工作区新建会话"
 						})]
-					}, binding.bindingId))
-				})]
+					}),
+					activeWorkspaceAmbiguous && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectConsole_module_css_default.historyWarning,
+						role: "alert",
+						children: "项目当前位置对应多个原生工作区。为避免选错，新会话入口已失败关闭；原始会话与日志没有改动。"
+					}),
+					legacyWorkspaceAmbiguous && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: ProjectConsole_module_css_default.historyWarning,
+						role: "alert",
+						children: "一个旧位置对应多个原生工作区；旧会话仍只按不可变 cwd 显示，不会自动改绑或移动。"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: ProjectConsole_module_css_default.sessionSection,
+						"aria-label": "旧位置历史",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: ProjectConsole_module_css_default.sectionBar,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: "旧位置历史" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: ProjectConsole_module_css_default.countBadge,
+								children: String(history.legacySessions.length)
+							})]
+						}), history.legacySessions.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							className: ProjectConsole_module_css_default.emptyCopy,
+							children: "没有按历史路径匹配到旧会话。"
+						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+							className: ProjectConsole_module_css_default.itemList,
+							children: history.legacySessions.map((session) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+								className: ProjectConsole_module_css_default.itemCard,
+								"data-native-legacy-session": true,
+								children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+										className: ProjectConsole_module_css_default.itemMain,
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: ProjectConsole_module_css_default.itemTopline,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: session.title }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												className: ProjectConsole_module_css_default.historyBadge,
+												children: "旧位置历史"
+											})]
+										}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: ProjectConsole_module_css_default.itemMeta,
+											children: [
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+													title: session.sessionId,
+													children: "session " + session.sessionId
+												}),
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+													title: session.locationRoot,
+													children: session.locationRoot
+												}),
+												session.archived && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "原生侧已归档" })
+											]
+										})]
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+										className: ProjectConsole_module_css_default.itemActions,
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectConsole_module_css_default.smallButton,
+											type: "button",
+											disabled: session.archived || mutation !== void 0,
+											onClick: () => {
+												onMutate("打开旧会话", async () => {
+													nativeHistory.openLegacySession(session.sessionId);
+												});
+											},
+											children: "打开旧会话"
+										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+											className: ProjectConsole_module_css_default.confirmButton,
+											type: "button",
+											disabled: mutation !== void 0 || activeWorkspaceAmbiguous,
+											"data-continue-in-active-workspace": true,
+											onClick: () => {
+												onMutate("在新工作区继续", () => nativeHistory.continueInActiveWorkspace(continuity.activeRoot, {
+													sessionId: session.sessionId,
+													expectedRoot: session.locationRoot
+												}));
+											},
+											children: "在新工作区继续"
+										})]
+									}),
+									session.updatedAt !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: ProjectConsole_module_css_default.eventTime,
+										children: formatNativeSessionTime(session.updatedAt)
+									})
+								]
+							}, session.sessionId))
+						})]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: ProjectConsole_module_css_default.sessionSection,
+						"aria-label": "Agent 管线会话绑定",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: ProjectConsole_module_css_default.sectionBar,
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: "Agent 管线会话绑定" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: ProjectConsole_module_css_default.countBadge,
+								children: String(bindings.total)
+							})]
+						}), bindings.items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							className: ProjectConsole_module_css_default.emptyCopy,
+							children: "还没有管线会话绑定。run→thread 绑定后会显示在这里。"
+						}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+							className: ProjectConsole_module_css_default.itemList,
+							children: bindings.items.map((binding) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+								className: ProjectConsole_module_css_default.itemCard,
+								"data-current-session": binding.sessionId === currentSessionId || void 0,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: ProjectConsole_module_css_default.itemMain,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: ProjectConsole_module_css_default.itemTopline,
+										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: "线程 " + binding.threadId }), binding.sessionId === currentSessionId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: ProjectConsole_module_css_default.currentBadge,
+											children: "当前会话"
+										})]
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: ProjectConsole_module_css_default.itemMeta,
+										children: [
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+												title: binding.runId,
+												children: "run " + binding.runId.slice(0, 18) + "…"
+											}),
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "session " + binding.sessionId }),
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: binding.harnessInstanceRef })
+										]
+									})]
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: ProjectConsole_module_css_default.eventTime,
+									children: binding.createdAt
+								})]
+							}, binding.bindingId))
+						})]
+					})
+				]
 			});
+		}
+		function formatNativeSessionTime(value) {
+			if (typeof value === "string") return value;
+			const timestamp = new Date(value);
+			return Number.isNaN(timestamp.getTime()) ? String(value) : timestamp.toLocaleString();
 		}
 		function StatusBadge({ kind, value }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -2812,7 +3174,7 @@ window.__ModuleLoader__.load({
 			}).catch(() => {});
 		}
 		function ProjectControlPlaceholder(props) {
-			const { workbench } = props;
+			const { nativeHistory, workbench } = props;
 			const currentSessionId = props.useSessions((state) => {
 				const current = state.current;
 				return current !== void 0 && state.byId[current]?.blank === false ? String(current) : void 0;
@@ -3108,6 +3470,9 @@ window.__ModuleLoader__.load({
 					const outcome = await selectProjectDirectory("project-root");
 					if (outcome.kind === "cancelled") return;
 					if (outcome.kind === "error") throw new Error(outcome.message);
+					const nativePreflight = assessNativeRebindPreflight(await api$1.getProjectWorkspaceContinuity(project.projectId), nativeHistory.snapshot(), outcome.selection.path);
+					if (nativePreflight.status === "blocked") throw new Error(nativeRebindPreflightMessage(nativePreflight));
+					if (nativePreflight.status === "warning" && !globalThis.confirm(nativeRebindPreflightMessage(nativePreflight))) return;
 					const result = await api$1.scan("project-root", outcome.selection);
 					const candidate = selectUserInitiatedRelocationCandidate(project.projectId, outcome.selection.path, result);
 					setCandidateView("review");
@@ -3466,6 +3831,7 @@ window.__ModuleLoader__.load({
 						consoleProject !== void 0 && loadState.kind === "ready" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ProjectConsole, {
 							project: consoleProject,
 							workbench,
+							nativeHistory,
 							currentSessionId,
 							pinned: preferences.pinnedProjectIds.includes(consoleProject.projectId),
 							onTogglePin: () => {
@@ -3477,7 +3843,7 @@ window.__ModuleLoader__.load({
 								notifyMemoryProjectBinding(void 0, currentSessionId);
 								workbench.clearProjectWorkspace();
 							}
-						})
+						}, consoleProject.projectId)
 					]
 				})]
 			});
@@ -4753,15 +5119,36 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/index.ts
-		const inject = ["slots", "workbench"];
+		const inject = [
+			"slots",
+			"workbench",
+			"sessions",
+			"workspaces"
+		];
 		/** Occupy Project Control and contribute one bounded candidate viewer to Workbench. */
 		function apply(ctx) {
+			const nativeHistory = createNativeWorkspaceHistoryBridge({
+				sessions: {
+					list: ctx.sessions.list,
+					open(id) {
+						ctx.sessions.open(id);
+					}
+				},
+				workspaces: {
+					list: ctx.workspaces.list,
+					create: (input) => ctx.workspaces.create(input),
+					connectWorkspace: (workspaceId) => ctx.workspaces.connectWorkspace(workspaceId)
+				}
+			});
 			ctx.effect(() => ctx.workbench.viewers.register({
 				id: "project-control.candidate-details",
 				family: "details",
 				title: "项目候选",
 				canRestore: (descriptor) => descriptor.family === "details" && descriptor.viewerId === "project-control.candidate-details" && isCandidateResourceKey(descriptor.resourceKey),
-				render: (descriptor) => isCandidateResourceKey(descriptor.resourceKey) ? (0, react.createElement)(CandidateDetails, { candidateId: descriptor.resourceKey }) : (0, react.createElement)("p", null, "候选项目标识无效。")
+				render: (descriptor) => isCandidateResourceKey(descriptor.resourceKey) ? (0, react.createElement)(CandidateDetails, {
+					candidateId: descriptor.resourceKey,
+					nativeHistory
+				}) : (0, react.createElement)("p", null, "候选项目标识无效。")
 			}), "project-control: candidate details viewer");
 			ctx.effect(() => ctx.workbench.viewers.register({
 				id: "project-control.progress-update",
@@ -4772,19 +5159,27 @@ window.__ModuleLoader__.load({
 			}), "project-control: progress update viewer");
 			ctx.slots.inject("project.control", () => ctx.slots.register({
 				name: "project.control",
-				inject: () => ({ workbench: ctx.workbench })
+				inject: () => ({
+					workbench: ctx.workbench,
+					nativeHistory
+				})
 			}, ProjectControlPlaceholder));
 		}
 		//#endregion
 		exports.CandidateDetails = CandidateDetails;
+		exports.NativeWorkspaceHistoryError = NativeWorkspaceHistoryError;
 		exports.ProgressUpdateViewer = ProgressUpdateViewer;
 		exports.ProjectConsole = ProjectConsole;
 		exports.ProjectControlPlaceholder = ProjectControlPlaceholder;
 		exports.apply = apply;
+		exports.assessNativeRebindPreflight = assessNativeRebindPreflight;
+		exports.createNativeWorkspaceHistoryBridge = createNativeWorkspaceHistoryBridge;
 		exports.createProjectControlApi = createProjectControlApi;
 		exports.inject = inject;
 		exports.isProgressUpdateResourceKey = isProgressUpdateResourceKey;
 		exports.loadConsolePreferences = loadConsolePreferences;
+		exports.nativePathKey = nativePathKey;
+		exports.projectNativeWorkspaceHistory = projectNativeWorkspaceHistory;
 		exports.saveConsolePreferences = saveConsolePreferences;
 		return module.exports;
 	}

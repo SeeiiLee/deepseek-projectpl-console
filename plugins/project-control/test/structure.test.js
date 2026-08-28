@@ -103,7 +103,7 @@ test('loads the canonical lifecycle schema lazily and keeps read routes independ
 
 test('occupies Project Control and registers one bounded Workbench viewer', () => {
   assert.match(contract, /'project\.control': \{ kind: 'single'; scope: 'root'/)
-  assert.match(client, /inject = \['slots', 'workbench'\]/)
+  assert.match(client, /inject = \['slots', 'workbench', 'sessions', 'workspaces'\]/)
   assert.match(client, /slots\.inject\('project\.control'/)
   assert.match(client, /slots\.register\(\{\s*name: 'project\.control'/)
   assert.match(client, /project-control\.candidate-details/)
@@ -366,6 +366,20 @@ test('project rows expose recoverable archive and scanner-backed workspace reloc
   assert.match(component, /data-project-page-next/)
   assert.match(component, /data-project-page-previous/)
   assert.doesNotMatch(component, /workspace_locations|UPDATE\s+projects/iu)
+})
+
+test('native workspace history stays read-only and reuses the one Project Control rebind path', () => {
+  const nativeHistory = readFileSync(new URL('../src/client/nativeWorkspaceHistory.ts', import.meta.url), 'utf8')
+  assert.match(component, /getProjectWorkspaceContinuity/)
+  assert.match(component, /assessNativeRebindPreflight/)
+  assert.match(candidateDetails, /assessNativeRebindPreflight/)
+  assert.match(consoleComponent, /旧位置历史/)
+  assert.match(consoleComponent, /在新工作区继续/)
+  assert.match(consoleComponent, /continueInActiveWorkspace/)
+  assert.match(nativeHistory, /workspaces\.create/)
+  assert.match(nativeHistory, /workspaces\.connectWorkspace/)
+  assert.doesNotMatch(nativeHistory, /writeFile|rename|junction/iu)
+  assert.doesNotMatch(component + candidateDetails, /project\.rebindLocation/)
 })
 
 test('workspace project index consumes every active-project page instead of stopping at 100', () => {

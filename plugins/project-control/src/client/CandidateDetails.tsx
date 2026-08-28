@@ -8,6 +8,11 @@ import {
   type ProjectDocumentRole,
 } from './projectControlApi.ts'
 import { notifyProjectControlChanged } from './projectControlEvents.ts'
+import {
+  assessNativeRebindPreflight,
+  nativeRebindPreflightMessage,
+  type NativeWorkspaceHistoryBridge,
+} from './nativeWorkspaceHistory.ts'
 import css from './CandidateDetails.module.css'
 
 const api = createProjectControlApi()
@@ -23,7 +28,13 @@ type DetailState =
   | DetailReadyState
   | { kind: 'error'; message: string }
 
-export function CandidateDetails({ candidateId }: { candidateId: string }): ReactNode {
+export function CandidateDetails({
+  candidateId,
+  nativeHistory,
+}: {
+  candidateId: string
+  nativeHistory: NativeWorkspaceHistoryBridge
+}): ReactNode {
   const [reloadKey, setReloadKey] = useState(0)
   const [state, setState] = useState<DetailState>({ kind: 'loading' })
   const [displayName, setDisplayName] = useState('')
@@ -150,8 +161,28 @@ export function CandidateDetails({ candidateId }: { candidateId: string }): Reac
           if (role === 'ignore' || document.contentHash === undefined) return []
           return [{ role, relativePath: document.relativePath, contentHash: document.contentHash }]
         })
-    setSubmitState({ kind: 'working', message: '正在生成只关联指令…' })
+    setSubmitState({ kind: 'working', message: '正在复核工作区与原生会话连续性…' })
     try {
+      if (candidate.status === 'relocation_candidate') {
+        if (candidate.manifestProjectId === undefined) {
+          throw new Error('位置变更候选缺少既有 project_id，已停止。')
+        }
+        const continuity = await api.getProjectWorkspaceContinuity(candidate.manifestProjectId)
+        const nativePreflight = assessNativeRebindPreflight(
+          continuity,
+          nativeHistory.snapshot(),
+          candidate.rootPath,
+        )
+        if (nativePreflight.status === 'blocked') {
+          throw new Error(nativeRebindPreflightMessage(nativePreflight))
+        }
+        if (nativePreflight.status === 'warning'
+          && !globalThis.confirm(nativeRebindPreflightMessage(nativePreflight))) {
+          setSubmitState({ kind: 'idle' })
+          return
+        }
+      }
+      setSubmitState({ kind: 'working', message: '正在生成只关联指令…' })
       const command = await api.prepareCandidate(candidate.candidateId, {
         registrationMode: candidate.detectedMode === 'managed' ? 'managed' : 'linked_legacy',
         name: displayName.trim(),

@@ -28,6 +28,11 @@ import {
 } from './directoryBridge.ts'
 import { subscribeProjectControlChanges } from './projectControlEvents.ts'
 import {
+  assessNativeRebindPreflight,
+  nativeRebindPreflightMessage,
+  type NativeWorkspaceHistoryBridge,
+} from './nativeWorkspaceHistory.ts'
+import {
   loadConsolePreferences,
   ProjectConsole,
   saveConsolePreferences,
@@ -102,7 +107,10 @@ interface ProjectNotice {
   message: string
 }
 
-type Props = ProjectControlPlaceholderProps & { workbench: WorkbenchService }
+type Props = ProjectControlPlaceholderProps & {
+  workbench: WorkbenchService
+  nativeHistory: NativeWorkspaceHistoryBridge
+}
 
 type DocumentPanelState =
   | { kind: 'idle' }
@@ -111,7 +119,7 @@ type DocumentPanelState =
   | { kind: 'error'; message: string }
 
 export function ProjectControlPlaceholder(props: Props): ReactNode {
-  const { workbench } = props
+  const { nativeHistory, workbench } = props
   const currentSessionId = props.useSessions((state) => {
     const current = state.current
     return current !== undefined && state.byId[current]?.blank === false ? String(current) : undefined
@@ -405,6 +413,17 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
       const outcome = await selectProjectDirectory('project-root')
       if (outcome.kind === 'cancelled') return
       if (outcome.kind === 'error') throw new Error(outcome.message)
+      const continuity = await api.getProjectWorkspaceContinuity(project.projectId)
+      const nativePreflight = assessNativeRebindPreflight(
+        continuity,
+        nativeHistory.snapshot(),
+        outcome.selection.path,
+      )
+      if (nativePreflight.status === 'blocked') {
+        throw new Error(nativeRebindPreflightMessage(nativePreflight))
+      }
+      if (nativePreflight.status === 'warning'
+        && !globalThis.confirm(nativeRebindPreflightMessage(nativePreflight))) return
       const result = await api.scan('project-root', outcome.selection)
       const candidate = selectUserInitiatedRelocationCandidate(project.projectId, outcome.selection.path, result)
       setCandidateView('review')
@@ -684,8 +703,10 @@ export function ProjectControlPlaceholder(props: Props): ReactNode {
         )}
         {consoleProject !== undefined && loadState.kind === 'ready' && (
           <ProjectConsole
+            key={consoleProject.projectId}
             project={consoleProject}
             workbench={workbench}
+            nativeHistory={nativeHistory}
             currentSessionId={currentSessionId}
             pinned={preferences.pinnedProjectIds.includes(consoleProject.projectId)}
             onTogglePin={() => { togglePin(consoleProject.projectId) }}

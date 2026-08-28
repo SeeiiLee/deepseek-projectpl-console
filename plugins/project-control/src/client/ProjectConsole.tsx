@@ -15,6 +15,11 @@ import {
   type WorkItemExecutionStatus,
 } from './projectControlApi.ts'
 import type { ProjectListItem } from './projectControlApi.ts'
+import {
+  projectNativeWorkspaceHistory,
+  type NativeWorkspaceHistoryBridge,
+  type ProjectWorkspaceContinuity,
+} from './nativeWorkspaceHistory.ts'
 import css from './ProjectConsole.module.css'
 
 const api = createProjectControlApi()
@@ -89,11 +94,13 @@ interface TabData {
   decisions?: PagedItems<ProjectDecision>
   events?: PagedItems<ProjectEvent>
   bindings?: PagedItems<ProjectSessionBinding>
+  continuity?: ProjectWorkspaceContinuity
 }
 
 export function ProjectConsole({
   project,
   workbench,
+  nativeHistory,
   currentSessionId,
   pinned,
   onTogglePin,
@@ -101,6 +108,7 @@ export function ProjectConsole({
 }: {
   project: ProjectListItem
   workbench: WorkbenchService
+  nativeHistory: NativeWorkspaceHistoryBridge
   currentSessionId: string | undefined
   pinned: boolean
   onTogglePin(): void
@@ -111,6 +119,11 @@ export function ProjectConsole({
   const [error, setError] = useState<string>()
   const [mutation, setMutation] = useState<string>()
   const [reloadKey, setReloadKey] = useState(0)
+  const [, setNativeRevision] = useState(0)
+
+  useEffect(() => nativeHistory.subscribe(() => {
+    setNativeRevision(value => value + 1)
+  }), [nativeHistory])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -152,9 +165,12 @@ export function ProjectConsole({
         setData(current => ({ ...current, events }))
       },
       sessions: async () => {
-        const bindings = await api.listSessions(project.projectId, controller.signal)
+        const [bindings, continuity] = await Promise.all([
+          api.listSessions(project.projectId, controller.signal),
+          api.getProjectWorkspaceContinuity(project.projectId, controller.signal),
+        ])
         if (controller.signal.aborted) return
-        setData(current => ({ ...current, bindings }))
+        setData(current => ({ ...current, bindings, continuity }))
       },
     }
     const loader = loaders[tab]
@@ -269,6 +285,9 @@ export function ProjectConsole({
             data={data}
             currentSessionId={currentSessionId}
             followSession={loadConsolePreferences().followSession}
+            nativeHistory={nativeHistory}
+            mutation={mutation}
+            onMutate={mutate}
           />
         )}
       </div>
@@ -815,16 +834,29 @@ function DocumentsTab({ project }: { project: ProjectListItem }): ReactNode {
   )
 }
 
-function SessionsTab({ data, currentSessionId, followSession }: {
+function SessionsTab({
+  data,
+  currentSessionId,
+  followSession,
+  nativeHistory,
+  mutation,
+  onMutate,
+}: {
   data: TabData
   currentSessionId: string | undefined
   followSession: boolean
+  nativeHistory: NativeWorkspaceHistoryBridge
+  mutation: string | undefined
+  onMutate(label: string, operation: () => Promise<unknown>): Promise<boolean>
 }): ReactNode {
   const bindings = data.bindings
-  if (bindings === undefined) return <TabNotice kind="loading" copy="正在读取会话绑定…" />
-  if (bindings.items.length === 0) {
-    return <TabNotice kind="empty" copy="还没有会话绑定。Agent 管线绑定 run→thread 后会出现这里。" />
+  const continuity = data.continuity
+  if (bindings === undefined || continuity === undefined) {
+    return <TabNotice kind="loading" copy="正在读取会话绑定与旧位置历史…" />
   }
+  const history = projectNativeWorkspaceHistory(continuity, nativeHistory.snapshot())
+  const activeWorkspaceAmbiguous = history.issues.includes('ACTIVE_NATIVE_WORKSPACE_AMBIGUOUS')
+  const legacyWorkspaceAmbiguous = history.issues.includes('LEGACY_NATIVE_WORKSPACE_AMBIGUOUS')
   const current = bindings.items.filter(binding => binding.sessionId === currentSessionId)
   return (
     <div className={css.sessions}>
@@ -835,30 +867,132 @@ function SessionsTab({ data, currentSessionId, followSession }: {
             : '跟随当前会话：' + String(current.length) + ' 个绑定与当前会话一致。'}
         </p>
       )}
-      <ul className={css.itemList}>
-        {bindings.items.map(binding => (
-          <li
-            className={css.itemCard}
-            key={binding.bindingId}
-            data-current-session={binding.sessionId === currentSessionId || undefined}
-          >
-            <div className={css.itemMain}>
-              <span className={css.itemTopline}>
-                <strong>{'线程 ' + binding.threadId}</strong>
-                {binding.sessionId === currentSessionId && <span className={css.currentBadge}>当前会话</span>}
-              </span>
-              <span className={css.itemMeta}>
-                <span title={binding.runId}>{'run ' + binding.runId.slice(0, 18) + '…'}</span>
-                <span>{'session ' + binding.sessionId}</span>
-                <span>{binding.harnessInstanceRef}</span>
-              </span>
-            </div>
-            <span className={css.eventTime}>{binding.createdAt}</span>
-          </li>
-        ))}
-      </ul>
+      <section className={css.nativeContinuation} aria-label="原生工作区连续性">
+        <div>
+          <strong>未来新会话位置</strong>
+          <code title={continuity.activeRoot}>{continuity.activeRoot}</code>
+          <p>这里会创建或复用 canonical 原生工作区，并打开一个新的空白会话；不会复制或改写旧会话内容。</p>
+        </div>
+        <button
+          className={css.confirmButton}
+          type="button"
+          disabled={mutation !== undefined || activeWorkspaceAmbiguous}
+          data-continue-in-active-workspace
+          onClick={() => {
+            void onMutate('在新工作区继续', () => nativeHistory.continueInActiveWorkspace(continuity.activeRoot))
+          }}
+        >
+          在新工作区新建会话
+        </button>
+      </section>
+      {activeWorkspaceAmbiguous && (
+        <p className={css.historyWarning} role="alert">
+          项目当前位置对应多个原生工作区。为避免选错，新会话入口已失败关闭；原始会话与日志没有改动。
+        </p>
+      )}
+      {legacyWorkspaceAmbiguous && (
+        <p className={css.historyWarning} role="alert">
+          一个旧位置对应多个原生工作区；旧会话仍只按不可变 cwd 显示，不会自动改绑或移动。
+        </p>
+      )}
+      <section className={css.sessionSection} aria-label="旧位置历史">
+        <div className={css.sectionBar}>
+          <h3>旧位置历史</h3>
+          <span className={css.countBadge}>{String(history.legacySessions.length)}</span>
+        </div>
+        {history.legacySessions.length === 0 ? (
+          <p className={css.emptyCopy}>没有按历史路径匹配到旧会话。</p>
+        ) : (
+          <ul className={css.itemList}>
+            {history.legacySessions.map(session => (
+              <li className={css.itemCard} key={session.sessionId} data-native-legacy-session>
+                <div className={css.itemMain}>
+                  <span className={css.itemTopline}>
+                    <strong>{session.title}</strong>
+                    <span className={css.historyBadge}>旧位置历史</span>
+                  </span>
+                  <span className={css.itemMeta}>
+                    <span title={session.sessionId}>{'session ' + session.sessionId}</span>
+                    <span title={session.locationRoot}>{session.locationRoot}</span>
+                    {session.archived && <span>原生侧已归档</span>}
+                  </span>
+                </div>
+                <div className={css.itemActions}>
+                  <button
+                    className={css.smallButton}
+                    type="button"
+                    disabled={session.archived || mutation !== undefined}
+                    onClick={() => {
+                      void onMutate('打开旧会话', async () => {
+                        nativeHistory.openLegacySession(session.sessionId)
+                      })
+                    }}
+                  >
+                    打开旧会话
+                  </button>
+                  <button
+                    className={css.confirmButton}
+                    type="button"
+                    disabled={mutation !== undefined || activeWorkspaceAmbiguous}
+                    data-continue-in-active-workspace
+                    onClick={() => {
+                      void onMutate('在新工作区继续', () => nativeHistory.continueInActiveWorkspace(
+                        continuity.activeRoot,
+                        { sessionId: session.sessionId, expectedRoot: session.locationRoot },
+                      ))
+                    }}
+                  >
+                    在新工作区继续
+                  </button>
+                </div>
+                {session.updatedAt !== undefined && (
+                  <span className={css.eventTime}>{formatNativeSessionTime(session.updatedAt)}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className={css.sessionSection} aria-label="Agent 管线会话绑定">
+        <div className={css.sectionBar}>
+          <h3>Agent 管线会话绑定</h3>
+          <span className={css.countBadge}>{String(bindings.total)}</span>
+        </div>
+        {bindings.items.length === 0 ? (
+          <p className={css.emptyCopy}>还没有管线会话绑定。run→thread 绑定后会显示在这里。</p>
+        ) : (
+          <ul className={css.itemList}>
+            {bindings.items.map(binding => (
+              <li
+                className={css.itemCard}
+                key={binding.bindingId}
+                data-current-session={binding.sessionId === currentSessionId || undefined}
+              >
+                <div className={css.itemMain}>
+                  <span className={css.itemTopline}>
+                    <strong>{'线程 ' + binding.threadId}</strong>
+                    {binding.sessionId === currentSessionId && <span className={css.currentBadge}>当前会话</span>}
+                  </span>
+                  <span className={css.itemMeta}>
+                    <span title={binding.runId}>{'run ' + binding.runId.slice(0, 18) + '…'}</span>
+                    <span>{'session ' + binding.sessionId}</span>
+                    <span>{binding.harnessInstanceRef}</span>
+                  </span>
+                </div>
+                <span className={css.eventTime}>{binding.createdAt}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   )
+}
+
+function formatNativeSessionTime(value: string | number): string {
+  if (typeof value === 'string') return value
+  const timestamp = new Date(value)
+  return Number.isNaN(timestamp.getTime()) ? String(value) : timestamp.toLocaleString()
 }
 
 function StatusBadge({ kind, value }: { kind: 'execution' | 'review' | 'review-status' | 'run'; value: string }): ReactNode {

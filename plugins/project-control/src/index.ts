@@ -29,6 +29,7 @@ import {
   type ProjectControlReadService,
   type ProjectControlReferenceResolver,
   type ProjectControlStorageState,
+  type ProjectWorkspaceContinuity,
 } from './http.ts'
 import { createProjectControlIntakeRuntime } from './intake.ts'
 import {
@@ -259,6 +260,27 @@ function storageReadAdapter(storage: Readonly<ProjectControlStorage>): ProjectCo
         ?? project.workspaceLocations?.find(item => item.isActive)
       if (location === undefined || location === null) return null
       return { projectId: project.projectId, root: location.displayPath }
+    },
+    getProjectWorkspaceContinuity(projectId: string): ProjectWorkspaceContinuity | null {
+      const project = storage.getProject(projectId)
+      if (project === null) return null
+      const locations = project.workspaceLocations ?? []
+      const active = locations.filter(location => location.isActive)
+      if (active.length !== 1 || active[0] === undefined) return null
+      return {
+        projectId: project.projectId,
+        revision: project.revision,
+        activeRoot: active[0].displayPath,
+        locations: locations.map(location => ({
+          locationId: location.locationId,
+          root: location.displayPath,
+          kind: location.kind,
+          active: location.isActive,
+          revision: location.revision,
+          createdAt: location.createdAt,
+          updatedAt: location.updatedAt,
+        })),
+      }
     },
     listProjectWorkspaces() {
       const status = storage.status()
@@ -581,6 +603,9 @@ function degradedRuntime(state: ProjectControlStorageState): ProjectControlRunti
         throw projectControlHttpError('STORAGE_UNAVAILABLE', '项目数据库暂不可用。', 503)
       },
       getProjectWorkspace() {
+        throw projectControlHttpError('STORAGE_UNAVAILABLE', '项目数据库暂不可用。', 503)
+      },
+      getProjectWorkspaceContinuity() {
         throw projectControlHttpError('STORAGE_UNAVAILABLE', '项目数据库暂不可用。', 503)
       },
       listProjectWorkspaces() {

@@ -1,4 +1,8 @@
 import type { AuthorizedDirectorySelection } from './directoryBridge.ts'
+import type {
+  ProjectWorkspaceContinuity,
+  ProjectWorkspaceContinuityLocation,
+} from './nativeWorkspaceHistory.ts'
 
 const API_PREFIX = '/__personal/project-control/v1alpha1'
 export const PROJECT_CONTROL_MAX_JSON_BYTES = 262_144
@@ -437,6 +441,7 @@ export interface ProjectControlApi {
     signal?: AbortSignal,
   ): Promise<ProjectListItem>
   workspaceStatus(projectId: string, signal?: AbortSignal): Promise<ProjectWorkspaceStatus>
+  getProjectWorkspaceContinuity(projectId: string, signal?: AbortSignal): Promise<ProjectWorkspaceContinuity>
   workspaceTree(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectWorkspaceTree>
   workspaceFile(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectWorkspaceFile>
   scan(
@@ -612,6 +617,12 @@ export function createProjectControlApi(fetchImpl: typeof fetch = fetch): Projec
     workspaceStatus: async (projectId, signal) => normalizeProjectWorkspaceStatus(await request(
       'GET',
       `/projects/${encodeURIComponent(validateIdentifier(projectId, '项目'))}/workspace/status`,
+      undefined,
+      signal,
+    )),
+    getProjectWorkspaceContinuity: async (projectId, signal) => normalizeProjectWorkspaceContinuity(await request(
+      'GET',
+      `/projects/${encodeURIComponent(validateIdentifier(projectId, '项目'))}/workspace/continuity`,
       undefined,
       signal,
     )),
@@ -1003,6 +1014,40 @@ function normalizeProjectWorkspaceStatus(value: unknown): ProjectWorkspaceStatus
   return {
     projectId: validateIdentifier(requiredText(object.projectId, '项目 ID', 200), '项目'),
     root: requiredText(object.root, '工作区根路径', 2_048),
+  }
+}
+
+function normalizeProjectWorkspaceContinuity(value: unknown): ProjectWorkspaceContinuity {
+  const object = requiredRecord(value, '项目工作区历史')
+  const activeRoot = requiredText(object.activeRoot, '活动工作区根路径', 32_767)
+  const locations = requiredArray(object.locations, '工作区位置历史')
+  if (locations.length < 1 || locations.length > 128) throw invalidResponse('工作区位置历史')
+  const normalized = locations.map(locationValue => {
+    const location = requiredRecord(locationValue, '工作区位置历史')
+    const kindValue = requiredText(location.kind, '工作区位置类型', 20)
+    if (kindValue !== 'primary' && kindValue !== 'mirror' && kindValue !== 'archive') {
+      throw invalidResponse('工作区位置类型')
+    }
+    const kind: ProjectWorkspaceContinuityLocation['kind'] = kindValue
+    return {
+      locationId: requiredText(location.locationId, '位置 ID', 200),
+      root: requiredText(location.root, '工作区位置', 32_767),
+      kind,
+      active: requiredBoolean(location.active, '活动位置标记'),
+      revision: requiredInteger(location.revision, '位置修订号', 1),
+      createdAt: requiredText(location.createdAt, '位置创建时间', 80),
+      updatedAt: requiredText(location.updatedAt, '位置更新时间', 80),
+    }
+  })
+  const active = normalized.filter(location => location.active)
+  if (active.length !== 1 || clientPathKey(active[0]?.root ?? '') !== clientPathKey(activeRoot)) {
+    throw invalidResponse('活动工作区位置')
+  }
+  return {
+    projectId: validateProjectId(requiredText(object.projectId, '项目 ID', 200)),
+    revision: requiredInteger(object.revision, '项目修订号', 1),
+    activeRoot,
+    locations: normalized,
   }
 }
 

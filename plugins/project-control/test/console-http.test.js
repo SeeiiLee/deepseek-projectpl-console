@@ -49,8 +49,8 @@ const readyService = {
   },
 }
 
-async function serve(t, options = {}) {
-  const server = createServer(createProjectControlRequestHandler(readyService, options))
+async function serve(t, options = {}, readService = readyService) {
+  const server = createServer(createProjectControlRequestHandler(readService, options))
   await new Promise((resolve, reject) => {
     server.once('error', reject)
     server.listen(0, '127.0.0.1', resolve)
@@ -60,6 +60,47 @@ async function serve(t, options = {}) {
   assert.equal(typeof address, 'object')
   return `http://127.0.0.1:${address.port}`
 }
+
+test('serves bounded project workspace continuity without exposing normalized path internals', async t => {
+  const projectId = 'prj_0198f4b2-7c3a-7d92-a5c6-6b6f39e9a0a1'
+  const origin = await serve(t, {}, {
+    ...readyService,
+    getProjectWorkspaceContinuity(id) {
+      assert.equal(id, projectId)
+      return {
+        projectId,
+        revision: 2,
+        activeRoot: 'F:\\Projects\\canonical\\workspace',
+        locations: [
+          {
+            locationId: 'loc_active',
+            root: 'F:\\Projects\\canonical\\workspace',
+            kind: 'primary',
+            active: true,
+            revision: 1,
+            createdAt: '2026-08-28T00:00:00.000Z',
+            updatedAt: '2026-08-28T00:00:00.000Z',
+          },
+          {
+            locationId: 'loc_legacy',
+            root: 'D:\\Legacy',
+            kind: 'primary',
+            active: false,
+            revision: 2,
+            createdAt: '2026-08-20T00:00:00.000Z',
+            updatedAt: '2026-08-28T00:00:00.000Z',
+          },
+        ],
+      }
+    },
+  })
+  const { response, payload } = await api(origin, `/projects/${projectId}/workspace/continuity`)
+  assert.equal(response.status, 200)
+  assert.equal(payload.ok, true)
+  assert.equal(payload.data.activeRoot, 'F:\\Projects\\canonical\\workspace')
+  assert.deepEqual(payload.data.locations.map(location => location.active), [true, false])
+  assert.equal(JSON.stringify(payload).includes('normalizedPath'), false)
+})
 
 async function api(origin, resource, init = {}) {
   const response = await fetch(`${origin}${PROJECT_CONTROL_API_PREFIX}${resource}`, {

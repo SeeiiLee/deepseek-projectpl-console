@@ -13195,6 +13195,7 @@ function createProjectControlRequestHandler(service, options = {}) {
 						capabilities: [
 							"status.read",
 							"projects.read",
+							"projects.workspace-continuity.read",
 							...options.lifecycle === void 0 ? [] : ["lifecycle.command.submit"],
 							...options.intake === void 0 ? [] : [
 								"intake.directory.scan",
@@ -13623,6 +13624,20 @@ function createProjectControlRequestHandler(service, options = {}) {
 						projectId: workspace.projectId,
 						root: workspace.root
 					}
+				});
+				return;
+			}
+			const workspaceContinuityRoute = /^\/projects\/(prj_[0-9a-f-]+)\/workspace\/continuity$/u.exec(resource);
+			if (workspaceContinuityRoute !== null) {
+				requireGetWithoutBody(request);
+				const projectId = workspaceContinuityRoute[1];
+				if (projectId === void 0 || !PROJECT_ID.test(projectId)) throw projectControlHttpError("NOT_FOUND", "项目不存在。", 404);
+				rejectUnexpectedQuery(parsed, /* @__PURE__ */ new Set());
+				const continuity = await service.getProjectWorkspaceContinuity(projectId);
+				if (continuity === null) throw projectControlHttpError("PROJECT_WORKSPACE_UNAVAILABLE", "项目没有可用的工作区位置历史。", 404);
+				sendJson(response, 200, {
+					ok: true,
+					data: normalizeProjectWorkspaceContinuity(continuity)
 				});
 				return;
 			}
@@ -15229,6 +15244,34 @@ function normalizeProjectList(value) {
 		})),
 		total: value.total,
 		nextCursor: nextCursor ?? null
+	};
+}
+function normalizeProjectWorkspaceContinuity(value) {
+	if (!PROJECT_ID.test(value.projectId) || !Array.isArray(value.locations) || value.locations.length < 1 || value.locations.length > 128) throw new TypeError("storage returned an invalid project workspace continuity");
+	const locations = value.locations.map((location) => {
+		if (![
+			"primary",
+			"mirror",
+			"archive"
+		].includes(location.kind) || typeof location.active !== "boolean") throw new TypeError("storage returned an invalid workspace location history");
+		return {
+			locationId: boundedText(location.locationId, "locationId", 200),
+			root: boundedText(location.root, "root", 32767),
+			kind: location.kind,
+			active: location.active,
+			revision: requiredRevision(location.revision, "location.revision", 1),
+			createdAt: responseTimestamp(location.createdAt, "location.createdAt"),
+			updatedAt: responseTimestamp(location.updatedAt, "location.updatedAt")
+		};
+	});
+	const activeRoot = boundedText(value.activeRoot, "activeRoot", 32767);
+	const active = locations.filter((location) => location.active);
+	if (active.length !== 1 || active[0]?.root !== activeRoot) throw new TypeError("storage returned ambiguous active workspace continuity");
+	return {
+		projectId: value.projectId,
+		revision: requiredRevision(value.revision, "project.revision", 1),
+		activeRoot,
+		locations
 	};
 }
 function boundedText(value, field, maxLength) {
@@ -17980,6 +18023,27 @@ function storageReadAdapter(storage) {
 				root: location.displayPath
 			};
 		},
+		getProjectWorkspaceContinuity(projectId) {
+			const project = storage.getProject(projectId);
+			if (project === null) return null;
+			const locations = project.workspaceLocations ?? [];
+			const active = locations.filter((location) => location.isActive);
+			if (active.length !== 1 || active[0] === void 0) return null;
+			return {
+				projectId: project.projectId,
+				revision: project.revision,
+				activeRoot: active[0].displayPath,
+				locations: locations.map((location) => ({
+					locationId: location.locationId,
+					root: location.displayPath,
+					kind: location.kind,
+					active: location.isActive,
+					revision: location.revision,
+					createdAt: location.createdAt,
+					updatedAt: location.updatedAt
+				}))
+			};
+		},
 		listProjectWorkspaces() {
 			if (storage.status().state !== "ready") throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
 			const projects = [];
@@ -18290,6 +18354,9 @@ function degradedRuntime(state) {
 				throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
 			},
 			getProjectWorkspace() {
+				throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
+			},
+			getProjectWorkspaceContinuity() {
 				throw projectControlHttpError("STORAGE_UNAVAILABLE", "项目数据库暂不可用。", 503);
 			},
 			listProjectWorkspaces() {
