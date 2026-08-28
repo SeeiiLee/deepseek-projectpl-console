@@ -15,8 +15,8 @@ import {
 import { UpdateService } from '../src/update-service.js'
 
 const PROJECT_CONTROL = '@cyrus/dsh-project-control'
-const BASELINE_VERSION = '0.1.0-rc.12'
-const CANDIDATE_VERSION = '0.1.0-rc.13'
+const BASELINE_VERSION = '0.1.0-rc.13'
+const CANDIDATE_VERSION = '0.1.0-rc.14'
 
 function parseArgs(argv) {
   const result = {}
@@ -115,7 +115,7 @@ async function main() {
     evidence.assetSize = fixture.entry.assetSize
     evidence.compatibleHarnessCommit = fixture.index.compatibleHarness.commit
 
-    temporaryRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-rc13-native-workspace-history-'))
+    temporaryRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-rc14-empty-document-upgrade-'))
     const userData = join(temporaryRoot, 'user-data')
     const dshHome = join(temporaryRoot, 'dsh-home')
     const baselineRoot = await createBaselineRoot(repositoryRoot, temporaryRoot)
@@ -223,7 +223,7 @@ async function main() {
     checks.temporaryProfileRemoved = temporaryRoot === undefined || !existsSync(temporaryRoot) ? 'pass' : 'fail'
     await writeJsonExclusive(receiptPath, {
       schemaVersion: 1,
-      task: 'Project Control 0.1.0-rc.13 native workspace history closure isolated generation acceptance',
+      task: 'Project Control 0.1.0-rc.14 empty-document managed upgrade isolated generation acceptance',
       startedAt,
       completedAt: new Date().toISOString(),
       outcome,

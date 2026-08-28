@@ -78,8 +78,8 @@
       "bundle": false
     },
     "@cyrus/dsh-project-control": {
-      "version": "0.1.0-rc.13",
-      "integrity": "e97b60323d0c26bf90f2db5ea250c55d39a3ee1bec9c47d56f93e46257bd3afe",
+      "version": "0.1.0-rc.14",
+      "integrity": "7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21",
       "source": "tgz",
       "role": "core",
       "bundle": false,

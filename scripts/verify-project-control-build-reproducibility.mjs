@@ -9,6 +9,7 @@ import {
   readdirSync,
   realpathSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
@@ -67,6 +68,30 @@ function runBuild(root) {
   return { stdout: result.stdout, stderr: result.stderr }
 }
 
+function packProjectControl(root, packDir) {
+  mkdirSync(packDir, { recursive: true })
+  const pluginRoot = join(root, projectControlRelative)
+  const result = spawnSync('npm', ['pack', '--pack-destination', packDir, '--silent'], {
+    cwd: pluginRoot,
+    encoding: 'utf8',
+    windowsHide: true,
+    shell: process.platform === 'win32',
+  })
+  if (result.status !== 0) {
+    throw new Error(`Project Control pack failed in ${root}.\n${result.stdout}${result.stderr}`)
+  }
+  const assetName = result.stdout.trim().split(/\r?\n/u).at(-1)
+  const assetPath = assetName === undefined ? undefined : join(packDir, assetName)
+  if (assetPath === undefined || !existsSync(assetPath)) {
+    throw new Error(`Project Control pack did not produce an asset in ${packDir}.`)
+  }
+  return {
+    assetName,
+    sha256: sha256(assetPath),
+    bytes: statSync(assetPath).size,
+  }
+}
+
 function copyProjectControlSource(source, target) {
   cpSync(source, target, {
     recursive: true,
@@ -74,7 +99,8 @@ function copyProjectControlSource(source, target) {
       const local = relative(source, path)
       if (local === '') return true
       const first = local.split(sep)[0]
-      return first !== 'lib' && first !== 'node_modules'
+      if (first === 'node_modules') return false
+      return !comparedArtifacts.includes(local)
     },
   })
 }
@@ -126,7 +152,7 @@ function assertOwnedTemporary(path, container, token) {
   }
   const marker = join(normalized, '.task-owner.json')
   const parsed = JSON.parse(readFileSync(marker, 'utf8'))
-  if (parsed.token !== token || parsed.task !== 'B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE') {
+  if (parsed.token !== token || parsed.task !== 'B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE') {
     throw new Error(`Task ownership marker mismatch: ${marker}`)
   }
 }
@@ -138,12 +164,12 @@ if (alternateValue === undefined) {
 const alternateWorktree = resolve(alternateValue)
 assertRegisteredWorktree(alternateWorktree)
 
-const taskContainer = join(alternateWorktree, '.dsh-task-temp', 'b-g4-native-workspace-history-rc13-local-candidate')
+const taskContainer = join(alternateWorktree, '.dsh-task-temp', 'b-g4-empty-document-managed-upgrade-rc14-local-candidate')
 mkdirSync(taskContainer, { recursive: true })
 const temporaryRoot = mkdtempSync(join(taskContainer, 'run-'))
 const token = randomUUID()
 writeFileSync(join(temporaryRoot, '.task-owner.json'), JSON.stringify({
-  task: 'B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE',
+  task: 'B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE',
   token,
 }, null, 2), { encoding: 'utf8', flag: 'wx' })
 
@@ -179,15 +205,23 @@ try {
       throw new Error(`client.js embeds an absolute build root: ${forbidden}`)
     }
   }
+  const candidatePackage = packProjectControl(projectRoot, join(temporaryRoot, 'candidate-pack'))
+  const alternatePackage = packProjectControl(alternateBuildRoot, join(temporaryRoot, 'alternate-pack'))
+  if (candidatePackage.assetName !== alternatePackage.assetName
+    || candidatePackage.sha256 !== alternatePackage.sha256
+    || candidatePackage.bytes !== alternatePackage.bytes) {
+    throw new Error(`Project Control package differs by build path: ${JSON.stringify({ candidatePackage, alternatePackage })}`)
+  }
   const result = {
     schemaVersion: 1,
-    task: 'B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE',
+    task: 'B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE',
     status: 'passed',
     checkedAt: new Date().toISOString(),
     canonicalWorkspace: alternateWorktree,
     candidateWorktree: projectRoot,
     canonicalTemporaryBuildRoot: alternateBuildRoot,
     artifacts,
+    packageArtifact: candidatePackage,
     buildLogs: {
       canonicalStdoutBytes: Buffer.byteLength(canonicalBuild.stdout),
       canonicalStderrBytes: Buffer.byteLength(canonicalBuild.stderr),
