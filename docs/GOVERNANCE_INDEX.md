@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。DSH 正式 Project Control binding 已由 Cyrus 确认切换到 canonical workspace；旧目录保留为可回滚历史且 Stable web profile 的失效绝对 link 已离线修复。换绑后暴露的原生 Workspace/旧会话连续性缺口已由 `1d00c8f` 在源码关闭并 ff-only 合入 canonical，但 Stable 仍运行 Project Control `0.1.0-rc.12`，尚未获得旧位置历史 UI。当前唯一下一任务为 `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE`，只允许另行授权后制作一份本地候选；push/Release、Stable 安装和量化/食溯迁移仍分门授权。项目搜索仍只支持 project_id 与已存名称的字面子串匹配。完整队列见 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks`。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。DSH 正式 Project Control binding 已切换到 canonical workspace；旧目录保留为可回滚历史且 Stable web profile 的失效绝对 link 已离线修复。原生 Workspace/旧会话连续性缺口已随 Project Control `0.1.0-rc.13` 发布、安装并由 Cyrus 人工验收：旧位置历史可见、旧会话可打开、新会话在 canonical workspace 继续且原旧会话不被改写。当前唯一下一任务为 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`，只读核对量化项目身份、旧路径和治理状态；真实迁移/rebind、食溯和 B1b 仍分门授权。项目搜索仍只支持 project_id 与已存名称的字面子串匹配。完整队列见 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks`。
 
 ## 权威链
 

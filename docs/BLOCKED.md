@@ -1,6 +1,6 @@
 # Blocked
 
-## 当前阻断（2026-08-28，DSH canonical rebind 与原生会话连续性源码闭环已关闭，rc.13 生产链尚未启动）
+## 当前阻断（2026-08-28，DSH canonical rebind 与原生会话连续性 rc.13 生产验收已关闭）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
@@ -10,11 +10,11 @@
 - **陈旧 relocation 默认队列阻断已关闭，历史证据继续保留**：`can_01a038b2-d821-7fac-ae47-fe28a94a5c78` 的原始状态行未物理删除，但已以 `historyReason=superseded` 只进入历史视图；禁止重复 rebind 或直接改库。
 - **项目生命周期第二批生产门已关闭**：Stable 已激活 Project Control `0.1.0-rc.12`；generation=`pending-1787848154807`，25 个安装文件 hash 一致，Host schema 9、active 4 / archived 0，Cyrus 已确认“归档”和“更换工作区”入口正常且未点击。receipt=`../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json`，SHA-256=`51f254b3...33f37`。
 - **DSH 正式换绑阻断已关闭，旧目录继续受保护**：外部切换器 R3 已把旧目录原子改名为 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828`，修复 linked worktree 指针且未复制、删除或建立 junction；Stable web profile 绝对 link 已离线修复。Cyrus 随后通过唯一主动入口确认正式 binding 指向 `F:\Projects\deepseek-harness-personal\workspace`；本轮不重复 rebind、不直接读写数据库。
-- **原生工作区历史产品缺口已在源码关闭，但生产仍缺 rc.13**：`1d00c8f` 已加入换绑前原生会话预检、旧位置历史只读投影和“在新工作区继续”入口，并 ff-only 合入 canonical；Project Control `206/206` 和机器门禁通过。Stable 仍运行 rc.12，因此生产界面暂时还没有这套能力；下一门是另行授权的一份 rc.13 本地候选。
-- **量化与食溯继续暂停**：量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。先完成 rc.13 本地候选、发布和 Stable 验收，再按量化 → 食溯逐项获得迁移/换绑授权。
+- **原生工作区历史产品与生产阻断已关闭**：源码 `1d00c8f` 已随 Project Control `0.1.0-rc.13` 发布并在 Stable generation `pending-1787905720701` 激活；25 个安装文件无缺失/哈希不符。Cyrus 已确认旧位置历史可见、旧会话可打开、新会话在 canonical workspace 继续且原旧会话仍存在。receipt=`../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json`，SHA-256=`b52c7738...11b00`。
+- **量化与食溯继续暂停写入，但量化只读预检成为下一任务**：量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。下一步只读核对量化身份、路径、文件与治理状态并形成迁移/回滚计划；真实建目录、移动/复制、Stable rebind 和食溯迁移仍需分别授权。
 - **项目搜索存在非阻断体验缺口**：当前只对 `project_id` 与已存名称做不区分大小写的字面子串匹配；`亚马逊`/`亚马` 命中，`Amazon` 不命中。别名、翻译和拼音搜索尚未实现，但不改变项目身份，也不阻断 rc.12 既定验收。
 - **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
-- **本轮 ff-only 合入与 docs-only 状态对齐授权在本提交后即用完**：`release-staging/` 未纳入提交；未 push、发布、安装、写 Stable、操作真实项目或清理旧目录。下一步 `B-G4-NATIVE-WORKSPACE-HISTORY-RC13-LOCAL-CANDIDATE` 仍需新授权；其后的 push/Release、Stable 安装、量化/食溯迁移、物理删除、instance detach 与 B1b 各有独立授权门。
+- **本轮 rc.13 Stable 验收与 docs-only 状态对齐授权在 commit/push 后即用完**：`release-staging/` 必须继续排除；本轮不再操作 Stable/会话，不操作 binding、真实项目或旧目录。下一步 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT` 仍需新授权；真实量化迁移/rebind、食溯、物理删除、instance detach 与 B1b 各有独立授权门。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 

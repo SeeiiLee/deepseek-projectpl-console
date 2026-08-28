@@ -1,6 +1,14 @@
 # Progress
 
-## 2026-08-28：DSH canonical rebind 与原生工作区历史闭环已进入 canonical 线性历史
+## 2026-08-28：Project Control rc.13 Stable 验收与原生工作区历史治理收口完成
+
+- rc.13 候选提交 `3780d159efc3a294b4fd01bb92ff4fe7942e7c82` 已无 force 推送并发布为 [plugins-v2026.08.28.1](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.28.1)（Release `378348305`）；仅 Project Control `0.1.0-rc.13`，tgz 310,006 bytes，SHA-256=`e97b60323d0c26bf90f2db5ea250c55d39a3ee1bec9c47d56f93e46257bd3afe`。
+- Stable 已激活 generation=`pending-1787905720701`，rc.12 generation=`pending-1787848154807` 继续作为回滚点；pending/activating 指针不存在，25 个安装文件逐一复算为 0 缺失/不符，已安装 metadata 与 Release 身份一致，启动到 `page-ready`。
+- Cyrus 人工验收通过：项目“打开控制台”→“会话”内可见旧位置历史；旧会话可正常打开；“在新工作区继续”成功使用 `F:\Projects\deepseek-harness-personal\workspace`；返回后原旧会话仍存在，未观察到原始会话改写。
+- Stable 验收 receipt=`../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json`，SHA-256=`b52c7738aaeb517c333bfb6d18a427a33081b7aa4061f0ecd11a5d6362711b00`。本治理收口不再访问或写 Stable，不操作会话、binding、旧目录或其他项目，`release-staging/` 继续排除。
+- DSH 的 G4 canonical rebind 与原生会话连续性现在完成产品、发布和生产闭环。下一任务为 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`：只读核对量化身份、旧 Kimi 路径（含 U+200C）、文件和治理状态，先形成迁移/回滚计划；任何物理迁移或 Stable rebind 仍需新授权。
+
+## 2026-08-28：DSH canonical rebind 与原生工作区历史闭环进入 canonical 线性历史（rc.13 发布前快照）
 
 - 外部一次性切换器 R3 已把旧目录原子改名为 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 并修复 linked worktree Git 指针；未复制、删除或建立 junction。runtime receipt=`../local/receipts/op_g4_dsh_canonical_rebind_20260828_06-external-switch-r3-runtime.json`，SHA-256=`1863568a5667c0841c2b865c1b92f9cee88efcde241d7f5bab5f9a391f300eac`。
 - 目录切换暴露的 Stable web profile 失效绝对 link 已通过官方离线插件流程修复；最终 receipt=`../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json`，SHA-256=`28da74b1fd21a5c6027257a37d9c49d41d13fc5a42e39e1b9ede202f6593ea67`。随后 Cyrus 在 Stable 使用唯一主动入口完成 DSH 正式项目换绑并确认 canonical 目标；本次治理对齐不直接读写 Stable 数据库，也不重复 rebind。

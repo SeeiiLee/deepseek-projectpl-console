@@ -53,9 +53,9 @@
 | governance/LLM项目治理说明书.md | 权威（v1.1，ADR-009 联动） | LLM 治理操作手册；Project Home 三分区；§0 速查卡进 workspace/AGENTS.md；含三层执行保障 |
 | governance/统一项目目录与三分区治理合同.md | 权威 v1.0（ADR-009） | Project Home、workspace/worktrees/local、Project ID、跨 Harness AGENTS/Skill/记忆、retention、存量迁移和 Console 机器验收 |
 | governance/项目路径绑定盘点表.md | 权威（v2，2026-08-25 联动） | 项目统一迁移第 0 步；目标改为 `F:\Projects\<slug>\workspace`；旧物理分类目录建议被 ADR-009 取代 |
-| GOVERNANCE_INDEX.md | 权威入口 | 治理总索引的人类可读入口；当前记录 DSH canonical rebind 完成、原生工作区历史源码合入和 rc.13 本地候选下一门，机器入口见下两行 |
-| governance/governance-index.json | 权威机器索引 | 权威优先级、固定合同 hash、实时状态入口、DSH 路径/原生会话连续性证据、rc.13 三道门、后续任务队列和 fail-closed 规则 |
-| governance/current-state.json | 活跃机器状态 | 当前项目身份、canonical binding、Stable `0.4.6` + Project Control `0.1.0-rc.12`、本地 `1d00c8f`、旧目录保护、搜索限制与下一任务；每次交接必须刷新 |
+| GOVERNANCE_INDEX.md | 权威入口 | 治理总索引的人类可读入口；当前记录 DSH canonical rebind 与 rc.13 原生会话连续性生产验收完成，下一门为量化项目 canonical 迁移只读预检，机器入口见下两行 |
+| governance/governance-index.json | 权威机器索引 | 权威优先级、固定合同 hash、实时状态入口、DSH 路径/rc.13 原生会话连续性生产证据、量化只读预检指针、后续任务队列和 fail-closed 规则 |
+| governance/current-state.json | 活跃机器状态 | 当前项目身份、canonical binding、Stable `0.4.6` + Project Control `0.1.0-rc.13`、旧目录保护、搜索限制与量化只读预检下一任务；每次交接必须刷新 |
 
 ## 设计（目标目录 design/）
 
@@ -76,7 +76,7 @@
 | design/C线-会话全量提取-首批三任务简报.md | 已盖章（Cyrus 2026-08-20），派发 Flash 执行 | C0 前置（稳定版补注册/out 移出/注册表导出）/ C1 登记 / C2 规范化三流 / C3 语料+盲评；稳定库为注册表权威；远程模型批准带三箍 |
 | design/B线-控制台审批中心与治理视图-设计稿.md | **v4 已生效**（2026-08-22；D-17～D-27 收口） | 单一 WorkItem 事实面；approval/details、impact/effective_class/extensions、卡↔Decision、分诊/裁决投影、云端终局与记忆接缝 |
 | design/B线-控制台审批中心-首批三任务简报.md | v4；B1a 已实现，B1b 被 G0–G3 暂停 | B1a 协议合同已迁入 `c27e989` 候选；migration/DB/HTTP/UI/侧栏/收件箱未开始；恢复前须通过当前治理索引与 context receipt |
-| design/B线-候选中心与项目位置生命周期-收口设计.md | 第一、二批已发布并完成 rc.12 Stable 验收；原生工作区历史闭环源码已合入，待 rc.13 | G4.1–G4.3 候选中心与归档/主动换绑已上线；换绑前原生会话预检、旧位置历史和新工作区继续入口位于 `1d00c8f`，尚未发布安装 |
+| design/B线-候选中心与项目位置生命周期-收口设计.md | 第一、二批与 rc.13 原生工作区历史闭环均已发布并完成 Stable 验收 | G4.1–G4.3 候选中心与归档/主动换绑已上线；换绑前原生会话预检、旧位置历史和新工作区继续入口已随 rc.13 生产验收 |
 | design/多线任务排期总表.md | v1.1 历史排期输入 | A/B/C/D5/迁移/记忆/客户端依赖链；当前执行顺序以 NEXT 顶部 G0–G4 为准 |
 | design/D5线-统一工具层-D5-0任务简报.md | 已盖章的历史任务输入 | D5-0a/D5-0b 的 schema、resolver、实例盘点与 identity_conflict 边界 |
 
@@ -104,10 +104,10 @@
 
 | 文档 | 状态 | 说明 |
 |---|---|---|
-| NEXT.md | 活跃（暂留根部） | DSH canonical rebind 与原生工作区历史源码合入已完成；当前下一门是 rc.13 本地候选，发布/安装、量化、食溯仍分门授权 |
+| NEXT.md | 活跃（暂留根部） | DSH canonical rebind 与 rc.13 原生工作区历史生产验收已完成；当前下一门是量化项目 canonical 迁移只读预检，真实迁移/rebind 与食溯仍分门授权 |
 | HANDOVER_TO_DEEPSEEK_HARNESS.md | 活跃 | 总交接入口（compat.json handoverEntry） |
 | HANDOFF_WORKBENCH_LOCAL_FILE_IMAGE.md | 留档 | 工作台本地文件识图交接 |
-| PROGRESS.md | 活跃 | 进度与机器验收记录；当前追加 DSH R3 目录切换、Stable web profile 修复、人工 rebind、原生会话连续性 `1d00c8f` 与治理合入证据 |
+| PROGRESS.md | 活跃 | 进度与机器验收记录；当前追加 rc.13 Release、Stable generation/文件完整性、旧位置历史与 canonical 新会话人工验收及量化只读预检指针 |
 | handoff/项目统合-迁移-工具架构-整合材料包-2026-08-25.md | 输入材料，非权威 | K3 讨论包；只作溯源与对照，任何状态须经 governance index/current-state 重新确认 |
 | HANDOVER_*（食溯侧在 meal_tracker 项目内） | — | 各项目自己的 docs 治理按 D3 同构执行 |
 
@@ -134,7 +134,7 @@
 |---|---|---|
 | DEVLOG.md | 活跃 | 开发日志（190K，追加式） |
 | 经验.md | 活跃 | 经验沉淀 |
-| BLOCKED.md | 活跃 | 活跃阻断与已关闭项；DSH rebind 和原生会话连续性源码阻断已关闭，rc.13 生产门、量化/食溯与删除继续分门授权 |
+| BLOCKED.md | 活跃 | 活跃阻断与已关闭项；DSH rebind 和 rc.13 原生会话连续性生产阻断已关闭，量化/食溯真实迁移、删除与 B1b 继续分门授权 |
 
 ## 附件（attachments/）与既有子目录
 
