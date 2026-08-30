@@ -15,8 +15,8 @@ import {
 import { UpdateService } from '../src/update-service.js'
 
 const PROJECT_CONTROL = '@cyrus/dsh-project-control'
-const BASELINE_VERSION = '0.1.0-rc.13'
-const CANDIDATE_VERSION = '0.1.0-rc.14'
+const BASELINE_VERSION = '0.1.0-rc.14'
+const CANDIDATE_VERSION = '0.1.0-rc.15'
 
 function parseArgs(argv) {
   const result = {}
@@ -115,7 +115,7 @@ async function main() {
     evidence.assetSize = fixture.entry.assetSize
     evidence.compatibleHarnessCommit = fixture.index.compatibleHarness.commit
 
-    temporaryRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-rc14-empty-document-upgrade-'))
+    temporaryRoot = await mkdtemp(join(tmpdir(), 'dsh-project-control-rc15-document-binding-hash-acceptance-'))
     const userData = join(temporaryRoot, 'user-data')
     const dshHome = join(temporaryRoot, 'dsh-home')
     const baselineRoot = await createBaselineRoot(repositoryRoot, temporaryRoot)
@@ -223,7 +223,7 @@ async function main() {
     checks.temporaryProfileRemoved = temporaryRoot === undefined || !existsSync(temporaryRoot) ? 'pass' : 'fail'
     await writeJsonExclusive(receiptPath, {
       schemaVersion: 1,
-      task: 'Project Control 0.1.0-rc.14 empty-document managed upgrade isolated generation acceptance',
+      task: 'Project Control 0.1.0-rc.15 linked-legacy document binding hash acceptance isolated generation acceptance',
       startedAt,
       completedAt: new Date().toISOString(),
       outcome,
