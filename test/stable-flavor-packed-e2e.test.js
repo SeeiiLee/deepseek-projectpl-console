@@ -26,6 +26,8 @@ import { PERSONAL_PLUGINS } from '../src/personal-plugins.js'
 import { UpdateService } from '../src/update-service.js'
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+const packedLifecycleRootOverride = process.env.DSH_PACKED_LIFECYCLE_ROOT?.trim()
+const lifecycleRoot = packedLifecycleRootOverride ? resolve(packedLifecycleRootOverride) : repoRoot
 const COMMIT = 'b150a551b8d465e31e418e1b2eaf5e79bbb7d28e'
 const owned = []
 afterEach(() => {
@@ -220,15 +222,16 @@ function terminateTree(pid) {
 }
 
 test('stable packed Electron/Harness external plugin closure activates, restarts ACTIVE, rolls back to builtin', async () => {
-  const logicalTaskId = resolvePackedLogicalTaskId({ projectRoot: repoRoot })
-  const lifecycle = reconcileManagedPackageSets({ projectRoot: repoRoot })
+  const logicalTaskId = resolvePackedLogicalTaskId({ projectRoot: lifecycleRoot, stateRoot: repoRoot })
+  const lifecycle = reconcileManagedPackageSets({ projectRoot: lifecycleRoot })
   ensureNonDestructiveLifecycleCycle({
-    projectRoot: repoRoot,
+    projectRoot: lifecycleRoot,
     projectId: lifecycle.projectId,
     operationId: `${logicalTaskId}-preflight`,
   })
   const packageSet = ensureManagedPackageSet({
-    projectRoot: repoRoot,
+    projectRoot: lifecycleRoot,
+    sourceRoot: repoRoot,
     logicalTaskId,
   })
   const executable = packageSet.exePath

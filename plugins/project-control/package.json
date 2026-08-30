@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-project-control",
   "description": "项目控制台：扫描、审阅并只读关联现有项目，保留真实数据库状态与项目列表。",
-  "version": "0.1.0-rc.15",
+  "version": "0.1.0-rc.16",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -128,7 +128,7 @@
       "sha256": {
         "lib/client.js": "fb84ca9b486cd530f2e5d21cb8e3551a71fa5db6c119f609e0fc8215f9db8574",
         "lib/client.js.map": "cb3852866fc063fa3a89f1c5f05450bc8189f654b7ac8a3ed04a2805ec5aafee",
-        "lib/index.js": "9b7a0f5b6625271885f5be2b9060ddc142141eecfe2169c9e0e711d747ac67b5",
+        "lib/index.js": "40111f45967ae9942a2e520fa5ec814445e32da11c23c9fe7364cd5ce21cc2cf",
         "lib/runtime-schemas/external-command-envelope.schema.json": "1eca3c79b90dbb4c9a313ab8e004eb1c8d87ffa2daeaa1698e06fb33c080f638",
         "lib/runtime-schemas/lifecycle-command-envelope.schema.json": "7ab0598a141df3337a86a9f23e4eaec906b333012a2999c77fba3a9c1b77d954",
         "lib/runtime-schemas/lifecycle-command-result.schema.json": "fc812375b2bc5655f02f1a4d699f9ec0b013d243e570ccb953b85a4c1f340b2f",
@@ -154,7 +154,7 @@
       }
     },
     "release": {
-      "batch": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE",
+      "batch": "B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-CLOSURE",
       "source": "a-line-generation-channel"
     }
   }

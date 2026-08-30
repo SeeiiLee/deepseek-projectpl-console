@@ -417,7 +417,7 @@ function assertNoReparseDescendants(root) {
   }
 }
 
-function validateObjectRecord(paths, projectId, object) {
+function validateObjectRecord(paths, projectId, object, { skipQuarantinedPackageSetTree = false } = {}) {
   if (typeof object !== 'object' || object === null || !OBJECT_ID_PATTERN.test(object.objectId ?? '')) throw new Error('Local objectId is invalid.')
   if (!VALID_STATUSES.has(object.status)) throw new Error(`Local object status is invalid: ${String(object.status)}`)
   if (!VALID_RETENTION_CLASSES.has(object.retentionClass)) throw new Error(`Local object retentionClass is invalid: ${String(object.retentionClass)}`)
@@ -445,10 +445,32 @@ function validateObjectRecord(paths, projectId, object) {
     if (typeof hash !== 'string' || marker.packageSetTreeHash !== hash || object.objectId !== `pkg_${hash}`) {
       throw new Error('Package-set marker or tree hash does not match its registry record.')
     }
-    const tree = hashTree(join(absolute, 'win-unpacked'))
-    if (tree.hash !== hash) throw new Error('Package-set complete tree bytes no longer match the registered hash.')
+    if (skipQuarantinedPackageSetTree && object.status !== 'QUARANTINED') {
+      throw new Error('Package-set tree validation can only be skipped for QUARANTINED evidence.')
+    }
+    if (!skipQuarantinedPackageSetTree) {
+      const tree = hashTree(join(absolute, 'win-unpacked'))
+      if (tree.hash !== hash) throw new Error('Package-set complete tree bytes no longer match the registered hash.')
+    }
   }
-  return { absolute, markerPath, markerSha256: sha256File(markerPath) }
+  return { absolute, markerPath, marker, markerSha256: sha256File(markerPath) }
+}
+
+function validateQuarantinedPackageSetRecord(paths, projectId, object, registry) {
+  const live = registry.objects.filter(item => item.deletedAt === undefined)
+  const objectIdMatches = live.filter(item => item.objectId === object.objectId)
+  const pathMatches = live.filter(item => item.relativePath === object.relativePath)
+  if (objectIdMatches.length !== 1 || pathMatches.length !== 1 || object.kind !== 'package-set' || object.status !== 'QUARANTINED') {
+    throw new Error(`QUARANTINED package-set registry identity is ambiguous or invalid: ${String(object.objectId)}`)
+  }
+  const verified = validateObjectRecord(paths, projectId, object, { skipQuarantinedPackageSetTree: true })
+  if (verified.marker?.schemaVersion !== 'managed-package-set/v1'
+    || verified.marker.projectId !== projectId
+    || verified.marker.objectId !== object.objectId
+    || object.markerSha256 !== verified.markerSha256) {
+    throw new Error(`QUARANTINED package-set marker identity or hash mismatch: ${String(object.objectId)}`)
+  }
+  return verified
 }
 
 function coreObjectIdentity(object) {
@@ -696,7 +718,9 @@ export function createCleanupPlan({ projectRoot, projectId, operationId, now = n
       else if (hoursBetween(retentionReferenceTime(object), now) <= rule.minimumAgeHours) reason = 'within-minimum-age'
       else if (rule.requireIssueClosed && object.issueClosed !== true) reason = 'issue-open'
     }
-    const verified = validateObjectRecord(paths, projectId, object)
+    const verified = object.kind === 'package-set' && object.status === 'QUARANTINED'
+      ? validateQuarantinedPackageSetRecord(paths, projectId, object, registry)
+      : validateObjectRecord(paths, projectId, object)
     if (reason !== undefined) {
       retained.push({ objectId: object.objectId, relativePath: object.relativePath, reason })
     } else {
@@ -935,7 +959,13 @@ export function applyCleanupPlan({ projectRoot, projectId, planPath, now = new D
       }
       for (const retained of plan.retained) {
         const object = registry.objects.find(item => item.objectId === retained.objectId)
-        if (object?.deletedAt === undefined) validateObjectRecord(paths, projectId, object)
+        if (object?.deletedAt === undefined) {
+          if (object.kind === 'package-set' && object.status === 'QUARANTINED') {
+            validateQuarantinedPackageSetRecord(paths, projectId, object, registry)
+          } else {
+            validateObjectRecord(paths, projectId, object)
+          }
+        }
       }
     }
     const deleted = plan.targets.map(target => ({ objectId: target.objectId, relativePath: target.relativePath, expectedBytes: target.expectedBytes }))

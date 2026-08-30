@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
@@ -16,6 +16,7 @@ import {
   installRetentionPolicy,
   readLocalRegistry,
   registerLocalObject,
+  updateLocalObjectLifecycle,
 } from '../scripts/local-lifecycle.mjs'
 
 const PROJECT_ID = 'prj_01a0082e-fea8-7d6f-b6c2-08a259fba389'
@@ -235,6 +236,193 @@ test('ACTIVE, QUARANTINED and PINNED objects never enter a cleanup target', () =
     const plan = createCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, operationId: 'plan-states', now: NOW })
     assert.equal(plan.targets.length, 0)
     assert.deepEqual(plan.retained.map(item => item.reason).sort(), ['status-ACTIVE', 'status-PINNED', 'status-QUARANTINED'])
+  } finally {
+    cleanup(fixture)
+  }
+})
+
+test('cleanup planning retains registered QUARANTINED package-set evidence after known tree drift', () => {
+  const fixture = makeProject()
+  try {
+    bootstrapLifecycle(fixture)
+    const pkg = registerPackageSet(fixture)
+    updateLocalObjectLifecycle({
+      projectRoot: fixture.projectRoot,
+      projectId: PROJECT_ID,
+      objectId: pkg.object.objectId,
+      status: 'QUARANTINED',
+      lastUsedAt: NOW,
+    })
+    writeFileSync(join(pkg.root, 'win-unpacked', 'known-incident.log'), 'known quarantined drift\n', 'utf8')
+
+    const plan = createCleanupPlan({
+      projectRoot: fixture.projectRoot,
+      projectId: PROJECT_ID,
+      operationId: 'plan-quarantined-known-drift',
+      now: NOW,
+    })
+    assert.equal(plan.targets.some(item => item.objectId === pkg.object.objectId), false)
+    assert.equal(plan.retained.some(item => item.objectId === pkg.object.objectId && item.reason === 'status-QUARANTINED'), true)
+    const receipt = applyCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, planPath: plan.path, now: NOW })
+    assert.equal(receipt.status, 'applied-and-verified')
+    assert.deepEqual(receipt.deleted, [])
+    assert.equal(receipt.retainedVerified, 1)
+    assert.equal(existsSync(pkg.root), true)
+  } finally {
+    cleanup(fixture)
+  }
+})
+
+test('zero-delete apply resumes a failed journal after QUARANTINED marker restoration', () => {
+  const fixture = makeProject()
+  try {
+    bootstrapLifecycle(fixture)
+    const pkg = registerPackageSet(fixture)
+    updateLocalObjectLifecycle({
+      projectRoot: fixture.projectRoot,
+      projectId: PROJECT_ID,
+      objectId: pkg.object.objectId,
+      status: 'QUARANTINED',
+      lastUsedAt: NOW,
+    })
+    writeFileSync(join(pkg.root, 'win-unpacked', 'known-incident.log'), 'known quarantined drift\n', 'utf8')
+    const plan = createCleanupPlan({
+      projectRoot: fixture.projectRoot,
+      projectId: PROJECT_ID,
+      operationId: 'plan-quarantined-resume',
+      now: NOW,
+    })
+    const markerPath = join(pkg.root, 'package-set.json')
+    const markerBytes = readFileSync(markerPath)
+    const marker = JSON.parse(markerBytes.toString('utf8'))
+    writeJson(markerPath, { ...marker, projectId: 'prj_01a0000-apply-marker-drift' })
+
+    assert.throws(
+      () => applyCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, planPath: plan.path, now: NOW }),
+      /marker|identity|hash/iu,
+    )
+    const journalDir = join(fixture.localRoot, 'ledgers', 'cleanup-operations', plan.operationId)
+    assert.equal(readdirSync(journalDir).length, 1)
+    assert.equal(existsSync(pkg.root), true)
+
+    writeFileSync(markerPath, markerBytes)
+    const receipt = applyCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, planPath: plan.path, now: NOW })
+    assert.equal(receipt.status, 'applied-and-verified')
+    assert.deepEqual(receipt.deleted, [])
+    assert.equal(readdirSync(journalDir).length, 2)
+    assert.equal(existsSync(pkg.root), true)
+  } finally {
+    cleanup(fixture)
+  }
+})
+
+test('cleanup planning rejects QUARANTINED package-set evidence after marker identity drift', () => {
+  const fixture = makeProject()
+  try {
+    bootstrapLifecycle(fixture)
+    const pkg = registerPackageSet(fixture)
+    updateLocalObjectLifecycle({
+      projectRoot: fixture.projectRoot,
+      projectId: PROJECT_ID,
+      objectId: pkg.object.objectId,
+      status: 'QUARANTINED',
+      lastUsedAt: NOW,
+    })
+    const markerPath = join(pkg.root, 'package-set.json')
+    const marker = JSON.parse(readFileSync(markerPath, 'utf8'))
+    writeJson(markerPath, { ...marker, projectId: 'prj_01a0000-marker-identity-drift' })
+
+    assert.throws(
+      () => createCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, operationId: 'plan-quarantined-marker-drift', now: NOW }),
+      /marker|identity|hash/iu,
+    )
+  } finally {
+    cleanup(fixture)
+  }
+})
+
+test('cleanup planning keeps complete-tree validation for PINNED and ACTIVE package sets', () => {
+  for (const status of ['PINNED', 'ACTIVE']) {
+    const fixture = makeProject()
+    try {
+      bootstrapLifecycle(fixture)
+      const pkg = registerPackageSet(fixture)
+      updateLocalObjectLifecycle({
+        projectRoot: fixture.projectRoot,
+        projectId: PROJECT_ID,
+        objectId: pkg.object.objectId,
+        status,
+        lastUsedAt: NOW,
+      })
+      writeFileSync(join(pkg.root, 'win-unpacked', 'unexpected-drift.bin'), status, 'utf8')
+
+      assert.throws(
+        () => createCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, operationId: `plan-${status.toLowerCase()}-tree-drift`, now: NOW }),
+        /tree bytes.*registered hash/iu,
+      )
+    } finally {
+      cleanup(fixture)
+    }
+  }
+})
+
+test('cleanup apply keeps complete-tree validation for retained PINNED and ACTIVE package sets', () => {
+  for (const status of ['PINNED', 'ACTIVE']) {
+    const fixture = makeProject()
+    try {
+      bootstrapLifecycle(fixture)
+      const pkg = registerPackageSet(fixture)
+      updateLocalObjectLifecycle({
+        projectRoot: fixture.projectRoot,
+        projectId: PROJECT_ID,
+        objectId: pkg.object.objectId,
+        status,
+        lastUsedAt: NOW,
+      })
+      const plan = createCleanupPlan({
+        projectRoot: fixture.projectRoot,
+        projectId: PROJECT_ID,
+        operationId: `apply-${status.toLowerCase()}-tree-drift`,
+        now: NOW,
+      })
+      writeFileSync(join(pkg.root, 'win-unpacked', 'unexpected-apply-drift.bin'), status, 'utf8')
+
+      assert.throws(
+        () => applyCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, planPath: plan.path, now: NOW }),
+        /tree bytes.*registered hash/iu,
+      )
+      assert.equal(existsSync(pkg.root), true)
+    } finally {
+      cleanup(fixture)
+    }
+  }
+})
+
+test('cleanup planning rejects ambiguous live registry identity before preserving QUARANTINED evidence', () => {
+  const fixture = makeProject()
+  try {
+    bootstrapLifecycle(fixture)
+    const pkg = registerPackageSet(fixture)
+    updateLocalObjectLifecycle({
+      projectRoot: fixture.projectRoot,
+      projectId: PROJECT_ID,
+      objectId: pkg.object.objectId,
+      status: 'QUARANTINED',
+      lastUsedAt: NOW,
+    })
+    const registry = readLocalRegistry({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID })
+    const duplicate = { ...registry.objects.find(item => item.objectId === pkg.object.objectId), objectId: 'pkg_duplicate_registry_identity' }
+    writeJson(join(fixture.localRoot, 'ledgers', 'local-object-registry', `${String(registry.revision + 1).padStart(12, '0')}.json`), {
+      ...registry,
+      revision: registry.revision + 1,
+      updatedAt: NOW,
+      objects: [...registry.objects, duplicate],
+    })
+
+    assert.throws(
+      () => createCleanupPlan({ projectRoot: fixture.projectRoot, projectId: PROJECT_ID, operationId: 'plan-quarantined-ambiguous-registry', now: NOW }),
+      /registry.*ambiguous|unique/iu,
+    )
   } finally {
     cleanup(fixture)
   }

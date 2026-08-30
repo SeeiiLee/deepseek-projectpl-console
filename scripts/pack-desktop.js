@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { delimiter, isAbsolute, join, relative, resolve } from 'node:path'
 import { writeBuildReceipt } from './build-receipt.mjs'
+import { resolveManagedPackageSetsRoot } from './package-set.mjs'
 
 // Flavor-aware packager. Builds the same tree under two completely separate
 // identities:
@@ -26,7 +27,9 @@ const defaultArtifactOutput = join(projectRoot, flavor === 'dev' ? 'artifacts-de
 const outputOverride = process.env.DSH_ARTIFACT_DIR?.trim()
 const artifactOutput = outputOverride ? resolve(outputOverride) : defaultArtifactOutput
 if (outputOverride) {
-  const managedRoot = join(resolve(projectRoot, '..'), 'local', 'package-sets', '.staging')
+  const managedProjectRootOverride = process.env.DSH_MANAGED_PROJECT_ROOT?.trim()
+  const managedProjectRoot = managedProjectRootOverride ? resolve(managedProjectRootOverride) : projectRoot
+  const managedRoot = join(resolveManagedPackageSetsRoot(managedProjectRoot), '.staging')
   const rel = relative(managedRoot, artifactOutput)
   if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
     throw new Error(`DSH_ARTIFACT_DIR must be an operation-owned path below ${managedRoot}.`)
