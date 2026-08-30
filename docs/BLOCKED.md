@@ -1,6 +1,6 @@
 # Blocked
 
-## 当前门禁（2026-08-30，文档哈希接受产品代码已合入；rc.15 本地候选为当前门）
+## 当前门禁（2026-08-30，Project Control rc.16 已发布；Stable 安装与食溯 NEXT 精确接受为当前门）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
@@ -16,12 +16,12 @@
 - **食溯 R3 正式本地接入阻断已关闭**：本地对象导入后，以一次 prepare/commit 原子事务把正式 `master` 和 5 个 detached worktree HEAD 映射到清洁等价提交 `a278843dae95c08285f2c03c535ef6eba5f86d78`，并保留正确权威快照 ref `refs/dsh/candidates/g4-meal-tracker-clean-history-r3@cc23e344...`。六个 index/status hash 均未变化，0 锁残留，receipt SHA-256=`43221623...72238`。
 - **食溯远端 advertised `master` 替换已关闭，但不能冒充 GitHub 物理清除完成**：远端原 tip `e2dab202...` 经唯一一次精确 `force-with-lease` 替换为 `a278843d...`；当前公开查询只有 `master`、无 tag、无 advertised `refs/pull/*`，主分支 90 个可达提交的禁止路径、tip 路径与凭据位置均为 0。GitHub 缓存提交页、内部 PR refs、fork/clone 和服务器对象是否已清除仍未核验；旧 tip 也按回滚合同保留于本地恢复 ref，未 GC/prune。receipt SHA-256=`a7356ecd...9281ca4`。
 - **食溯 GitHub 敏感数据深层清除继续外部等待，但不再阻断迁移**：任务自有 bare probe 各只尝试一次，GitHub 均成功按 SHA 返回旧 First Changed Commit `d4b9bb6...` 和旧 tip `e2dab202...`；advertised PR refs=0、affected PR count=0、LFS 未使用。Cyrus 已提交 Support 工单 [#4708849](https://support.github.com/ticket/personal/0/4708849)，状态 open。服务器 GC、内部引用/fork 和缓存视图清除仍未验证，故不得宣称事故已关闭；但 Cyrus 当前决定将其作为异步收尾，不再作为迁移依赖。不得再次 force push 或清理本地恢复 ref。
-- **食溯物理迁移/rebind 的基础盘点已完成，但真实迁移继续暂停**：尚未建立 `F:\Projects\meal-tracker` 标准三分区，未移动当前物理主源，Stable binding 仍未切换。2026-08-30 只读重冻结确认目标为空、六工作树均为清洁 HEAD `a278843...`；27 个 tracked 旧绝对路径引用已在任务分支分类并完成活动入口回归。下一步不是移动，而是先交付 rc.15 并关闭官方文档哈希门；之后才可恢复 managed upgrade、原子移动、linked-worktree 指针修复和唯一 rebind。对齐 receipt SHA-256=`21042afe...05b0`。
-- **食溯迁移新增一条已定位、可关闭的文档治理门**：旧路径活动入口与回归已经收口；官方 `prepare-upgrade` 发现 DEVLOG、NEXT、PRD 的登记哈希落后于已验收权威合并，按合同停止且未提交升级。产品提交 `cf479676` 已提供 linked-legacy 专用 Host 接受事务，但 Stable rc.14 尚不具备该能力。当前只允许制作一份 rc.15 本地候选；发布、安装、真实哈希接受与再次 `prepare-upgrade` 仍分别待授权，迁移/rebind 在这些门关闭前保持暂停。
+- **食溯物理迁移与跨 Harness locator 阻断已关闭**：标准三分区、managed upgrade、104,423 文件原子物理迁移、六工作树指针修复、唯一 Stable rebind 以及 Codex/Kimi canonical locator 对齐均已完成；revision=4、唯一 active root=`F:\Projects\meal-tracker\workspace`。禁止重复 rebind 或把历史迁移门重新写成当前阻断。
+- **食溯仅剩一份状态文档绑定门，产品发布已完成**：`docs/NEXT.md` 从 `0f777907...` 到 `86395da2...` 的唯一变化仍未写入 Stable。Project Control rc.16 的修复与 packed 隔离闭环已提交为 `965f87a`，并发布为 `plugins-v2026.08.30.2`；Stable 仍为 rc.15。只有另行授权安装并确认精确 rc.16 资产后，才可通过官方 Host 单次接受该 NEXT 变化；禁止直接改库或扩大变化集合。
 - **食溯审核生成物仍受保护**：`outputs/**` 的 29 个文件 / 35,047,644 bytes 原地保留且未纳入 Git；未来 `F:\Projects\meal-tracker\local\evidence` 迁入只登记未执行，移动、复制或删除仍需独立清单和授权。
 - **项目搜索存在非阻断体验缺口**：当前只对 `project_id` 与已存名称做不区分大小写的字面子串匹配；`亚马逊`/`亚马` 命中，`Amazon` 不命中。别名、翻译和拼音搜索尚未实现，但不改变项目身份，也不阻断 rc.12 既定验收。
 - **B1b 原审批中心任务继续暂停，前置增加 UI 地基任务**：食溯迁移闭环后先执行 `B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B`，只稳定项目身份、导航、列表/详情、搜索筛选、状态反馈和危险操作交互；不得提前进入 migration 0010、审批数据库、文件摄入或审批收件箱。UI 地基验收后再单独开启 B1b。
-- **DSH 白名单外并行未跟踪内容继续受保护**：`demos/`、`release-staging/`、`tmp/`、`plugins/ui-craft/` 以及本轮门禁期间继续出现的多个未跟踪 Skill/plugin 目录均来自本任务之外；本任务未创建、修改、提交或清理。本次授权只更新治理文件与本地 receipt，不授权 push/force、修改 GitHub 仓库、食溯源/refs/worktree 写入、Stable 写入、迁移/rebind、审核生成物移动、恢复历史清理、物理删除、instance detach 或 B1b。
+- **DSH 白名单外并行未跟踪内容继续受保护**：`demos/`、`release-staging/`、`tmp/`、`plugins/ui-craft/` 以及本轮门禁期间继续出现的多个未跟踪 Skill/plugin 目录均来自本任务之外；rc.16 产品提交与 docs-only 提交均精确排除这些路径。本次授权已消费于代码复核、精确提交、canonical 合入、无 force push、单插件 Release 和治理对齐；仍不授权 Stable 写入、食溯真实 NEXT 接受、迁移/rebind、审核生成物移动、恢复历史清理、物理删除、instance detach 或 B1b。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 
@@ -49,7 +49,7 @@ Cyrus 已分别授权并完成 B-G4-0/G2-P2 的本地治理、代码、测试、
 
 - **Stable 物理迁移与换绑不再阻断**：官方 Host 只读核验确认食溯 `project_id` 不变、registrationMode=`managed`、lifecycle=`active`、revision=`4`，唯一 active root 为 `F:\Projects\meal-tracker\workspace`；旧 QClaw location 为 inactive，rebind 事件 `evt_01a052aa-6c13-7a7b-ba7c-f4e554f9321f` 已记录。没有第二次 rebind，也没有直接访问数据库。
 - **Codex/Kimi 外部定位器已由 Cyrus 人工完成**：两端均已对齐 `F:\Projects\meal-tracker\workspace`，没有新建第二项目身份、移动文件、改写旧会话或建立 junction。
-- **仅一份 managed 文档绑定待产品交付后刷新**：食溯治理收口将 `docs/NEXT.md` 从已接受哈希 `0f777907...` 更新为 `86395da2...`。rc.15 仅允许 linked-legacy，面对 managed 项目返回 `MODE_CONFLICT` 是当前真实产品缺口。提交 `2588b6b` 已补齐 manifest 身份/冻结哈希复核以及 binding + mirror 同事务更新；但在 rc.16 发布、安装并另行授权真实 Host 写入前，禁止接受这份 NEXT、直接改 Stable 数据库或重复 rebind。
+- **仅一份 managed 文档绑定待 Stable 安装后刷新**：食溯治理收口将 `docs/NEXT.md` 从已接受哈希 `0f777907...` 更新为 `86395da2...`。rc.16 已发布但尚未安装；在精确资产安装验收和真实 Host 写入分别获得授权前，禁止接受这份 NEXT、直接改 Stable 数据库或重复 rebind。
 - **GitHub Support `#4708849` 继续异步但不阻断开发**：它只影响旧敏感对象的服务端最终销毁证明；不得把等待 Support 重新升级为本地迁移、UI 地基或 B1b 的前置门。
 
 ## 历史 A 线状态（已完成并冻结）

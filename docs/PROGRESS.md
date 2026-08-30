@@ -368,6 +368,14 @@
 - Project Control `208/208`、全插件 manifest/lock/typecheck/syntax/tests、checkout、launch、governance 与 diff 门禁通过；正式 `npm test` 的产品测试全部通过，packed 测试按治理合同拒绝任务 worktree，Electron `EBUSY` 单测复跑通过。收据=`../local/receipts/op_b_g4_managed_document_binding_acceptance_closure_20260830_01.json`，SHA-256=`d153ca126f3f9e659ecf8ddc7f4222807dc62e9b1676f06a79bf82cbf643af42`。
 - 产品提交 `2588b6bd07a3cbfafd5a218b33dd6132d67a7d14` 精确包含 4 个 Project Control 文件，并从 `d935f30e4fe8ef6934bff89de96ee4ae6db55191` 严格 ff-only 合入 canonical；既有 UI 实验目录和 `release-staging/` 未纳入提交。下一门为一份 rc.16 本地单插件候选与 canonical governed packed；push、Release、Stable 安装和真实食溯 NEXT 接受仍未授权。
 
+## 2026-08-30 Project Control rc.16 packed 隔离、提交与单插件发布
+
+- 代码复核确认 QUARANTINED package-set 只放宽已登记事故对象的事故前整树哈希，不放宽唯一 registry 身份、project_id、objectId、路径与 marker；PINNED/ACTIVE、删除目标、未知对象和 marker 漂移继续严格失败关闭。source checkout 与 canonical lifecycle checkout 分离，避免 packed 验收再次把生成物污染产品提交。
+- Project Control `208/208` 全绿、skipped/todo=0；非 packed 正式套件有效 `352/352`，唯一首次 `shortcuts-electron` Windows `spawn EBUSY` 定向重跑 `1/1`；launch、governance `22/22`、syntax 与 diff 门禁通过。governed packed 在干净 task worktree 中唯一一次通过，receipt=`../local/receipts/op_b_g4_rc16_packed_checkout_isolation_closure_20260830_01.json`，SHA-256=`7ba7c002040c1782958de0ebe36165106a2c3b3a31485c6f9a6c591a6ae9784d`。
+- 产品提交 `965f87ab1b8436547fa7039762a1ec3b3ea45b4a` 精确包含 10 个 rc.16 源码/测试/版本文件；canonical 从 `2588b6b` 严格 ff-only 合入。既有 `release-staging/`、UI/设计实验目录、`tmp/` 和 task worktree 生成物均未进入产品提交。
+- 远端 branch 与新 tag `plugins-v2026.08.30.2` 均指向 `965f87a`，无 force、无覆盖；公开 Release [plugins-v2026.08.30.2](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.30.2) ID=`379317536`，仅四项 Project Control 资产。tgz=`cyrus-dsh-project-control-0.1.0-rc.16.tgz`，313,426 bytes，SHA-256=`7eaafc2080ecac528755c4aa19f2ef2f10f931b6141ffd7ce961025d5295dd7f`；四项资产均独立下载并与本地字节及 GitHub API digest 一致。
+- 发布 receipt=`../local/receipts/op_b_g4_managed_document_binding_acceptance_rc16_commit_push_release_20260830_01.json`，SHA-256=`8952b7d663583d00e8cb42bc190f2b62007fce2be300c479ddeb0c88765b0233`。本轮未安装或写 Stable、未接受食溯 NEXT、未重复 rebind、未进入 UI/B1b。
+
 ## 2026-08-24 v0.4.4 生产缺陷修复（main→helper 外部插件根未注入）
 - 目标：修复 v0.4.3 真实 Stable 重启后 pending 不激活（helper 拿不到 userData/plugins-external），产出 v0.4.4 候选与红→绿真实进程证据。
 - 顺序：①基线 727/727（skipped=0）②写 packed 回归（不注入 DSH_PERSONAL_PLUGINS_EXTERNAL）在旧代码红 ③修复 resolveExternalRoot userData 优先 + main 注入 helper + stable 缺路径 fail-closed ④全量门禁 + 构建 v0.4.4 Stable 候选 ⑤文档/评估 minClient；最终全量 731/731（新增 4 项）。

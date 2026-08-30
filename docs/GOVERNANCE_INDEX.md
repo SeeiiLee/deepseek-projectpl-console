@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结。Project Control `0.1.0-rc.15` 已进入 Stable。食溯已完成旧文档哈希接受、managed upgrade、104,423 文件原子物理迁移、唯一 Host rebind，以及 Cyrus 人工完成的 Codex/Kimi canonical locator 对齐；Stable 仍为 revision=4、唯一 active root=`F:\Projects\meal-tracker\workspace`。rc.15 对 managed 项目的 `accept-current` 正确失败关闭，因此状态化 `docs/NEXT.md` 的唯一剩余绑定变化尚未写入 Stable。产品提交 `2588b6bd07a3cbfafd5a218b33dd6132d67a7d14` 已在同一官方事务中补齐 managed manifest/mirror 原子接受并 ff-only 合入 canonical；当前下一任务是只制作 Project Control rc.16 本地单插件候选并执行受治理 packed 验收。push、Release、Stable 安装与真实食溯 NEXT 接受仍是后续独立门；完成后才进入 UI 地基，再进入 B1b。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结。Stable 仍运行 Project Control `0.1.0-rc.15`。食溯已完成旧文档哈希接受、managed upgrade、104,423 文件原子物理迁移、唯一 Host rebind，以及 Cyrus 人工完成的 Codex/Kimi canonical locator 对齐；Stable 仍为 revision=4、唯一 active root=`F:\Projects\meal-tracker\workspace`。managed `accept-current` 修复与 packed 生命周期隔离已精确提交为 `965f87ab1b8436547fa7039762a1ec3b3ea45b4a`，无 force 推送并发布为 Project Control `0.1.0-rc.16` / `plugins-v2026.08.30.2`。当前下一任务是另行授权后的 rc.16 Stable 安装验收，并只通过官方 Host 接受食溯 `docs/NEXT.md` 唯一冻结变化；尚未安装、尚未写 Stable。完成后才进入 UI 地基，再进入 B1b。
 
 ## 权威链
 

@@ -1,18 +1,18 @@
 # Next Development
 
-状态：**Project Control rc.15 已发布、安装并验收；食溯迁移、单次 rebind 与 Codex/Kimi locator 对齐均已完成；managed 文档哈希接受修复已合入 canonical，当前制作 rc.16 本地候选并执行 packed**
+状态：**Project Control rc.16 已完成代码复核、packed、精确提交、push 与单插件 Release；Stable 仍为 rc.15，下一门是另行授权的 rc.16 安装验收与食溯唯一 NEXT 哈希接受**
 当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.15 active；食溯 `prj_01a0109b-0dd8-7bfb-be07-ee80c768640d` 为 managed/active、revision=4，唯一 active root=`F:\Projects\meal-tracker\workspace`；旧 QClaw 路径已作为 inactive 历史位置保留**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，产品 HEAD=`2588b6bd07a3cbfafd5a218b33dd6132d67a7d14`。rc.15 Release=`plugins-v2026.08.30.1`，唯一 Project Control tgz SHA-256=`ab12d00aae86329f7825db4020e187a8f6a200ce4e22e9b58f709b1e5b0f515e`。旧 DSH 历史目录继续保留；`demos/`、既有 `release-staging/`、`tmp/` 与未跟踪 UI/插件实验目录继续排除，不清理、不提交
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，rc.16 产品 HEAD=`965f87ab1b8436547fa7039762a1ec3b3ea45b4a`。rc.16 Release=`plugins-v2026.08.30.2`（ID `379317536`），唯一 Project Control tgz 313,426 bytes，SHA-256=`7eaafc2080ecac528755c4aa19f2ef2f10f931b6141ffd7ce961025d5295dd7f`。旧 DSH 历史目录继续保留；`demos/`、既有 `release-staging/`、`tmp/` 与未跟踪 UI/插件实验目录继续排除，不清理、不提交
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-30 当前唯一执行顺序**：① rc.15 Stable、食溯旧文档哈希、managed upgrade、104,423 文件物理迁移、唯一 rebind 与 Codex/Kimi locator 已完成；② managed `accept-current` 修复已提交为 `2588b6b` 并 ff-only 合入 canonical；③ 当前只版本化并制作一份 rc.16 单插件候选，从 canonical 复用或最多新增一套内容寻址 package-set 完成 packed；④ push/Release、Stable 安装和真实食溯 NEXT 接受分别另行授权；⑤ 绑定收口后进入 UI 地基，验收后才恢复 B1b。
+> **2026-08-30 当前唯一执行顺序**：① rc.15 Stable、食溯旧文档哈希、managed upgrade、104,423 文件物理迁移、唯一 rebind 与 Codex/Kimi locator 已完成；② managed `accept-current` 与 rc.16 packed 隔离闭环已提交为 `965f87a`；③ rc.16 已无 force push 并发布单插件 Release；④ 当前暂停在 Stable 安装和真实食溯 NEXT 接受之前，两项均需另行授权并保持精确失败关闭；⑤ 绑定收口后进入 UI 地基，验收后才恢复 B1b。
 
-## 当前门：B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-LOCAL-CANDIDATE
+## 当前门：B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-STABLE-ACCEPTANCE-AND-MEAL-NEXT-CLOSURE
 
 - Stable rebind 已完成且只发生一次：revision `3 → 4`，事件 `evt_01a052aa-6c13-7a7b-ba7c-f4e554f9321f`；`project_id`、managed manifest、路径历史与审计链均保持。
 - Codex 与 Kimi 已由 Cyrus 人工对齐 canonical workspace；旧会话历史保留，未改写原始日志。
 - 食溯 `docs/NEXT.md` 从旧已接受哈希 `0f777907...` 更新为 `86395da2...`；rc.15 对 managed 项目返回 `MODE_CONFLICT`。提交 `2588b6b` 复用唯一官方事务，同时复核 manifest 身份/冻结哈希并原子更新 binding + manifest mirror。
-- 当前只制作一份 rc.16 本地单插件候选并执行受治理 packed；不得 push、Release、安装、写 Stable、接受真实 NEXT、移动项目、重复 rebind 或进入 B1b。
+- rc.16 本地单插件候选、一次 governed packed、精确提交、无 force push 和单插件 Release 均已完成；当前尚未安装或写 Stable。下一任务必须先验收精确 rc.16 generation，再仅接受已冻结的食溯 NEXT 单文件变化；不得直接改库、移动项目、重复 rebind 或进入 B1b。
 - GitHub Support 工单 `#4708849` 仍只阻断服务端旧敏感对象最终销毁证明，不阻断本地迁移、外部定位器收口或后续 UI 开发。
 
 ## 已完成：B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14 生产链
@@ -149,9 +149,9 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 - Cyrus 人工确认“旧位置历史”可见、旧会话可打开、“在新工作区继续”成功落到 `F:\Projects\deepseek-harness-personal\workspace`，且原旧会话仍存在、未被改写。
 - Stable 验收 receipt：`../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json`，SHA-256=`b52c7738aaeb517c333bfb6d18a427a33081b7aa4061f0ecd11a5d6362711b00`。
 
-## 当前唯一任务：B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE
+## 已完成历史门：B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE
 
-食溯 Task 1 的旧路径收口与回归已经完成，但 Task 2 的官方 `prepare-upgrade` 正确阻断：Stable 登记的 DEVLOG、NEXT、PRD 哈希与已验收权威合并后的当前文件不同。不能直接改数据库，也不能把当前权威文档回退到旧内容。产品提交 `cf479676636caab52801bc339d3399eb90912e2b` 已增加唯一 Host 事务 `project.document-bindings.accept-current`：只允许 `linked_legacy`，重新读取全部登记文档，要求 project revision、完整变化集合、旧登记哈希和新观察哈希精确一致；缺失、不可读、阻断诊断或 rebind proposal 均失败关闭。当前任务只基于该提交版本化 Project Control `0.1.0-rc.15`，通过现有可复现单插件管线制作一份本地候选并写收据。不得 commit 候选版本化文件、push、Release、安装/写 Stable、接受真实食溯哈希、调用 `prepare-upgrade`、移动/rebind 项目或进入 B1b。
+该门曾因 Stable 登记的 DEVLOG、NEXT、PRD 哈希落后于已验收权威合并而正确失败关闭；产品提交 `cf479676636caab52801bc339d3399eb90912e2b` 增加 linked-legacy 专用官方 Host 事务。rc.15 后续已经发布、安装并实际关闭旧哈希门，食溯 managed upgrade、物理迁移和唯一 rebind 均已完成。本段只保留作历史证据，不是当前执行指针。
 
 ## 权威后续任务队列（可随时查阅）
 
@@ -190,15 +190,15 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 31–34 | rc.15 交付与 `G4-MEAL-TRACKER-MIGRATION-REBIND` | linked-legacy 哈希接受、managed upgrade、物理迁移和唯一 rebind | 已完成 |
 | 35 | `G4-MEAL-TRACKER-EXTERNAL-LOCATOR-ALIGNMENT` | Codex/Kimi 指向 canonical workspace | 已由 Cyrus 人工完成 |
 | 36 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-CLOSURE` | managed manifest/mirror 原子哈希接受能力 | 已提交 `2588b6b` 并 ff-only 合入 canonical |
-| 37 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-LOCAL-CANDIDATE` | 一份 rc.16 单插件候选与 governed packed | 当前任务；已授权本地候选/packed |
-| 38 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-COMMIT-PUSH-RELEASE` | 候选版本提交、push、单插件 Release | 待另行授权 |
-| 39 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-STABLE-ACCEPTANCE-AND-MEAL-NEXT-CLOSURE` | 安装 rc.16 并精确接受唯一 NEXT 变化 | 待另行授权；禁止直接改库 |
+| 37 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-LOCAL-CANDIDATE` | 一份 rc.16 单插件候选与 governed packed | 已完成；packed receipt `7ba7c002...9784d` |
+| 38 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-COMMIT-PUSH-RELEASE` | 候选版本提交、push、单插件 Release | 已完成：`965f87a` / `.2` / Release `379317536` |
+| 39 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-STABLE-ACCEPTANCE-AND-MEAL-NEXT-CLOSURE` | 安装 rc.16 并精确接受唯一 NEXT 变化 | 当前下一门；待另行授权，禁止直接改库 |
 | 40 | `B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B` | 项目身份、导航、列表/详情、搜索筛选、状态反馈和危险操作 UI 地基 | 待食溯 NEXT 绑定闭环；不得提前进入审批 DB/收件箱 |
 | 41 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；依赖 UI 地基验收 |
-| 37 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
-| 38 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
-| 39 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
-| 40 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
+| 42 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
+| 43 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
+| 44 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |
+| 45 | `G2-MAINTENANCE-DEBT` | Windows 调度任务与旧 artifacts/证据生命周期另案收口 | 系统配置/删除分别授权 |
 
 这张表是当前后续任务的人工总表；同一队列也写入 `docs/governance/current-state.json::futureTasks`，Harness 应以机器指针和本表交叉核对，不以聊天摘要替代。
 
