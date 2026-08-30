@@ -3824,7 +3824,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 					reason: "project_not_found",
 					projectId
 				});
-				if (project.mode !== "linked_legacy") throw new StorageValidationError("Only linked legacy projects may accept current document hashes.", {
+				if (project.mode !== "linked_legacy" && project.mode !== "managed") throw new StorageValidationError("The project mode cannot accept current document hashes.", {
 					reason: "mode_conflict",
 					projectId
 				});
@@ -3846,7 +3846,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
           WHERE project_id = ? AND role = ? AND relative_path = ?
           RETURNING revision
         `);
-				for (const binding of acceptance.bindings) {
+				const registeredBindings = acceptance.bindings.map((binding) => {
 					const row = selectBinding.get(projectId, binding.role, binding.relativePath);
 					if (!row || row.contentHash !== binding.expectedContentHash) throw new StorageValidationError("The registered document binding hash changed before acceptance.", {
 						reason: "binding_hash_conflict",
@@ -3854,6 +3854,37 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 						role: binding.role,
 						relativePath: binding.relativePath
 					});
+					return binding;
+				});
+				let manifestMirror = null;
+				let manifestBindings = null;
+				if (project.mode === "managed") {
+					manifestMirror = database.prepare(`
+            SELECT document_bindings_json AS documentBindingsJson, revision
+            FROM project_manifest_mirrors
+            WHERE project_id = ?
+          `).get(projectId);
+					if (!manifestMirror) throw new StorageValidationError("The managed project manifest mirror is missing.", {
+						reason: "manifest_mirror_missing",
+						projectId
+					});
+					manifestBindings = parseJson(manifestMirror.documentBindingsJson);
+					if (!Array.isArray(manifestBindings)) throw new StorageValidationError("The managed project manifest mirror is invalid.", {
+						reason: "manifest_mirror_invalid",
+						projectId
+					});
+					const mirrorByIdentity = new Map(manifestBindings.map((binding) => [`${binding.role}\u0000${binding.relativePath}`, binding]));
+					for (const binding of acceptance.bindings) {
+						const mirrored = mirrorByIdentity.get(binding.identity);
+						if (!mirrored || mirrored.contentHash !== binding.expectedContentHash) throw new StorageValidationError("The managed manifest mirror changed before acceptance.", {
+							reason: "manifest_binding_hash_conflict",
+							projectId,
+							role: binding.role,
+							relativePath: binding.relativePath
+						});
+					}
+				}
+				for (const binding of registeredBindings) {
 					const updated = updateBinding.get(binding.currentContentHash, recordedAt, projectId, binding.role, binding.relativePath);
 					acceptedIdentities.add(binding.identity);
 					acceptedBindings.push(Object.freeze({
@@ -3863,6 +3894,25 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 						contentHash: binding.currentContentHash,
 						revision: Number(updated.revision)
 					}));
+				}
+				if (project.mode === "managed") {
+					const acceptedByIdentity = new Map(acceptance.bindings.map((binding) => [binding.identity, binding]));
+					const updatedManifestBindings = manifestBindings.map((binding) => {
+						const accepted = acceptedByIdentity.get(`${binding.role}\u0000${binding.relativePath}`);
+						return accepted === void 0 ? binding : {
+							...binding,
+							contentHash: accepted.currentContentHash
+						};
+					});
+					if (!database.prepare(`
+            UPDATE project_manifest_mirrors
+            SET document_bindings_json = ?, verified_at = ?, revision = revision + 1
+            WHERE project_id = ? AND revision = ?
+            RETURNING revision
+          `).get(canonicalJson(updatedManifestBindings), recordedAt, projectId, Number(manifestMirror.revision))) throw new StorageValidationError("The managed manifest mirror changed before acceptance.", {
+						reason: "manifest_binding_hash_conflict",
+						projectId
+					});
 				}
 				upsertDocumentStates(database, projectId, acceptance.documentIndex.documentStates, recordedAt, acceptedIdentities);
 				database.prepare(`
@@ -3884,7 +3934,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 					aggregateId: projectId,
 					beforeRevision: acceptance.expectedRevision,
 					afterRevision: projectRevision,
-					eventType: "project.legacy.document_bindings.accepted",
+					eventType: project.mode === "managed" ? "project.managed.document_bindings.accepted" : "project.legacy.document_bindings.accepted",
 					data: { acceptedBindings: acceptedBindings.map((binding) => ({
 						role: binding.role,
 						relativePath: binding.relativePath,
@@ -16861,9 +16911,10 @@ function createProjectControlIntakeRuntime(options) {
 			},
 			async acceptCurrentDocumentBindings(projectId, input) {
 				const project = requireRegisteredProject(options.storage, projectId);
-				if (project.mode !== "linked_legacy") throw projectControlHttpError("MODE_CONFLICT", "只有已关联的旧项目可以接受当前文档哈希；受管理项目必须更新 manifest。", 409);
+				if (project.mode !== "linked_legacy" && project.mode !== "managed") throw projectControlHttpError("MODE_CONFLICT", "当前项目模式不能接受文档哈希。", 409);
 				if (project.revision !== input.expectedRevision) throw projectControlHttpError("REVISION_CONFLICT", "项目已经变化，请刷新后重试。", 409);
 				try {
+					if (project.mode === "managed") await verifyManagedManifestAuthority(project);
 					const documentIndex = await refreshProjectDocumentIndex(options.storage, project);
 					if (documentIndex.documentStates.find((state) => state.state === "missing" || state.state === "unreadable" || state.parseIssues.some((issue) => issue.severity === "blocking")) !== void 0 || documentIndex.rebindProposals.length > 0) throw projectControlHttpError("DOCUMENT_BINDING_STATE_CONFLICT", "文档存在缺失、不可读、阻断诊断或待处理重绑，不能接受当前哈希。", 409);
 					const changedStates = documentIndex.documentStates.filter((state) => state.state === "changed");
@@ -17349,6 +17400,50 @@ function hostUpgradeCommandMatches(command, plan, renderParams, expected) {
 function sha256(bytes) {
 	return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
+async function verifyManagedManifestAuthority(project) {
+	const activeLocation = project.workspaceLocations?.find((location) => location.isActive);
+	const mirror = project.manifestMirror;
+	if (activeLocation === void 0 || mirror === null || mirror === void 0) throw projectControlHttpError("MANIFEST_HASH_MISMATCH", "受管理项目缺少活动位置或已验证的 manifest mirror。", 409);
+	let bytes;
+	let parsed;
+	try {
+		const rootReal = await realpath(activeLocation.displayPath);
+		const manifestDisplayPath = win32.join(activeLocation.displayPath, ".dsh-project", "project.yaml");
+		const manifestInfo = await lstat(manifestDisplayPath);
+		const manifestReal = await realpath(manifestDisplayPath);
+		if (!manifestInfo.isFile() || !isWithinWindowsPath(rootReal, manifestReal)) throw new Error("manifest path is not a regular file inside the active workspace");
+		bytes = await readFile(manifestReal);
+		parsed = parseYamlSubset(bytes.toString("utf8"));
+	} catch {
+		throw projectControlHttpError("MANIFEST_HASH_MISMATCH", "受管理项目的 manifest 当前不可读取或无法解析。", 409);
+	}
+	const validation = validateProjectManifest(parsed);
+	const manifest = asObject(parsed);
+	const metadata = asObject(manifest?.metadata);
+	const entries = asObject(asObject(manifest?.spec)?.documents)?.entries;
+	if (!validation.valid || metadata?.projectId !== project.projectId || sha256(bytes) !== mirror.manifestHash || !Array.isArray(entries) || !managedManifestDeclarationsMatch(entries, mirror.documentBindings)) throw projectControlHttpError("MANIFEST_HASH_MISMATCH", "受管理项目的 manifest 身份、内容或文档声明已经变化，请先重新核对。", 409);
+}
+function managedManifestDeclarationsMatch(entries, mirrorBindings) {
+	const declarations = entries.map((raw) => {
+		const entry = asObject(raw);
+		return {
+			role: entry?.role,
+			relativePath: entry?.path,
+			required: entry?.required === true
+		};
+	}).sort(compareDocumentDeclaration);
+	const mirrored = mirrorBindings.map((binding) => ({
+		role: binding.role,
+		relativePath: binding.relativePath,
+		required: binding.required === true
+	})).sort(compareDocumentDeclaration);
+	return declarations.length === mirrored.length && declarations.every((entry, index) => entry.role === mirrored[index]?.role && entry.relativePath === mirrored[index]?.relativePath && entry.required === mirrored[index]?.required);
+}
+function compareDocumentDeclaration(left, right) {
+	const leftKey = `${String(left.role)}\u0000${String(left.relativePath)}`;
+	const rightKey = `${String(right.role)}\u0000${String(right.relativePath)}`;
+	return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+}
 function authorizeCreateSelection(input, secret, consumed) {
 	const nowMs = Date.now();
 	for (const [nonce, expiresAt] of consumed) if (expiresAt < nowMs) consumed.delete(nonce);
@@ -17653,7 +17748,10 @@ function publicDocumentIndexError(error) {
 		case "revision_conflict": return projectControlHttpError("REVISION_CONFLICT", "项目已经变化，请刷新后重试。", 409);
 		case "binding_hash_conflict":
 		case "binding_acceptance_set_mismatch": return projectControlHttpError("DOCUMENT_BINDING_SET_CHANGED", "当前文档绑定或哈希已经变化，请刷新后重新确认。", 409);
-		case "mode_conflict": return projectControlHttpError("MODE_CONFLICT", "只有已关联的旧项目可以接受当前文档哈希。", 409);
+		case "manifest_mirror_missing":
+		case "manifest_mirror_invalid":
+		case "manifest_binding_hash_conflict": return projectControlHttpError("MANIFEST_HASH_MISMATCH", "受管理项目的 manifest mirror 已经变化，请重新核对。", 409);
+		case "mode_conflict": return projectControlHttpError("MODE_CONFLICT", "当前项目模式不能接受文档哈希。", 409);
 		default: return projectControlHttpError("DOCUMENT_INDEX_OPERATION_FAILED", "文档索引操作失败。", 409);
 	}
 }
@@ -17791,6 +17889,11 @@ function isPublicHttpError(error) {
 function sameWindowsPath(left, right) {
 	const key = (value) => win32.normalize(value.replaceAll("/", "\\")).normalize("NFC").toLocaleLowerCase("en-US");
 	return key(left) === key(right);
+}
+function isWithinWindowsPath(rootPath, candidatePath) {
+	const key = (value) => win32.normalize(value.replaceAll("/", "\\")).normalize("NFC").toLocaleLowerCase("en-US");
+	const relation = win32.relative(key(rootPath), key(candidatePath));
+	return relation === "" || relation !== ".." && !relation.startsWith(`..${win32.sep}`) && !win32.isAbsolute(relation);
 }
 async function isAccessibleDirectory(path) {
 	try {

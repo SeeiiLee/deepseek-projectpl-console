@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
-import { readFile, readdir, stat } from 'node:fs/promises'
+import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { win32 } from 'node:path'
 import { canonicalJson } from './host/index.js'
 import { parseYamlSubset } from './discovery/runtime.js'
@@ -337,10 +337,10 @@ export function createProjectControlIntakeRuntime(options: {
       }>
     }) {
       const project = requireRegisteredProject(options.storage, projectId)
-      if (project.mode !== 'linked_legacy') {
+      if (project.mode !== 'linked_legacy' && project.mode !== 'managed') {
         throw projectControlHttpError(
           'MODE_CONFLICT',
-          '只有已关联的旧项目可以接受当前文档哈希；受管理项目必须更新 manifest。',
+          '当前项目模式不能接受文档哈希。',
           409,
         )
       }
@@ -348,6 +348,9 @@ export function createProjectControlIntakeRuntime(options: {
         throw projectControlHttpError('REVISION_CONFLICT', '项目已经变化，请刷新后重试。', 409)
       }
       try {
+        if (project.mode === 'managed') {
+          await verifyManagedManifestAuthority(project)
+        }
         const documentIndex = await refreshProjectDocumentIndex(options.storage, project)
         const unsafeState = documentIndex.documentStates.find((state) => (
           state.state === 'missing'
@@ -969,6 +972,88 @@ function sha256(bytes: Buffer): string {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`
 }
 
+async function verifyManagedManifestAuthority(project: Readonly<ProjectView>): Promise<void> {
+  const activeLocation = project.workspaceLocations?.find(location => location.isActive)
+  const mirror = project.manifestMirror
+  if (activeLocation === undefined || mirror === null || mirror === undefined) {
+    throw projectControlHttpError(
+      'MANIFEST_HASH_MISMATCH',
+      '受管理项目缺少活动位置或已验证的 manifest mirror。',
+      409,
+    )
+  }
+  let bytes: Buffer
+  let parsed: unknown
+  try {
+    const rootReal = await realpath(activeLocation.displayPath)
+    const manifestDisplayPath = win32.join(activeLocation.displayPath, '.dsh-project', 'project.yaml')
+    const manifestInfo = await lstat(manifestDisplayPath)
+    const manifestReal = await realpath(manifestDisplayPath)
+    if (!manifestInfo.isFile() || !isWithinWindowsPath(rootReal, manifestReal)) {
+      throw new Error('manifest path is not a regular file inside the active workspace')
+    }
+    bytes = await readFile(manifestReal)
+    parsed = parseYamlSubset(bytes.toString('utf8'))
+  } catch {
+    throw projectControlHttpError(
+      'MANIFEST_HASH_MISMATCH',
+      '受管理项目的 manifest 当前不可读取或无法解析。',
+      409,
+    )
+  }
+  const validation = validateProjectManifest(parsed)
+  const manifest = asObject(parsed)
+  const metadata = asObject(manifest?.metadata)
+  const spec = asObject(manifest?.spec)
+  const documents = asObject(spec?.documents)
+  const entries = documents?.entries
+  if (!validation.valid
+    || metadata?.projectId !== project.projectId
+    || sha256(bytes) !== mirror.manifestHash
+    || !Array.isArray(entries)
+    || !managedManifestDeclarationsMatch(entries, mirror.documentBindings)) {
+    throw projectControlHttpError(
+      'MANIFEST_HASH_MISMATCH',
+      '受管理项目的 manifest 身份、内容或文档声明已经变化，请先重新核对。',
+      409,
+    )
+  }
+}
+
+function managedManifestDeclarationsMatch(
+  entries: unknown[],
+  mirrorBindings: ReadonlyArray<Readonly<ProjectDocumentBindingInput>>,
+): boolean {
+  const declarations = entries.map(raw => {
+    const entry = asObject(raw)
+    return {
+      role: entry?.role,
+      relativePath: entry?.path,
+      required: entry?.required === true,
+    }
+  }).sort(compareDocumentDeclaration)
+  const mirrored = mirrorBindings.map(binding => ({
+    role: binding.role,
+    relativePath: binding.relativePath,
+    required: binding.required === true,
+  })).sort(compareDocumentDeclaration)
+  return declarations.length === mirrored.length
+    && declarations.every((entry, index) => (
+      entry.role === mirrored[index]?.role
+      && entry.relativePath === mirrored[index]?.relativePath
+      && entry.required === mirrored[index]?.required
+    ))
+}
+
+function compareDocumentDeclaration(
+  left: { role: unknown; relativePath: unknown; required: boolean },
+  right: { role: unknown; relativePath: unknown; required: boolean },
+): number {
+  const leftKey = `${String(left.role)}\u0000${String(left.relativePath)}`
+  const rightKey = `${String(right.role)}\u0000${String(right.relativePath)}`
+  return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0
+}
+
 function authorizeCreateSelection(
   input: ProjectControlCreatePreparation,
   secret: string,
@@ -1549,8 +1634,12 @@ function publicDocumentIndexError(error: unknown): unknown {
     case 'binding_hash_conflict':
     case 'binding_acceptance_set_mismatch':
       return projectControlHttpError('DOCUMENT_BINDING_SET_CHANGED', '当前文档绑定或哈希已经变化，请刷新后重新确认。', 409)
+    case 'manifest_mirror_missing':
+    case 'manifest_mirror_invalid':
+    case 'manifest_binding_hash_conflict':
+      return projectControlHttpError('MANIFEST_HASH_MISMATCH', '受管理项目的 manifest mirror 已经变化，请重新核对。', 409)
     case 'mode_conflict':
-      return projectControlHttpError('MODE_CONFLICT', '只有已关联的旧项目可以接受当前文档哈希。', 409)
+      return projectControlHttpError('MODE_CONFLICT', '当前项目模式不能接受文档哈希。', 409)
     default:
       return projectControlHttpError('DOCUMENT_INDEX_OPERATION_FAILED', '文档索引操作失败。', 409)
   }
@@ -1793,6 +1882,14 @@ function sameWindowsPath(left: string, right: string): boolean {
     .normalize('NFC')
     .toLocaleLowerCase('en-US')
   return key(left) === key(right)
+}
+
+function isWithinWindowsPath(rootPath: string, candidatePath: string): boolean {
+  const key = (value: string): string => win32.normalize(value.replaceAll('/', '\\'))
+    .normalize('NFC')
+    .toLocaleLowerCase('en-US')
+  const relation = win32.relative(key(rootPath), key(candidatePath))
+  return relation === '' || (relation !== '..' && !relation.startsWith(`..${win32.sep}`) && !win32.isAbsolute(relation))
 }
 
 async function isAccessibleDirectory(path: string): Promise<boolean> {

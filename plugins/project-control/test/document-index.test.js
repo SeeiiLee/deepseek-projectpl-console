@@ -757,6 +757,133 @@ test('HTTP document index endpoints refresh, resolve, and expose bounded errors'
   assert.equal(missing, undefined)
 })
 
+test('managed projects accept current document hashes while keeping the manifest mirror atomic and authoritative', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-project-control-managed-docaccept-'))
+  const projectRoot = join(root, 'Managed-Acceptance')
+  await mkdir(join(projectRoot, '.dsh-project'), { recursive: true })
+  await mkdir(join(projectRoot, 'docs'), { recursive: true })
+  const storage = await openStorage(root)
+  t.after(async () => {
+    storage.close()
+    await rm(root, { recursive: true, force: true })
+  })
+
+  const projectId = 'prj_0198f4b2-7c3a-7d92-a5c6-6b6f39e27777'
+  const manifestText = [
+    'apiVersion: project-control.dsh/v1alpha1',
+    'kind: ProjectManifest',
+    'metadata:',
+    `  projectId: ${projectId}`,
+    '  name: Managed Acceptance',
+    '  createdAt: 2026-08-30T12:00:00.000Z',
+    '  createdBy:',
+    '    kind: human',
+    '    id: cyrus',
+    '  origin:',
+    '    kind: imported',
+    'spec:',
+    '  documents:',
+    '    docsRoot: docs',
+    '    entries:',
+    '      - role: next',
+    '        path: docs/NEXT.md',
+    '        required: true',
+    '    standardOutputs:',
+    '      updatesRoot: .dsh-project/updates',
+    '      decisionsRoot: .dsh-project/decisions',
+    '      artifactsRoot: .dsh-project/artifacts',
+    '',
+  ].join('\n')
+  const initialNext = '# Next\n\nInitial managed authority.\n'
+  const acceptedNext = '# Next\n\nAccepted managed authority.\n'
+  const blockedNext = '# Next\n\nMust not be accepted after manifest drift.\n'
+  const initialNextHash = sha256Text(initialNext)
+  const acceptedNextHash = sha256Text(acceptedNext)
+  const blockedNextHash = sha256Text(blockedNext)
+  const manifestHash = sha256Text(manifestText)
+  await writeFile(join(projectRoot, '.dsh-project', 'project.yaml'), manifestText)
+  await writeFile(join(projectRoot, 'docs', 'NEXT.md'), initialNext)
+  registerManaged(storage, {
+    projectId,
+    locationPath: projectRoot,
+    name: 'Managed Acceptance',
+    manifestHash,
+    bindings: [{
+      role: 'next',
+      relativePath: 'docs/NEXT.md',
+      contentHash: initialNextHash,
+      required: true,
+    }],
+    serial: 7,
+  })
+
+  const runtime = createProjectControlIntakeRuntime({
+    storage,
+    scanner: { scanProjectDirectory, scanSourceDirectory },
+    selectionSecret: 'managed-document-acceptance-selection-secret',
+    applicationInstanceId: 'host-managed-docaccept',
+    applicationVersion: '0.1.0-test',
+  })
+  const origin = await serveRuntime(t, storage, runtime)
+  const outboxBefore = storage.listOutbox().length
+
+  await writeFile(join(projectRoot, 'docs', 'NEXT.md'), acceptedNext)
+  const accepted = await postJson(origin, `/projects/${projectId}/document-bindings/accept-current`, {
+    expectedRevision: 1,
+    bindings: [{
+      role: 'next',
+      relativePath: 'docs/NEXT.md',
+      expectedContentHash: initialNextHash,
+      currentContentHash: acceptedNextHash,
+    }],
+  })
+  assert.equal(accepted.projectRevision, 2)
+  assert.deepEqual(accepted.acceptedBindings.map(binding => ({
+    role: binding.role,
+    relativePath: binding.relativePath,
+    previousContentHash: binding.previousContentHash,
+    contentHash: binding.contentHash,
+  })), [{
+    role: 'next',
+    relativePath: 'docs/NEXT.md',
+    previousContentHash: initialNextHash,
+    contentHash: acceptedNextHash,
+  }])
+  let project = storage.getProject(projectId)
+  assert.equal(project.documentBindings[0].contentHash, acceptedNextHash)
+  assert.equal(project.manifestMirror.manifestHash, manifestHash)
+  assert.equal(project.manifestMirror.documentBindings[0].contentHash, acceptedNextHash)
+  assert.equal(project.manifestMirror.revision, 2)
+  const receipt = storage.getCommandReceipt(accepted.commandId)
+  assert.equal(receipt?.kind, 'console.project.managed.document_bindings.accepted')
+  const event = storage.listEvents({ projectId }).find(item => item.eventId === accepted.eventId)
+  assert.equal(event?.eventType, 'project.managed.document_bindings.accepted')
+  assert.equal(JSON.stringify({ receipt, event }).includes('Accepted managed authority'), false)
+  assert.equal(storage.listOutbox().length, outboxBefore)
+  const acceptedIndex = await getJson(origin, `/projects/${projectId}/documents`)
+  assert.equal(acceptedIndex.documents[0].state, 'ok')
+
+  await writeFile(join(projectRoot, 'docs', 'NEXT.md'), blockedNext)
+  await writeFile(
+    join(projectRoot, '.dsh-project', 'project.yaml'),
+    manifestText.replace('name: Managed Acceptance', 'name: Drifted Managed Acceptance'),
+  )
+  await postJson(origin, `/projects/${projectId}/document-bindings/accept-current`, {
+    expectedRevision: 2,
+    bindings: [{
+      role: 'next',
+      relativePath: 'docs/NEXT.md',
+      expectedContentHash: acceptedNextHash,
+      currentContentHash: blockedNextHash,
+    }],
+  }, { expectError: 'MANIFEST_HASH_MISMATCH' })
+  project = storage.getProject(projectId)
+  assert.equal(project.revision, 2)
+  assert.equal(project.documentBindings[0].contentHash, acceptedNextHash)
+  assert.equal(project.manifestMirror.documentBindings[0].contentHash, acceptedNextHash)
+  assert.equal(project.manifestMirror.revision, 2)
+})
+
 async function serveRuntime(t, storage, runtime) {
   const read = {
     getStatus() {

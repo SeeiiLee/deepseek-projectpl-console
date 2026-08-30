@@ -4826,8 +4826,8 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
             projectId,
           })
         }
-        if (project.mode !== 'linked_legacy') {
-          throw new StorageValidationError('Only linked legacy projects may accept current document hashes.', {
+        if (project.mode !== 'linked_legacy' && project.mode !== 'managed') {
+          throw new StorageValidationError('The project mode cannot accept current document hashes.', {
             reason: 'mode_conflict',
             projectId,
           })
@@ -4853,7 +4853,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
           WHERE project_id = ? AND role = ? AND relative_path = ?
           RETURNING revision
         `)
-        for (const binding of acceptance.bindings) {
+        const registeredBindings = acceptance.bindings.map((binding) => {
           const row = selectBinding.get(projectId, binding.role, binding.relativePath)
           if (!row || row.contentHash !== binding.expectedContentHash) {
             throw new StorageValidationError('The registered document binding hash changed before acceptance.', {
@@ -4863,6 +4863,46 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
               relativePath: binding.relativePath,
             })
           }
+          return binding
+        })
+        let manifestMirror = null
+        let manifestBindings = null
+        if (project.mode === 'managed') {
+          manifestMirror = database.prepare(`
+            SELECT document_bindings_json AS documentBindingsJson, revision
+            FROM project_manifest_mirrors
+            WHERE project_id = ?
+          `).get(projectId)
+          if (!manifestMirror) {
+            throw new StorageValidationError('The managed project manifest mirror is missing.', {
+              reason: 'manifest_mirror_missing',
+              projectId,
+            })
+          }
+          manifestBindings = parseJson(manifestMirror.documentBindingsJson)
+          if (!Array.isArray(manifestBindings)) {
+            throw new StorageValidationError('The managed project manifest mirror is invalid.', {
+              reason: 'manifest_mirror_invalid',
+              projectId,
+            })
+          }
+          const mirrorByIdentity = new Map(manifestBindings.map(binding => [
+            `${binding.role}\u0000${binding.relativePath}`,
+            binding,
+          ]))
+          for (const binding of acceptance.bindings) {
+            const mirrored = mirrorByIdentity.get(binding.identity)
+            if (!mirrored || mirrored.contentHash !== binding.expectedContentHash) {
+              throw new StorageValidationError('The managed manifest mirror changed before acceptance.', {
+                reason: 'manifest_binding_hash_conflict',
+                projectId,
+                role: binding.role,
+                relativePath: binding.relativePath,
+              })
+            }
+          }
+        }
+        for (const binding of registeredBindings) {
           const updated = updateBinding.get(
             binding.currentContentHash,
             recordedAt,
@@ -4878,6 +4918,33 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
             contentHash: binding.currentContentHash,
             revision: Number(updated.revision),
           }))
+        }
+
+        if (project.mode === 'managed') {
+          const acceptedByIdentity = new Map(acceptance.bindings.map(binding => [binding.identity, binding]))
+          const updatedManifestBindings = manifestBindings.map((binding) => {
+            const accepted = acceptedByIdentity.get(`${binding.role}\u0000${binding.relativePath}`)
+            return accepted === undefined
+              ? binding
+              : { ...binding, contentHash: accepted.currentContentHash }
+          })
+          const updatedMirror = database.prepare(`
+            UPDATE project_manifest_mirrors
+            SET document_bindings_json = ?, verified_at = ?, revision = revision + 1
+            WHERE project_id = ? AND revision = ?
+            RETURNING revision
+          `).get(
+            canonicalJson(updatedManifestBindings),
+            recordedAt,
+            projectId,
+            Number(manifestMirror.revision),
+          )
+          if (!updatedMirror) {
+            throw new StorageValidationError('The managed manifest mirror changed before acceptance.', {
+              reason: 'manifest_binding_hash_conflict',
+              projectId,
+            })
+          }
         }
 
         upsertDocumentStates(
@@ -4908,7 +4975,9 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
           aggregateId: projectId,
           beforeRevision: acceptance.expectedRevision,
           afterRevision: projectRevision,
-          eventType: 'project.legacy.document_bindings.accepted',
+          eventType: project.mode === 'managed'
+            ? 'project.managed.document_bindings.accepted'
+            : 'project.legacy.document_bindings.accepted',
           data: {
             acceptedBindings: acceptedBindings.map(binding => ({
               role: binding.role,
