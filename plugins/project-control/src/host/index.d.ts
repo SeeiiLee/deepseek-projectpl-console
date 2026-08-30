@@ -531,6 +531,18 @@ export interface RecordDocumentIndexInput {
   }[]
 }
 
+export interface AcceptCurrentDocumentBindingsInput {
+  expectedRevision: number
+  bindings: readonly {
+    role: ProjectDocumentRole
+    relativePath: string
+    expectedContentHash: string | null
+    currentContentHash: string
+  }[]
+  /** Host-refreshed file facts. This is trusted runtime input, never client input. */
+  documentIndex: RecordDocumentIndexInput
+}
+
 export interface ResolvedFileSyncPlanRefs {
   planId: string
   location: WorkspaceLocationResolution & { kind: 'primary'; expiresAt: string }
@@ -638,6 +650,23 @@ export interface ProjectControlStorage {
     projectId: string,
     input: { expectedRevision: number; archived: boolean },
   ): Readonly<ProjectView>
+  acceptCurrentDocumentBindings(
+    projectId: string,
+    input: AcceptCurrentDocumentBindingsInput,
+  ): Readonly<{
+    projectId: string
+    projectRevision: number
+    commandId: string
+    eventId: string
+    recordedAt: string
+    acceptedBindings: readonly {
+      role: ProjectDocumentRole
+      relativePath: string
+      previousContentHash: string | null
+      contentHash: string
+      revision: number
+    }[]
+  }>
   getCommandReceipt(commandId: string): Readonly<Record<string, unknown>> | null
   replayCommandReceipt(
     command: LifecycleCommand,

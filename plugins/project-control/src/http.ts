@@ -320,6 +320,18 @@ export interface ProjectControlIntakeService {
   prepareUpgrade(projectId: string, input: { expectedRevision: number }): unknown | Promise<unknown>
   getProjectDocuments(projectId: string): unknown | Promise<unknown>
   refreshProjectDocuments(projectId: string): unknown | Promise<unknown>
+  acceptCurrentDocumentBindings(
+    projectId: string,
+    input: {
+      expectedRevision: number
+      bindings: Array<{
+        role: ProjectDocumentBindingInput['role']
+        relativePath: string
+        expectedContentHash: string | null
+        currentContentHash: string
+      }>
+    },
+  ): unknown | Promise<unknown>
   resolveDocumentRebind(
     projectId: string,
     proposalId: string,
@@ -497,6 +509,7 @@ export function createProjectControlRequestHandler(
                 'project.documents.read',
                 'project.workspace.read',
                 'project.documents.refresh',
+                'project.document-bindings.accept-current',
                 'project.document-rebind.resolve',
               ]),
               ...(options.external === undefined ? [] : [
@@ -903,6 +916,23 @@ export function createProjectControlRequestHandler(
         rejectUnexpectedQuery(parsed, new Set())
         requireEmptyBody(request)
         const result = normalizeDocumentIndex(await intake.refreshProjectDocuments(projectId))
+        sendJson(response, 200, { ok: true, data: result })
+        return
+      }
+
+      const bindingAcceptanceRoute = /^\/projects\/(prj_[0-9a-f-]+)\/document-bindings\/accept-current$/u.exec(resource)
+      if (bindingAcceptanceRoute !== null) {
+        requireMethod(request, 'POST')
+        const intake = requireIntake(options)
+        const projectId = bindingAcceptanceRoute[1]
+        if (projectId === undefined || !PROJECT_ID.test(projectId)) {
+          throw projectControlHttpError('NOT_FOUND', '项目不存在。', 404)
+        }
+        rejectUnexpectedQuery(parsed, new Set())
+        const input = normalizeDocumentBindingAcceptance(await readJsonBody(request))
+        const result = normalizeDocumentBindingAcceptanceResult(
+          await intake.acceptCurrentDocumentBindings(projectId, input),
+        )
         sendJson(response, 200, { ok: true, data: result })
         return
       }
@@ -2077,6 +2107,83 @@ function normalizeRebindResolution(value: unknown): {
     input.candidateRelativePath = relativePath
   }
   return input
+}
+
+function normalizeDocumentBindingAcceptance(value: unknown): {
+  expectedRevision: number
+  bindings: Array<{
+    role: ProjectDocumentBindingInput['role']
+    relativePath: string
+    expectedContentHash: string | null
+    currentContentHash: string
+  }>
+} {
+  const candidate = requestObject(value, '文档绑定哈希接受请求')
+  requireExactKeys(candidate, new Set(['expectedRevision', 'bindings']), '文档绑定哈希接受请求')
+  if (!Array.isArray(candidate.bindings) || candidate.bindings.length < 1 || candidate.bindings.length > 50) {
+    throw projectControlHttpError('INVALID_BODY', '文档绑定哈希接受项必须为 1..50 项。')
+  }
+  const seen = new Set<string>()
+  const bindings = candidate.bindings.map((raw, index) => {
+    const binding = requestObject(raw, `文档绑定哈希接受项 ${String(index + 1)}`)
+    requireExactKeys(
+      binding,
+      new Set(['role', 'relativePath', 'expectedContentHash', 'currentContentHash']),
+      `文档绑定哈希接受项 ${String(index + 1)}`,
+    )
+    const role = requestText(binding.role, '文档角色', 40) as ProjectDocumentBindingInput['role']
+    if (!['readme', 'prd', 'devlog', 'progress', 'next', 'current_architecture', 'decision', 'other'].includes(role)) {
+      throw projectControlHttpError('INVALID_BODY', '文档角色无效。')
+    }
+    const relativePath = requestText(binding.relativePath, '文档相对路径', 512)
+    if (!isCanonicalRelativePath(relativePath)) {
+      throw projectControlHttpError('INVALID_BODY', '文档相对路径无效。')
+    }
+    const expectedContentHash = binding.expectedContentHash
+    if (expectedContentHash !== null
+      && (typeof expectedContentHash !== 'string' || !/^sha256:[0-9a-f]{64}$/u.test(expectedContentHash))) {
+      throw projectControlHttpError('INVALID_BODY', '已登记文档哈希无效。')
+    }
+    if (typeof binding.currentContentHash !== 'string'
+      || !/^sha256:[0-9a-f]{64}$/u.test(binding.currentContentHash)) {
+      throw projectControlHttpError('INVALID_BODY', '当前文档哈希无效。')
+    }
+    const identity = `${role}\u0000${relativePath}`
+    if (seen.has(identity)) {
+      throw projectControlHttpError('INVALID_BODY', '文档绑定哈希接受项不能重复。')
+    }
+    seen.add(identity)
+    return { role, relativePath, expectedContentHash, currentContentHash: binding.currentContentHash }
+  })
+  return {
+    expectedRevision: requestRevision(candidate.expectedRevision, '项目修订', 1),
+    bindings,
+  }
+}
+
+function normalizeDocumentBindingAcceptanceResult(value: unknown): Record<string, unknown> {
+  const candidate = responseObject(value, 'document binding acceptance')
+  if (!Array.isArray(candidate.acceptedBindings) || candidate.acceptedBindings.length < 1
+    || candidate.acceptedBindings.length > 50) {
+    throw new TypeError('intake service returned invalid accepted document bindings')
+  }
+  return {
+    projectId: responseId(candidate.projectId, PROJECT_ID, 'projectId'),
+    projectRevision: requiredRevision(candidate.projectRevision, 'projectRevision', 1),
+    commandId: boundedText(candidate.commandId, 'commandId', 80),
+    eventId: boundedText(candidate.eventId, 'eventId', 80),
+    recordedAt: responseTimestamp(candidate.recordedAt, 'recordedAt'),
+    acceptedBindings: candidate.acceptedBindings.map((raw) => {
+      const binding = responseObject(raw, 'accepted document binding')
+      return {
+        role: boundedText(binding.role, 'role', 40),
+        relativePath: responseRelativePath(binding.relativePath, 'relativePath'),
+        previousContentHash: boundedNullableText(binding.previousContentHash, 'previousContentHash', 80),
+        contentHash: boundedText(binding.contentHash, 'contentHash', 80),
+        revision: requiredRevision(binding.revision, 'binding revision', 1),
+      }
+    }),
+  }
 }
 
 function normalizeRebindResolutionResult(value: unknown): Record<string, unknown> {

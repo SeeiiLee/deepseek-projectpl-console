@@ -613,6 +613,7 @@ test('HTTP document index endpoints refresh, resolve, and expose bounded errors'
   assert.equal(status.capabilities.includes('project.documents.read'), true)
   assert.equal(status.capabilities.includes('project.documents.refresh'), true)
   assert.equal(status.capabilities.includes('project.document-rebind.resolve'), true)
+  assert.equal(status.capabilities.includes('project.document-bindings.accept-current'), true)
 
   const empty = await getJson(origin, `/projects/${projectId}/documents`)
   assert.equal(empty.projectId, projectId)
@@ -621,6 +622,112 @@ test('HTTP document index endpoints refresh, resolve, and expose bounded errors'
   const refreshed = await postJson(origin, `/projects/${projectId}/documents/refresh`, undefined)
   assert.equal(refreshed.documents.filter(document => document.state === 'ok').length, 2)
   assert.equal(refreshed.proposals.length, 0)
+
+  const beforeUpgrade = await postJson(origin, `/intake/projects/${projectId}/prepare-upgrade`, {
+    expectedRevision: 1,
+  })
+  const revisedReadme = '# Readme\n\nAccepted authority merge.\n'
+  const revisedPrd = '# PRD\n\nAccepted authority merge.\n'
+  const revisedReadmeHash = sha256Text(revisedReadme)
+  const revisedPrdHash = sha256Text(revisedPrd)
+  await writeFile(join(projectRoot, 'README.md'), revisedReadme)
+  await writeFile(join(projectRoot, 'docs', 'PRD.md'), revisedPrd)
+  const changed = await postJson(origin, `/projects/${projectId}/documents/refresh`, undefined)
+  assert.equal(changed.documents.find(document => document.role === 'readme').state, 'changed')
+  assert.equal(changed.documents.find(document => document.role === 'prd').state, 'changed')
+
+  await postJson(origin, `/projects/${projectId}/document-bindings/accept-current`, {
+    expectedRevision: 1,
+    bindings: [{
+      role: 'prd',
+      relativePath: 'docs/PRD.md',
+      expectedContentHash: sha256Text(prdHash),
+      currentContentHash: revisedPrdHash,
+    }],
+  }, { expectError: 'DOCUMENT_BINDING_SET_CHANGED' })
+  assert.equal(storage.getProject(projectId).revision, 1)
+
+  await postJson(origin, `/projects/${projectId}/document-bindings/accept-current`, {
+    expectedRevision: 1,
+    bindings: [
+      {
+        role: 'readme',
+        relativePath: 'README.md',
+        expectedContentHash: sha256Text(readmeHash),
+        currentContentHash: revisedReadmeHash,
+      },
+      {
+        role: 'prd',
+        relativePath: 'docs/PRD.md',
+        expectedContentHash: sha256Text(prdHash),
+        currentContentHash: `sha256:${'0'.repeat(64)}`,
+      },
+    ],
+  }, { expectError: 'DOCUMENT_BINDING_SET_CHANGED' })
+  assert.equal(storage.getProject(projectId).revision, 1)
+
+  await postJson(origin, `/projects/${projectId}/document-bindings/accept-current`, {
+    expectedRevision: 77,
+    bindings: [
+      {
+        role: 'readme',
+        relativePath: 'README.md',
+        expectedContentHash: sha256Text(readmeHash),
+        currentContentHash: revisedReadmeHash,
+      },
+      {
+        role: 'prd',
+        relativePath: 'docs/PRD.md',
+        expectedContentHash: sha256Text(prdHash),
+        currentContentHash: revisedPrdHash,
+      },
+    ],
+  }, { expectError: 'REVISION_CONFLICT' })
+
+  const outboxBeforeAcceptance = storage.listOutbox().length
+  const accepted = await postJson(origin, `/projects/${projectId}/document-bindings/accept-current`, {
+    expectedRevision: 1,
+    bindings: [
+      {
+        role: 'readme',
+        relativePath: 'README.md',
+        expectedContentHash: sha256Text(readmeHash),
+        currentContentHash: revisedReadmeHash,
+      },
+      {
+        role: 'prd',
+        relativePath: 'docs/PRD.md',
+        expectedContentHash: sha256Text(prdHash),
+        currentContentHash: revisedPrdHash,
+      },
+    ],
+  })
+  assert.equal(accepted.projectId, projectId)
+  assert.equal(accepted.projectRevision, 2)
+  assert.equal(accepted.acceptedBindings.length, 2)
+  assert.equal(accepted.acceptedBindings.find(binding => binding.role === 'prd').previousContentHash, sha256Text(prdHash))
+  assert.equal(accepted.acceptedBindings.find(binding => binding.role === 'prd').contentHash, revisedPrdHash)
+  assert.match(accepted.commandId, /^cmd_/u)
+  assert.match(accepted.eventId, /^evt_/u)
+  const acceptanceReceipt = storage.getCommandReceipt(accepted.commandId)
+  assert.equal(acceptanceReceipt?.status, 'accepted')
+  assert.equal(acceptanceReceipt?.kind, 'console.project.legacy.document_bindings.accepted')
+  assert.equal(storage.listEvents({ projectId }).some(event => (
+    event.eventType === 'project.legacy.document_bindings.accepted'
+      && event.eventId === accepted.eventId
+  )), true)
+  assert.equal(JSON.stringify(storage.listEvents({ projectId })).includes('Accepted authority merge'), false)
+  assert.equal(storage.listOutbox().length, outboxBeforeAcceptance)
+  assert.equal(storage.getProject(projectId).documentBindings.find(binding => binding.role === 'prd').contentHash, revisedPrdHash)
+
+  const acceptedIndex = await getJson(origin, `/projects/${projectId}/documents`)
+  assert.equal(acceptedIndex.documents.find(document => document.role === 'readme').state, 'ok')
+  assert.equal(acceptedIndex.documents.find(document => document.role === 'prd').state, 'ok')
+  const afterUpgrade = await postJson(origin, `/intake/projects/${projectId}/prepare-upgrade`, {
+    expectedRevision: 2,
+  })
+  assert.notEqual(afterUpgrade.fingerprintHash, beforeUpgrade.fingerprintHash)
+  assert.equal(afterUpgrade.command.payload.legacyFingerprintHash, afterUpgrade.fingerprintHash)
 
   await rename(join(projectRoot, 'docs', 'PRD.md'), join(projectRoot, 'docs', 'PRD-renamed.md'))
   const afterRename = await postJson(origin, `/projects/${projectId}/documents/refresh`, undefined)

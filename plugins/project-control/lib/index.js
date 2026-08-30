@@ -1491,6 +1491,75 @@ function validateDocumentIndexInput(input) {
 		rebindProposals
 	});
 }
+function validateDocumentBindingAcceptanceInput(projectId, input) {
+	requireObject(input, "input");
+	const expectedRevision = requireInteger(input.expectedRevision, "input.expectedRevision", 1);
+	if (!Array.isArray(input.bindings) || input.bindings.length < 1 || input.bindings.length > 50) throw new StorageValidationError("input.bindings must be an array of 1..50 items.");
+	const seen = /* @__PURE__ */ new Set();
+	const bindings = input.bindings.map((raw, index) => {
+		const field = `input.bindings[${index}]`;
+		const binding = requireObject(raw, field);
+		const role = requireString(binding.role, `${field}.role`);
+		const relativePath = requireString(binding.relativePath, `${field}.relativePath`);
+		if (!DOCUMENT_ROLES$3.has(role) || !RELATIVE_PATH$1.test(relativePath)) throw new StorageValidationError("Document binding acceptance contains an invalid role or relative path.", { index });
+		const expectedContentHash = binding.expectedContentHash ?? null;
+		if (expectedContentHash !== null && !CONTENT_HASH$1.test(expectedContentHash)) throw new StorageValidationError(`${field}.expectedContentHash is invalid.`, { index });
+		const currentContentHash = requireString(binding.currentContentHash, `${field}.currentContentHash`);
+		if (!CONTENT_HASH$1.test(currentContentHash) || currentContentHash === expectedContentHash) throw new StorageValidationError(`${field}.currentContentHash is invalid or unchanged.`, { index });
+		const identity = `${role}\u0000${relativePath}`;
+		if (seen.has(identity)) throw new StorageValidationError("Document binding acceptance contains a duplicate role/path pair.", { index });
+		seen.add(identity);
+		return {
+			role,
+			relativePath,
+			expectedContentHash,
+			currentContentHash,
+			identity
+		};
+	});
+	const documentIndex = validateDocumentIndexInput(input.documentIndex);
+	if (documentIndex.projectId !== projectId || documentIndex.rebindProposals.length > 0) throw new StorageValidationError("Trusted document index does not match the binding acceptance project.", { reason: "binding_acceptance_set_mismatch" });
+	const changedStates = documentIndex.documentStates.filter((state) => state.state === "changed");
+	if (changedStates.length !== bindings.length || documentIndex.documentStates.some((state) => state.state === "missing" || state.state === "unreadable" || state.parseIssues.some((issue) => issue.severity === "blocking"))) throw new StorageValidationError("Trusted document index is not safe for binding acceptance.", { reason: "binding_acceptance_set_mismatch" });
+	const bindingByIdentity = new Map(bindings.map((binding) => [binding.identity, binding]));
+	for (const state of changedStates) {
+		const binding = bindingByIdentity.get(`${state.role}\u0000${state.relativePath}`);
+		if (binding === void 0 || binding.currentContentHash !== state.contentHash) throw new StorageValidationError("Trusted document index changed before binding acceptance.", { reason: "binding_acceptance_set_mismatch" });
+	}
+	return Object.freeze({
+		expectedRevision,
+		bindings,
+		documentIndex
+	});
+}
+function upsertDocumentStates(database, projectId, documentStates, recordedAt, acceptedIdentities = /* @__PURE__ */ new Set()) {
+	const upsertState = database.prepare(`
+    INSERT INTO project_document_states(
+      project_id, role, relative_path, binding_source, state, content_hash,
+      byte_size, parse_issues_json, revision, first_seen_at,
+      last_verified_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(project_id, role, relative_path) DO UPDATE SET
+      binding_source = excluded.binding_source,
+      state = excluded.state,
+      content_hash = excluded.content_hash,
+      byte_size = excluded.byte_size,
+      parse_issues_json = excluded.parse_issues_json,
+      revision = excluded.revision,
+      last_verified_at = excluded.last_verified_at,
+      updated_at = excluded.updated_at
+  `);
+	for (const state of documentStates) {
+		const prior = database.prepare(`
+      SELECT revision, content_hash AS contentHash, state, first_seen_at AS firstSeenAt
+      FROM project_document_states
+      WHERE project_id = ? AND role = ? AND relative_path = ?
+    `).get(projectId, state.role, state.relativePath);
+		const persistedState = acceptedIdentities.has(`${state.role}\u0000${state.relativePath}`) ? "ok" : state.state;
+		const changed = prior === void 0 || prior.contentHash !== state.contentHash || prior.state !== persistedState;
+		upsertState.run(projectId, state.role, state.relativePath, state.bindingSource, persistedState, state.contentHash, state.byteSize, JSON.stringify(state.parseIssues), prior === void 0 ? 1 : Number(prior.revision) + (changed ? 1 : 0), prior === void 0 ? recordedAt : prior.firstSeenAt, recordedAt, recordedAt);
+	}
+}
 function selectDocumentStateRows(database, projectId) {
 	return database.prepare(`
     SELECT
@@ -3694,31 +3763,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 					reason: "binding_conflict",
 					candidatePath
 				});
-				const upsertState = database.prepare(`
-          INSERT INTO project_document_states(
-            project_id, role, relative_path, binding_source, state, content_hash,
-            byte_size, parse_issues_json, revision, first_seen_at,
-            last_verified_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(project_id, role, relative_path) DO UPDATE SET
-            binding_source = excluded.binding_source,
-            state = excluded.state,
-            content_hash = excluded.content_hash,
-            byte_size = excluded.byte_size,
-            parse_issues_json = excluded.parse_issues_json,
-            revision = excluded.revision,
-            last_verified_at = excluded.last_verified_at,
-            updated_at = excluded.updated_at
-        `);
-				for (const state of index.documentStates) {
-					const prior = database.prepare(`
-            SELECT revision, content_hash AS contentHash, state, first_seen_at AS firstSeenAt
-            FROM project_document_states
-            WHERE project_id = ? AND role = ? AND relative_path = ?
-          `).get(index.projectId, state.role, state.relativePath);
-					const changed = prior === void 0 || prior.contentHash !== state.contentHash || prior.state !== state.state;
-					upsertState.run(index.projectId, state.role, state.relativePath, state.bindingSource, state.state, state.contentHash, state.byteSize, JSON.stringify(state.parseIssues), prior === void 0 ? 1 : Number(prior.revision) + (changed ? 1 : 0), prior === void 0 ? recordedAt : prior.firstSeenAt, recordedAt, recordedAt);
-				}
+				upsertDocumentStates(database, index.projectId, index.documentStates, recordedAt);
 				const incomingKeys = new Set(index.rebindProposals.map((proposal) => `${proposal.role}\u0000${proposal.missingRelativePath}`));
 				const existingRows = selectRebindProposalRows(database, index.projectId);
 				for (const existing of existingRows) {
@@ -3764,6 +3809,100 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
 				return null;
 			});
 			return this.getProjectDocumentIndex(index.projectId);
+		},
+		acceptCurrentDocumentBindings(projectId, input) {
+			ensureOpen();
+			requireString(projectId, "projectId");
+			if (!BUSINESS_IDS.prj.test(projectId)) throw new StorageValidationError("projectId must be a prj_ UUIDv7.");
+			const acceptance = validateDocumentBindingAcceptanceInput(projectId, input);
+			const recordedAt = requireTimestamp(now(), "now()");
+			return executeWrite(database, () => {
+				const project = database.prepare(`
+          SELECT mode, revision FROM projects WHERE project_id = ?
+        `).get(projectId);
+				if (!project) throw new StorageValidationError("The project does not exist.", {
+					reason: "project_not_found",
+					projectId
+				});
+				if (project.mode !== "linked_legacy") throw new StorageValidationError("Only linked legacy projects may accept current document hashes.", {
+					reason: "mode_conflict",
+					projectId
+				});
+				const currentRevision = Number(project.revision);
+				if (currentRevision !== acceptance.expectedRevision) throw new StorageValidationError("The project changed before document binding acceptance.", {
+					reason: "revision_conflict",
+					currentRevision
+				});
+				const acceptedBindings = [];
+				const acceptedIdentities = /* @__PURE__ */ new Set();
+				const selectBinding = database.prepare(`
+          SELECT content_hash AS contentHash, revision
+          FROM project_document_bindings
+          WHERE project_id = ? AND role = ? AND relative_path = ?
+        `);
+				const updateBinding = database.prepare(`
+          UPDATE project_document_bindings
+          SET content_hash = ?, confirmed_at = ?, revision = revision + 1
+          WHERE project_id = ? AND role = ? AND relative_path = ?
+          RETURNING revision
+        `);
+				for (const binding of acceptance.bindings) {
+					const row = selectBinding.get(projectId, binding.role, binding.relativePath);
+					if (!row || row.contentHash !== binding.expectedContentHash) throw new StorageValidationError("The registered document binding hash changed before acceptance.", {
+						reason: "binding_hash_conflict",
+						projectId,
+						role: binding.role,
+						relativePath: binding.relativePath
+					});
+					const updated = updateBinding.get(binding.currentContentHash, recordedAt, projectId, binding.role, binding.relativePath);
+					acceptedIdentities.add(binding.identity);
+					acceptedBindings.push(Object.freeze({
+						role: binding.role,
+						relativePath: binding.relativePath,
+						previousContentHash: binding.expectedContentHash,
+						contentHash: binding.currentContentHash,
+						revision: Number(updated.revision)
+					}));
+				}
+				upsertDocumentStates(database, projectId, acceptance.documentIndex.documentStates, recordedAt, acceptedIdentities);
+				database.prepare(`
+          UPDATE project_document_rebind_proposals
+          SET status = 'superseded', resolved_at = ?, updated_at = ?, revision = revision + 1
+          WHERE project_id = ? AND status = 'proposed'
+        `).run(recordedAt, recordedAt, projectId);
+				const updatedProject = database.prepare(`
+          UPDATE projects
+          SET revision = revision + 1, updated_at = ?
+          WHERE project_id = ? AND revision = ?
+          RETURNING revision
+        `).get(recordedAt, projectId, acceptance.expectedRevision);
+				if (!updatedProject) throw new StorageValidationError("Project revision update unexpectedly affected no rows.");
+				const projectRevision = Number(updatedProject.revision);
+				const event = recordConsoleEvent({
+					projectId,
+					aggregateType: "project",
+					aggregateId: projectId,
+					beforeRevision: acceptance.expectedRevision,
+					afterRevision: projectRevision,
+					eventType: "project.legacy.document_bindings.accepted",
+					data: { acceptedBindings: acceptedBindings.map((binding) => ({
+						role: binding.role,
+						relativePath: binding.relativePath,
+						previousContentHash: binding.previousContentHash,
+						contentHash: binding.contentHash,
+						revision: binding.revision
+					})) },
+					recordedAt
+				});
+				return Object.freeze({
+					projectId,
+					projectRevision,
+					commandId: event.causation.commandId,
+					eventId: event.eventId,
+					recordedAt,
+					acceptedBindings: Object.freeze(acceptedBindings)
+				});
+			});
 		},
 		getProjectDocumentIndex(projectId) {
 			ensureOpen();
@@ -13206,6 +13345,7 @@ function createProjectControlRequestHandler(service, options = {}) {
 								"project.documents.read",
 								"project.workspace.read",
 								"project.documents.refresh",
+								"project.document-bindings.accept-current",
 								"project.document-rebind.resolve"
 							],
 							...options.external === void 0 ? [] : [
@@ -13575,6 +13715,20 @@ function createProjectControlRequestHandler(service, options = {}) {
 				sendJson(response, 200, {
 					ok: true,
 					data: normalizeDocumentIndex(await intake.refreshProjectDocuments(projectId))
+				});
+				return;
+			}
+			const bindingAcceptanceRoute = /^\/projects\/(prj_[0-9a-f-]+)\/document-bindings\/accept-current$/u.exec(resource);
+			if (bindingAcceptanceRoute !== null) {
+				requireMethod(request, "POST");
+				const intake = requireIntake(options);
+				const projectId = bindingAcceptanceRoute[1];
+				if (projectId === void 0 || !PROJECT_ID.test(projectId)) throw projectControlHttpError("NOT_FOUND", "项目不存在。", 404);
+				rejectUnexpectedQuery(parsed, /* @__PURE__ */ new Set());
+				const input = normalizeDocumentBindingAcceptance(await readJsonBody(request));
+				sendJson(response, 200, {
+					ok: true,
+					data: normalizeDocumentBindingAcceptanceResult(await intake.acceptCurrentDocumentBindings(projectId, input))
 				});
 				return;
 			}
@@ -14573,6 +14727,71 @@ function normalizeRebindResolution(value) {
 		input.candidateRelativePath = relativePath;
 	}
 	return input;
+}
+function normalizeDocumentBindingAcceptance(value) {
+	const candidate = requestObject(value, "文档绑定哈希接受请求");
+	requireExactKeys(candidate, new Set(["expectedRevision", "bindings"]), "文档绑定哈希接受请求");
+	if (!Array.isArray(candidate.bindings) || candidate.bindings.length < 1 || candidate.bindings.length > 50) throw projectControlHttpError("INVALID_BODY", "文档绑定哈希接受项必须为 1..50 项。");
+	const seen = /* @__PURE__ */ new Set();
+	const bindings = candidate.bindings.map((raw, index) => {
+		const binding = requestObject(raw, `文档绑定哈希接受项 ${String(index + 1)}`);
+		requireExactKeys(binding, new Set([
+			"role",
+			"relativePath",
+			"expectedContentHash",
+			"currentContentHash"
+		]), `文档绑定哈希接受项 ${String(index + 1)}`);
+		const role = requestText(binding.role, "文档角色", 40);
+		if (![
+			"readme",
+			"prd",
+			"devlog",
+			"progress",
+			"next",
+			"current_architecture",
+			"decision",
+			"other"
+		].includes(role)) throw projectControlHttpError("INVALID_BODY", "文档角色无效。");
+		const relativePath = requestText(binding.relativePath, "文档相对路径", 512);
+		if (!isCanonicalRelativePath(relativePath)) throw projectControlHttpError("INVALID_BODY", "文档相对路径无效。");
+		const expectedContentHash = binding.expectedContentHash;
+		if (expectedContentHash !== null && (typeof expectedContentHash !== "string" || !/^sha256:[0-9a-f]{64}$/u.test(expectedContentHash))) throw projectControlHttpError("INVALID_BODY", "已登记文档哈希无效。");
+		if (typeof binding.currentContentHash !== "string" || !/^sha256:[0-9a-f]{64}$/u.test(binding.currentContentHash)) throw projectControlHttpError("INVALID_BODY", "当前文档哈希无效。");
+		const identity = `${role}\u0000${relativePath}`;
+		if (seen.has(identity)) throw projectControlHttpError("INVALID_BODY", "文档绑定哈希接受项不能重复。");
+		seen.add(identity);
+		return {
+			role,
+			relativePath,
+			expectedContentHash,
+			currentContentHash: binding.currentContentHash
+		};
+	});
+	return {
+		expectedRevision: requestRevision(candidate.expectedRevision, "项目修订", 1),
+		bindings
+	};
+}
+function normalizeDocumentBindingAcceptanceResult(value) {
+	const candidate = responseObject(value, "document binding acceptance");
+	if (!Array.isArray(candidate.acceptedBindings) || candidate.acceptedBindings.length < 1 || candidate.acceptedBindings.length > 50) throw new TypeError("intake service returned invalid accepted document bindings");
+	return {
+		projectId: responseId(candidate.projectId, PROJECT_ID, "projectId"),
+		projectRevision: requiredRevision(candidate.projectRevision, "projectRevision", 1),
+		commandId: boundedText(candidate.commandId, "commandId", 80),
+		eventId: boundedText(candidate.eventId, "eventId", 80),
+		recordedAt: responseTimestamp(candidate.recordedAt, "recordedAt"),
+		acceptedBindings: candidate.acceptedBindings.map((raw) => {
+			const binding = responseObject(raw, "accepted document binding");
+			return {
+				role: boundedText(binding.role, "role", 40),
+				relativePath: responseRelativePath(binding.relativePath, "relativePath"),
+				previousContentHash: boundedNullableText(binding.previousContentHash, "previousContentHash", 80),
+				contentHash: boundedText(binding.contentHash, "contentHash", 80),
+				revision: requiredRevision(binding.revision, "binding revision", 1)
+			};
+		})
+	};
 }
 function normalizeRebindResolutionResult(value) {
 	const candidate = responseObject(value, "rebind resolution");
@@ -16640,6 +16859,33 @@ function createProjectControlIntakeRuntime(options) {
 					throw publicDocumentIndexError(error);
 				}
 			},
+			async acceptCurrentDocumentBindings(projectId, input) {
+				const project = requireRegisteredProject(options.storage, projectId);
+				if (project.mode !== "linked_legacy") throw projectControlHttpError("MODE_CONFLICT", "只有已关联的旧项目可以接受当前文档哈希；受管理项目必须更新 manifest。", 409);
+				if (project.revision !== input.expectedRevision) throw projectControlHttpError("REVISION_CONFLICT", "项目已经变化，请刷新后重试。", 409);
+				try {
+					const documentIndex = await refreshProjectDocumentIndex(options.storage, project);
+					if (documentIndex.documentStates.find((state) => state.state === "missing" || state.state === "unreadable" || state.parseIssues.some((issue) => issue.severity === "blocking")) !== void 0 || documentIndex.rebindProposals.length > 0) throw projectControlHttpError("DOCUMENT_BINDING_STATE_CONFLICT", "文档存在缺失、不可读、阻断诊断或待处理重绑，不能接受当前哈希。", 409);
+					const changedStates = documentIndex.documentStates.filter((state) => state.state === "changed");
+					const requestByIdentity = new Map(input.bindings.map((binding) => [`${binding.role}\u0000${binding.relativePath}`, binding]));
+					const registeredByIdentity = new Map((project.documentBindings ?? []).map((binding) => [`${binding.role}\u0000${binding.relativePath}`, binding]));
+					if (changedStates.length !== input.bindings.length) throw projectControlHttpError("DOCUMENT_BINDING_SET_CHANGED", "当前发生变化的文档集合与请求不一致，请刷新后重新确认。", 409);
+					for (const state of changedStates) {
+						const identity = `${state.role}\u0000${state.relativePath}`;
+						const requested = requestByIdentity.get(identity);
+						const registered = registeredByIdentity.get(identity);
+						if (requested === void 0 || registered === void 0 || requested.expectedContentHash !== registered.contentHash || requested.currentContentHash !== state.contentHash) throw projectControlHttpError("DOCUMENT_BINDING_SET_CHANGED", "当前文档哈希或已登记哈希与请求不一致，请刷新后重新确认。", 409);
+					}
+					return options.storage.acceptCurrentDocumentBindings(projectId, {
+						expectedRevision: input.expectedRevision,
+						bindings: input.bindings,
+						documentIndex
+					});
+				} catch (error) {
+					if (isPublicHttpError(error)) throw error;
+					throw publicDocumentIndexError(error);
+				}
+			},
 			resolveDocumentRebind(projectId, proposalId, input) {
 				requireRegisteredProject(options.storage, projectId);
 				try {
@@ -17404,6 +17650,10 @@ function publicDocumentIndexError(error) {
 		case "managed_manifest_authoritative": return projectControlHttpError("MANAGED_MANIFEST_AUTHORITATIVE", "受管理项目的文档映射以 manifest 为准，请先更新 manifest。", 409);
 		case "binding_not_found": return projectControlHttpError("REBIND_BINDING_MISSING", "原文档绑定已不存在，请刷新。", 409);
 		case "binding_conflict": return projectControlHttpError("REBIND_BINDING_CONFLICT", "重绑目标已经是已绑定文档路径。", 409);
+		case "revision_conflict": return projectControlHttpError("REVISION_CONFLICT", "项目已经变化，请刷新后重试。", 409);
+		case "binding_hash_conflict":
+		case "binding_acceptance_set_mismatch": return projectControlHttpError("DOCUMENT_BINDING_SET_CHANGED", "当前文档绑定或哈希已经变化，请刷新后重新确认。", 409);
+		case "mode_conflict": return projectControlHttpError("MODE_CONFLICT", "只有已关联的旧项目可以接受当前文档哈希。", 409);
 		default: return projectControlHttpError("DOCUMENT_INDEX_OPERATION_FAILED", "文档索引操作失败。", 409);
 	}
 }

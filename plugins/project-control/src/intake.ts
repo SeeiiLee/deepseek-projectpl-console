@@ -327,6 +327,82 @@ export function createProjectControlIntakeRuntime(options: {
       }
     },
 
+    async acceptCurrentDocumentBindings(projectId: string, input: {
+      expectedRevision: number
+      bindings: Array<{
+        role: ProjectDocumentBindingInput['role']
+        relativePath: string
+        expectedContentHash: string | null
+        currentContentHash: string
+      }>
+    }) {
+      const project = requireRegisteredProject(options.storage, projectId)
+      if (project.mode !== 'linked_legacy') {
+        throw projectControlHttpError(
+          'MODE_CONFLICT',
+          '只有已关联的旧项目可以接受当前文档哈希；受管理项目必须更新 manifest。',
+          409,
+        )
+      }
+      if (project.revision !== input.expectedRevision) {
+        throw projectControlHttpError('REVISION_CONFLICT', '项目已经变化，请刷新后重试。', 409)
+      }
+      try {
+        const documentIndex = await refreshProjectDocumentIndex(options.storage, project)
+        const unsafeState = documentIndex.documentStates.find((state) => (
+          state.state === 'missing'
+          || state.state === 'unreadable'
+          || state.parseIssues.some(issue => issue.severity === 'blocking')
+        ))
+        if (unsafeState !== undefined || documentIndex.rebindProposals.length > 0) {
+          throw projectControlHttpError(
+            'DOCUMENT_BINDING_STATE_CONFLICT',
+            '文档存在缺失、不可读、阻断诊断或待处理重绑，不能接受当前哈希。',
+            409,
+          )
+        }
+        const changedStates = documentIndex.documentStates.filter(state => state.state === 'changed')
+        const requestByIdentity = new Map(input.bindings.map(binding => [
+          `${binding.role}\u0000${binding.relativePath}`,
+          binding,
+        ]))
+        const registeredByIdentity = new Map((project.documentBindings ?? []).map(binding => [
+          `${binding.role}\u0000${binding.relativePath}`,
+          binding,
+        ]))
+        if (changedStates.length !== input.bindings.length) {
+          throw projectControlHttpError(
+            'DOCUMENT_BINDING_SET_CHANGED',
+            '当前发生变化的文档集合与请求不一致，请刷新后重新确认。',
+            409,
+          )
+        }
+        for (const state of changedStates) {
+          const identity = `${state.role}\u0000${state.relativePath}`
+          const requested = requestByIdentity.get(identity)
+          const registered = registeredByIdentity.get(identity)
+          if (requested === undefined
+            || registered === undefined
+            || requested.expectedContentHash !== registered.contentHash
+            || requested.currentContentHash !== state.contentHash) {
+            throw projectControlHttpError(
+              'DOCUMENT_BINDING_SET_CHANGED',
+              '当前文档哈希或已登记哈希与请求不一致，请刷新后重新确认。',
+              409,
+            )
+          }
+        }
+        return options.storage.acceptCurrentDocumentBindings(projectId, {
+          expectedRevision: input.expectedRevision,
+          bindings: input.bindings,
+          documentIndex,
+        })
+      } catch (error) {
+        if (isPublicHttpError(error)) throw error
+        throw publicDocumentIndexError(error)
+      }
+    },
+
     resolveDocumentRebind(projectId: string, proposalId: string, input: {
       expectedRevision: number
       decision: 'accept' | 'reject'
@@ -1468,6 +1544,13 @@ function publicDocumentIndexError(error: unknown): unknown {
       return projectControlHttpError('REBIND_BINDING_MISSING', '原文档绑定已不存在，请刷新。', 409)
     case 'binding_conflict':
       return projectControlHttpError('REBIND_BINDING_CONFLICT', '重绑目标已经是已绑定文档路径。', 409)
+    case 'revision_conflict':
+      return projectControlHttpError('REVISION_CONFLICT', '项目已经变化，请刷新后重试。', 409)
+    case 'binding_hash_conflict':
+    case 'binding_acceptance_set_mismatch':
+      return projectControlHttpError('DOCUMENT_BINDING_SET_CHANGED', '当前文档绑定或哈希已经变化，请刷新后重新确认。', 409)
+    case 'mode_conflict':
+      return projectControlHttpError('MODE_CONFLICT', '只有已关联的旧项目可以接受当前文档哈希。', 409)
     default:
       return projectControlHttpError('DOCUMENT_INDEX_OPERATION_FAILED', '文档索引操作失败。', 409)
   }

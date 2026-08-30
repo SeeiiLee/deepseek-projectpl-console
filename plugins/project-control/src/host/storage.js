@@ -1520,6 +1520,110 @@ function validateDocumentIndexInput(input) {
   return Object.freeze({ projectId, documentStates, rebindProposals })
 }
 
+function validateDocumentBindingAcceptanceInput(projectId, input) {
+  requireObject(input, 'input')
+  const expectedRevision = requireInteger(input.expectedRevision, 'input.expectedRevision', 1)
+  if (!Array.isArray(input.bindings) || input.bindings.length < 1 || input.bindings.length > 50) {
+    throw new StorageValidationError('input.bindings must be an array of 1..50 items.')
+  }
+  const seen = new Set()
+  const bindings = input.bindings.map((raw, index) => {
+    const field = `input.bindings[${index}]`
+    const binding = requireObject(raw, field)
+    const role = requireString(binding.role, `${field}.role`)
+    const relativePath = requireString(binding.relativePath, `${field}.relativePath`)
+    if (!DOCUMENT_ROLES.has(role) || !RELATIVE_PATH.test(relativePath)) {
+      throw new StorageValidationError('Document binding acceptance contains an invalid role or relative path.', { index })
+    }
+    const expectedContentHash = binding.expectedContentHash ?? null
+    if (expectedContentHash !== null && !CONTENT_HASH.test(expectedContentHash)) {
+      throw new StorageValidationError(`${field}.expectedContentHash is invalid.`, { index })
+    }
+    const currentContentHash = requireString(binding.currentContentHash, `${field}.currentContentHash`)
+    if (!CONTENT_HASH.test(currentContentHash) || currentContentHash === expectedContentHash) {
+      throw new StorageValidationError(`${field}.currentContentHash is invalid or unchanged.`, { index })
+    }
+    const identity = `${role}\u0000${relativePath}`
+    if (seen.has(identity)) {
+      throw new StorageValidationError('Document binding acceptance contains a duplicate role/path pair.', { index })
+    }
+    seen.add(identity)
+    return { role, relativePath, expectedContentHash, currentContentHash, identity }
+  })
+  const documentIndex = validateDocumentIndexInput(input.documentIndex)
+  if (documentIndex.projectId !== projectId || documentIndex.rebindProposals.length > 0) {
+    throw new StorageValidationError('Trusted document index does not match the binding acceptance project.', {
+      reason: 'binding_acceptance_set_mismatch',
+    })
+  }
+  const changedStates = documentIndex.documentStates.filter(state => state.state === 'changed')
+  if (changedStates.length !== bindings.length
+    || documentIndex.documentStates.some(state => (
+      state.state === 'missing'
+      || state.state === 'unreadable'
+      || state.parseIssues.some(issue => issue.severity === 'blocking')
+    ))) {
+    throw new StorageValidationError('Trusted document index is not safe for binding acceptance.', {
+      reason: 'binding_acceptance_set_mismatch',
+    })
+  }
+  const bindingByIdentity = new Map(bindings.map(binding => [binding.identity, binding]))
+  for (const state of changedStates) {
+    const binding = bindingByIdentity.get(`${state.role}\u0000${state.relativePath}`)
+    if (binding === undefined || binding.currentContentHash !== state.contentHash) {
+      throw new StorageValidationError('Trusted document index changed before binding acceptance.', {
+        reason: 'binding_acceptance_set_mismatch',
+      })
+    }
+  }
+  return Object.freeze({ expectedRevision, bindings, documentIndex })
+}
+
+function upsertDocumentStates(database, projectId, documentStates, recordedAt, acceptedIdentities = new Set()) {
+  const upsertState = database.prepare(`
+    INSERT INTO project_document_states(
+      project_id, role, relative_path, binding_source, state, content_hash,
+      byte_size, parse_issues_json, revision, first_seen_at,
+      last_verified_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(project_id, role, relative_path) DO UPDATE SET
+      binding_source = excluded.binding_source,
+      state = excluded.state,
+      content_hash = excluded.content_hash,
+      byte_size = excluded.byte_size,
+      parse_issues_json = excluded.parse_issues_json,
+      revision = excluded.revision,
+      last_verified_at = excluded.last_verified_at,
+      updated_at = excluded.updated_at
+  `)
+  for (const state of documentStates) {
+    const prior = database.prepare(`
+      SELECT revision, content_hash AS contentHash, state, first_seen_at AS firstSeenAt
+      FROM project_document_states
+      WHERE project_id = ? AND role = ? AND relative_path = ?
+    `).get(projectId, state.role, state.relativePath)
+    const accepted = acceptedIdentities.has(`${state.role}\u0000${state.relativePath}`)
+    const persistedState = accepted ? 'ok' : state.state
+    const changed = prior === undefined
+      || prior.contentHash !== state.contentHash
+      || prior.state !== persistedState
+    upsertState.run(
+      projectId,
+      state.role,
+      state.relativePath,
+      state.bindingSource,
+      persistedState,
+      state.contentHash,
+      state.byteSize,
+      JSON.stringify(state.parseIssues),
+      prior === undefined ? 1 : Number(prior.revision) + (changed ? 1 : 0),
+      prior === undefined ? recordedAt : prior.firstSeenAt,
+      recordedAt,
+      recordedAt,
+    )
+  }
+}
+
 function selectDocumentStateRows(database, projectId) {
   return database.prepare(`
     SELECT
@@ -4621,46 +4725,7 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
             }
           }
         }
-        const upsertState = database.prepare(`
-          INSERT INTO project_document_states(
-            project_id, role, relative_path, binding_source, state, content_hash,
-            byte_size, parse_issues_json, revision, first_seen_at,
-            last_verified_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(project_id, role, relative_path) DO UPDATE SET
-            binding_source = excluded.binding_source,
-            state = excluded.state,
-            content_hash = excluded.content_hash,
-            byte_size = excluded.byte_size,
-            parse_issues_json = excluded.parse_issues_json,
-            revision = excluded.revision,
-            last_verified_at = excluded.last_verified_at,
-            updated_at = excluded.updated_at
-        `)
-        for (const state of index.documentStates) {
-          const prior = database.prepare(`
-            SELECT revision, content_hash AS contentHash, state, first_seen_at AS firstSeenAt
-            FROM project_document_states
-            WHERE project_id = ? AND role = ? AND relative_path = ?
-          `).get(index.projectId, state.role, state.relativePath)
-          const changed = prior === undefined
-            || prior.contentHash !== state.contentHash
-            || prior.state !== state.state
-          upsertState.run(
-            index.projectId,
-            state.role,
-            state.relativePath,
-            state.bindingSource,
-            state.state,
-            state.contentHash,
-            state.byteSize,
-            JSON.stringify(state.parseIssues),
-            prior === undefined ? 1 : Number(prior.revision) + (changed ? 1 : 0),
-            prior === undefined ? recordedAt : prior.firstSeenAt,
-            recordedAt,
-            recordedAt,
-          )
-        }
+        upsertDocumentStates(database, index.projectId, index.documentStates, recordedAt)
 
         const incomingKeys = new Set(index.rebindProposals.map((proposal) => (
           `${proposal.role}\u0000${proposal.missingRelativePath}`
@@ -4741,6 +4806,129 @@ function createStorage({ database, databasePath, lockPath, writerLock, migration
       })
       void persisted
       return this.getProjectDocumentIndex(index.projectId)
+    },
+
+    acceptCurrentDocumentBindings(projectId, input) {
+      ensureOpen()
+      requireString(projectId, 'projectId')
+      if (!BUSINESS_IDS.prj.test(projectId)) {
+        throw new StorageValidationError('projectId must be a prj_ UUIDv7.')
+      }
+      const acceptance = validateDocumentBindingAcceptanceInput(projectId, input)
+      const recordedAt = requireTimestamp(now(), 'now()')
+      return executeWrite(database, () => {
+        const project = database.prepare(`
+          SELECT mode, revision FROM projects WHERE project_id = ?
+        `).get(projectId)
+        if (!project) {
+          throw new StorageValidationError('The project does not exist.', {
+            reason: 'project_not_found',
+            projectId,
+          })
+        }
+        if (project.mode !== 'linked_legacy') {
+          throw new StorageValidationError('Only linked legacy projects may accept current document hashes.', {
+            reason: 'mode_conflict',
+            projectId,
+          })
+        }
+        const currentRevision = Number(project.revision)
+        if (currentRevision !== acceptance.expectedRevision) {
+          throw new StorageValidationError('The project changed before document binding acceptance.', {
+            reason: 'revision_conflict',
+            currentRevision,
+          })
+        }
+
+        const acceptedBindings = []
+        const acceptedIdentities = new Set()
+        const selectBinding = database.prepare(`
+          SELECT content_hash AS contentHash, revision
+          FROM project_document_bindings
+          WHERE project_id = ? AND role = ? AND relative_path = ?
+        `)
+        const updateBinding = database.prepare(`
+          UPDATE project_document_bindings
+          SET content_hash = ?, confirmed_at = ?, revision = revision + 1
+          WHERE project_id = ? AND role = ? AND relative_path = ?
+          RETURNING revision
+        `)
+        for (const binding of acceptance.bindings) {
+          const row = selectBinding.get(projectId, binding.role, binding.relativePath)
+          if (!row || row.contentHash !== binding.expectedContentHash) {
+            throw new StorageValidationError('The registered document binding hash changed before acceptance.', {
+              reason: 'binding_hash_conflict',
+              projectId,
+              role: binding.role,
+              relativePath: binding.relativePath,
+            })
+          }
+          const updated = updateBinding.get(
+            binding.currentContentHash,
+            recordedAt,
+            projectId,
+            binding.role,
+            binding.relativePath,
+          )
+          acceptedIdentities.add(binding.identity)
+          acceptedBindings.push(Object.freeze({
+            role: binding.role,
+            relativePath: binding.relativePath,
+            previousContentHash: binding.expectedContentHash,
+            contentHash: binding.currentContentHash,
+            revision: Number(updated.revision),
+          }))
+        }
+
+        upsertDocumentStates(
+          database,
+          projectId,
+          acceptance.documentIndex.documentStates,
+          recordedAt,
+          acceptedIdentities,
+        )
+        database.prepare(`
+          UPDATE project_document_rebind_proposals
+          SET status = 'superseded', resolved_at = ?, updated_at = ?, revision = revision + 1
+          WHERE project_id = ? AND status = 'proposed'
+        `).run(recordedAt, recordedAt, projectId)
+        const updatedProject = database.prepare(`
+          UPDATE projects
+          SET revision = revision + 1, updated_at = ?
+          WHERE project_id = ? AND revision = ?
+          RETURNING revision
+        `).get(recordedAt, projectId, acceptance.expectedRevision)
+        if (!updatedProject) {
+          throw new StorageValidationError('Project revision update unexpectedly affected no rows.')
+        }
+        const projectRevision = Number(updatedProject.revision)
+        const event = recordConsoleEvent({
+          projectId,
+          aggregateType: 'project',
+          aggregateId: projectId,
+          beforeRevision: acceptance.expectedRevision,
+          afterRevision: projectRevision,
+          eventType: 'project.legacy.document_bindings.accepted',
+          data: {
+            acceptedBindings: acceptedBindings.map(binding => ({
+              role: binding.role,
+              relativePath: binding.relativePath,
+              previousContentHash: binding.previousContentHash,
+              contentHash: binding.contentHash,
+              revision: binding.revision,
+            })),
+          },
+          recordedAt,
+        })
+        return Object.freeze({
+          projectId,
+          projectRevision,
+          commandId: event.causation.commandId,
+          eventId: event.eventId,
+          recordedAt,
+          acceptedBindings: Object.freeze(acceptedBindings),
+        })
+      })
     },
 
     getProjectDocumentIndex(projectId) {
