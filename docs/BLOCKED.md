@@ -45,6 +45,13 @@
 
 Cyrus 已分别授权并完成 B-G4-0/G2-P2 的本地治理、代码、测试、一次正式 packed 验收、`496b3357...` 精确生命周期删除、精确 commit、source push 和现有 Draft Release `376569643` 的公开；当前授权只覆盖本次 docs-only 发布状态对齐，不覆盖这批文档的 commit/push、真实 Stable 安装/rebind、其他删除或量化/食溯迁移。后续 packed E2E 必须从权威 nextTask 取得 logical task ID，并复用或最多新增一套按内容寻址的共享 package set。
 
+## 2026-08-30 食溯换绑后剩余治理门
+
+- **Stable 物理迁移与换绑不再阻断**：官方 Host 只读核验确认食溯 `project_id` 不变、registrationMode=`managed`、lifecycle=`active`、revision=`4`，唯一 active root 为 `F:\Projects\meal-tracker\workspace`；旧 QClaw location 为 inactive，rebind 事件 `evt_01a052aa-6c13-7a7b-ba7c-f4e554f9321f` 已记录。没有第二次 rebind，也没有直接访问数据库。
+- **Codex/Kimi 外部定位器已由 Cyrus 人工完成**：两端均已对齐 `F:\Projects\meal-tracker\workspace`，没有新建第二项目身份、移动文件、改写旧会话或建立 junction。
+- **仅一份 managed 文档绑定待产品交付后刷新**：食溯治理收口将 `docs/NEXT.md` 从已接受哈希 `0f777907...` 更新为 `86395da2...`。rc.15 仅允许 linked-legacy，面对 managed 项目返回 `MODE_CONFLICT` 是当前真实产品缺口。提交 `2588b6b` 已补齐 manifest 身份/冻结哈希复核以及 binding + mirror 同事务更新；但在 rc.16 发布、安装并另行授权真实 Host 写入前，禁止接受这份 NEXT、直接改 Stable 数据库或重复 rebind。
+- **GitHub Support `#4708849` 继续异步但不阻断开发**：它只影响旧敏感对象的服务端最终销毁证明；不得把等待 Support 重新升级为本地迁移、UI 地基或 B1b 的前置门。
+
 ## 历史 A 线状态（已完成并冻结）
 
 ## Codex 复核阻断项（2026-08-24）：三项已全部修复并验证

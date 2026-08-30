@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结。食溯清洁本地/远端主线与 GitHub Support 异步事故收尾状态不变；真实物理迁移尚未开始。迁移 Task 1 已完成旧路径活动入口收口，但官方 `prepare-upgrade` 因 DEVLOG、NEXT、PRD 登记哈希落后于已验收权威合并而正确失败关闭。Project Control 产品提交 `cf479676636caab52801bc339d3399eb90912e2b` 已提供 linked-legacy 专用、Host 新鲜重读且精确匹配的 `project.document-bindings.accept-current` 事务，并已 ff-only 合入 canonical；未写 Stable、未操作真实食溯。当前下一任务为 `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE`，只制作一份本地单插件候选；其后依次经过 candidate commit/push/Release、Stable 安装与官方食溯哈希接受/prepare-upgrade，才恢复迁移/rebind。迁移闭环后先做 UI 地基，再进入 B1b。完整队列见 `docs/NEXT.md` 与机器治理索引。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结。Project Control `0.1.0-rc.15` 已进入 Stable。食溯已完成旧文档哈希接受、managed upgrade、104,423 文件原子物理迁移、唯一 Host rebind，以及 Cyrus 人工完成的 Codex/Kimi canonical locator 对齐；Stable 仍为 revision=4、唯一 active root=`F:\Projects\meal-tracker\workspace`。rc.15 对 managed 项目的 `accept-current` 正确失败关闭，因此状态化 `docs/NEXT.md` 的唯一剩余绑定变化尚未写入 Stable。产品提交 `2588b6bd07a3cbfafd5a218b33dd6132d67a7d14` 已在同一官方事务中补齐 managed manifest/mirror 原子接受并 ff-only 合入 canonical；当前下一任务是只制作 Project Control rc.16 本地单插件候选并执行受治理 packed 验收。push、Release、Stable 安装与真实食溯 NEXT 接受仍是后续独立门；完成后才进入 UI 地基，再进入 B1b。
 
 ## 权威链
 

@@ -1,11 +1,19 @@
 # Next Development
 
-状态：**文档绑定哈希接受能力已提交并合入 canonical；当前下一任务为 Project Control rc.15 本地单插件候选，食溯迁移暂停在 Stable 文档治理门前**
-当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.14 active；DSH 正式 binding 与未来原生新会话均指向 `F:\Projects\deepseek-harness-personal\workspace`；旧会话继续作为“旧位置历史”只读可见**
-当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`；空文档升级产品源码提交为 `613f53588bcd3585b7298db323f682c46d6129df`，rc.14 交付提交为 `6e2a1d0c09bb78140a4f99929acf2242a9635bfa`，Stable 当前 generation=`pending-1787924242823`。旧目录 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828` 保留，未删除、未复制、未建 junction；`demos/`、`release-staging/`、`tmp/` 与并行出现的未跟踪 `plugins/*` 目录继续排除，本任务不清理、不提交
+状态：**Project Control rc.15 已发布、安装并验收；食溯迁移、单次 rebind 与 Codex/Kimi locator 对齐均已完成；managed 文档哈希接受修复已合入 canonical，当前制作 rc.16 本地候选并执行 packed**
+当前 Stable：**客户端 0.4.6；Project Control 0.1.0-rc.15 active；食溯 `prj_01a0109b-0dd8-7bfb-be07-ee80c768640d` 为 managed/active、revision=4，唯一 active root=`F:\Projects\meal-tracker\workspace`；旧 QClaw 路径已作为 inactive 历史位置保留**
+当前 canonical workspace：`F:\Projects\deepseek-harness-personal\workspace`，产品 HEAD=`2588b6bd07a3cbfafd5a218b33dd6132d67a7d14`。rc.15 Release=`plugins-v2026.08.30.1`，唯一 Project Control tgz SHA-256=`ab12d00aae86329f7825db4020e187a8f6a200ce4e22e9b58f709b1e5b0f515e`。旧 DSH 历史目录继续保留；`demos/`、既有 `release-staging/`、`tmp/` 与未跟踪 UI/插件实验目录继续排除，不清理、不提交
 旧 B 工作树：`6481c4794cb44b6020589b4aa52b9e7fc6095911 / 0.4.3`，只作迁移输入，不得继续扩建
 
-> **2026-08-30 当前唯一执行顺序**：① 食溯旧路径回归已经完成，但 `prepare-upgrade` 因 DEVLOG、NEXT、PRD 的登记哈希落后于已验收权威合并而失败关闭；② 产品提交 `cf479676` 已加入 linked-legacy 专用、Host 重新读取且精确匹配的哈希接受事务；③ 当前只制作一份 rc.15 本地单插件候选；④ candidate commit/push/Release、Stable 安装、真实食溯哈希接受与再次 `prepare-upgrade` 分别另行授权；⑤ 上述门通过后才恢复物理迁移/rebind，迁移后再做 UI 地基和 B1b。
+> **2026-08-30 当前唯一执行顺序**：① rc.15 Stable、食溯旧文档哈希、managed upgrade、104,423 文件物理迁移、唯一 rebind 与 Codex/Kimi locator 已完成；② managed `accept-current` 修复已提交为 `2588b6b` 并 ff-only 合入 canonical；③ 当前只版本化并制作一份 rc.16 单插件候选，从 canonical 复用或最多新增一套内容寻址 package-set 完成 packed；④ push/Release、Stable 安装和真实食溯 NEXT 接受分别另行授权；⑤ 绑定收口后进入 UI 地基，验收后才恢复 B1b。
+
+## 当前门：B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-LOCAL-CANDIDATE
+
+- Stable rebind 已完成且只发生一次：revision `3 → 4`，事件 `evt_01a052aa-6c13-7a7b-ba7c-f4e554f9321f`；`project_id`、managed manifest、路径历史与审计链均保持。
+- Codex 与 Kimi 已由 Cyrus 人工对齐 canonical workspace；旧会话历史保留，未改写原始日志。
+- 食溯 `docs/NEXT.md` 从旧已接受哈希 `0f777907...` 更新为 `86395da2...`；rc.15 对 managed 项目返回 `MODE_CONFLICT`。提交 `2588b6b` 复用唯一官方事务，同时复核 manifest 身份/冻结哈希并原子更新 binding + manifest mirror。
+- 当前只制作一份 rc.16 本地单插件候选并执行受治理 packed；不得 push、Release、安装、写 Stable、接受真实 NEXT、移动项目、重复 rebind 或进入 B1b。
+- GitHub Support 工单 `#4708849` 仍只阻断服务端旧敏感对象最终销毁证明，不阻断本地迁移、外部定位器收口或后续 UI 开发。
 
 ## 已完成：B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14 生产链
 
@@ -179,12 +187,14 @@ Project Control 的 CSS module 编译身份和 bundle virtual id 已从物理绝
 | 28 | `G4-MEAL-TRACKER-REMOTE-HISTORY-REPLACEMENT` | 用一次精确 lease 替换私有远端 advertised `master` | 已完成分支层；receipt `a7356ecd...9281ca4`；GitHub 深层清除未证明 |
 | 29 | `G4-MEAL-TRACKER-GITHUB-SENSITIVE-DATA-PURGE-CLOSURE` | 核验 GitHub 缓存/PR/fork/服务器对象，跟踪 Support 清除请求 | 外部异步等待；工单 `#4708849` open，不阻断迁移，仍阻断“物理清除完成”结论 |
 | 30 | `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE` | 以 Host 新鲜重读和精确新旧哈希集合接受已验收 linked-legacy 文档变化 | 已完成代码复核、提交与 ff-only 合入：`cf479676`；未发布/安装/写 Stable |
-| 31 | `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE` | 只制作一份 Project Control rc.15 本地单插件候选并完成可复现与隔离验收 | 当前任务；已授权 local-only |
-| 32 | `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-COMMIT-PUSH-RELEASE` | 精确提交 rc.15 版本化文件、无 force push、发布单插件 Release | 待新授权 |
-| 33 | `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-STABLE-ACCEPTANCE-AND-MEAL-DOCUMENT-RECONCILIATION` | 安装 rc.15，并通过官方 Host 事务接受食溯三份当前权威文档哈希后重跑 `prepare-upgrade` | 待新授权；禁止直接改库 |
-| 34 | `G4-MEAL-TRACKER-MIGRATION-REBIND` | 继续既有合同，完成 managed upgrade、同卷原子迁移、唯一 rebind 与跨端 locator 对齐 | 暂停，等待 rc.15 Stable 文档治理门关闭 |
-| 35 | `B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B` | 迁移后稳定项目身份、导航、列表/详情、搜索筛选、状态反馈和危险操作 UI 地基 | 待食溯迁移闭环；不得提前进入审批 DB/收件箱 |
-| 36 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；依赖 UI 地基验收 |
+| 31–34 | rc.15 交付与 `G4-MEAL-TRACKER-MIGRATION-REBIND` | linked-legacy 哈希接受、managed upgrade、物理迁移和唯一 rebind | 已完成 |
+| 35 | `G4-MEAL-TRACKER-EXTERNAL-LOCATOR-ALIGNMENT` | Codex/Kimi 指向 canonical workspace | 已由 Cyrus 人工完成 |
+| 36 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-CLOSURE` | managed manifest/mirror 原子哈希接受能力 | 已提交 `2588b6b` 并 ff-only 合入 canonical |
+| 37 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-LOCAL-CANDIDATE` | 一份 rc.16 单插件候选与 governed packed | 当前任务；已授权本地候选/packed |
+| 38 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-COMMIT-PUSH-RELEASE` | 候选版本提交、push、单插件 Release | 待另行授权 |
+| 39 | `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-RC16-STABLE-ACCEPTANCE-AND-MEAL-NEXT-CLOSURE` | 安装 rc.16 并精确接受唯一 NEXT 变化 | 待另行授权；禁止直接改库 |
+| 40 | `B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B` | 项目身份、导航、列表/详情、搜索筛选、状态反馈和危险操作 UI 地基 | 待食溯 NEXT 绑定闭环；不得提前进入审批 DB/收件箱 |
+| 41 | `B1B-APPROVAL-INBOX-MVP` | migration 0010、审批数据库、文件摄入、审批收件箱 | Class A；依赖 UI 地基验收 |
 | 37 | `B2-GOVERNANCE-VIEW` | 治理视图 | 依赖 B1b 与 ADR-005 决策 |
 | 38 | `B3-AUTHORIZATION-SESSION-CALENDAR` | 常备授权、门禁、会话上下文、日历指标 | 依赖 B1/B2 |
 | 39 | `G3-CROSS-HARNESS-ACTIVATION` | 从 shadow 推进真实宿主 discovery、Skill/记忆接入验收 | 逐 Harness 授权，不批量写宿主 |

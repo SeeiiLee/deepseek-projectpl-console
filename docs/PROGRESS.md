@@ -352,6 +352,22 @@
 - rc.5 ChatView/工具卡仍未从真实点击调用 `openDetails`。Gate 1 已把官方 Details 子树与 `openDetails/closeDetails` 兼容命令统一路由到 Workbench 的 `Details` 页签，但这只是详情容器与状态契约，不是工具卡业务已接通。
 - `compat.json` 仍保持 Harness rc.5/`47f943`，本轮不更新。`artifacts\win-unpacked` 已按 Gate 2C 重建并通过 packed smoke；NSIS 和 Portable 没有重建，仍是此前 Gate 的制品。
 
+## 2026-08-30 G4 食溯物理迁移与 Stable 单次 rebind 验收
+
+- Project Control `0.1.0-rc.15` 已发布为 `plugins-v2026.08.30.1`（Release `379266339`）并进入 Stable；tgz SHA-256=`ab12d00aae86329f7825db4020e187a8f6a200ce4e22e9b58f709b1e5b0f515e`，Stable storage=`ready`、schemaVersion=`9`。
+- 食溯五份旧文档 binding 已通过官方 Host 接受，`prepare-upgrade` 闭环后 managed upgrade 已完成。物理迁移 Forward R2 验证 104,423 个冻结文件和六个 Git worktree，通过后旧根消失、新 workspace=`F:\Projects\meal-tracker\workspace`。
+- Cyrus 在 Stable 使用唯一“更换工作区”入口完成单次 rebind。只读复核确认 `prj_01a0109b-0dd8-7bfb-be07-ee80c768640d` 为 managed/active、revision `3 → 4`；新 location `loc_01a052aa-6afb-7ff1-8b64-2c635fdc41fb` active，旧 location `loc_01a0109b-7f15-792d-924c-77a583958186` inactive；审计事件=`evt_01a052aa-6c13-7a7b-ba7c-f4e554f9321f`。
+- 食溯 canonical 已补齐 human/machine governance index、current-state、BLOCKED、PROGRESS，`project-governance-context` 返回 `ready` 且五份 authority hash 全 matched。现有业务 dirty/untracked 与六工作树均保留；未 commit、push、发布、删除、复制、建 junction 或直接读写 Stable 数据库。
+- 只读外部定位器审计发现 Codex 项目 `cc6d16fb-6bee-4d1d-817c-4b9b34048bb3` 与 Kimi Workspace 均仍指向已经不存在的旧 QClaw 路径；因此下一任务为 `G4-MEAL-TRACKER-EXTERNAL-LOCATOR-ALIGNMENT`。本轮状态化 `docs/NEXT.md` 的新哈希也待另行授权后由官方 Host 精确接受。
+- 物理迁移验收 receipt：`../local/receipts/op_g4_meal_tracker_migration_rebind_20260830_08_post_physical_verification.json`，SHA-256=`8929d6622e975f4962db4be7aad5f91a7ee71694ddcf879c4835ef2261798627`。换绑与治理 bootstrap receipt 写入 Project Home `local/receipts`，不进 Git。
+
+## 2026-08-30 managed 文档绑定接受修复与 canonical 合入
+
+- Cyrus 已把 Codex 与 Kimi locator 对齐到 `F:\Projects\meal-tracker\workspace`；rc.15 的官方 `accept-current` 对 managed 项目返回 `MODE_CONFLICT`，因此没有写 Stable、没有重复 rebind，也没有直接改数据库。
+- `B-G4-MANAGED-DOCUMENT-BINDING-ACCEPTANCE-CLOSURE` 在任务 worktree 中复用同一 Host 命令：写前复核活动 manifest 的普通文件边界、真实路径、project_id、冻结 manifest hash 和文档声明集合；同一 storage transaction 更新 `project_document_bindings` 与 `project_manifest_mirrors`，project/mirror revision 和审计事件同步推进，失败整笔回滚且不产生 outbox。
+- Project Control `208/208`、全插件 manifest/lock/typecheck/syntax/tests、checkout、launch、governance 与 diff 门禁通过；正式 `npm test` 的产品测试全部通过，packed 测试按治理合同拒绝任务 worktree，Electron `EBUSY` 单测复跑通过。收据=`../local/receipts/op_b_g4_managed_document_binding_acceptance_closure_20260830_01.json`，SHA-256=`d153ca126f3f9e659ecf8ddc7f4222807dc62e9b1676f06a79bf82cbf643af42`。
+- 产品提交 `2588b6bd07a3cbfafd5a218b33dd6132d67a7d14` 精确包含 4 个 Project Control 文件，并从 `d935f30e4fe8ef6934bff89de96ee4ae6db55191` 严格 ff-only 合入 canonical；既有 UI 实验目录和 `release-staging/` 未纳入提交。下一门为一份 rc.16 本地单插件候选与 canonical governed packed；push、Release、Stable 安装和真实食溯 NEXT 接受仍未授权。
+
 ## 2026-08-24 v0.4.4 生产缺陷修复（main→helper 外部插件根未注入）
 - 目标：修复 v0.4.3 真实 Stable 重启后 pending 不激活（helper 拿不到 userData/plugins-external），产出 v0.4.4 候选与红→绿真实进程证据。
 - 顺序：①基线 727/727（skipped=0）②写 packed 回归（不注入 DSH_PERSONAL_PLUGINS_EXTERNAL）在旧代码红 ③修复 resolveExternalRoot userData 优先 + main 注入 helper + stable 缺路径 fail-closed ④全量门禁 + 构建 v0.4.4 Stable 候选 ⑤文档/评估 minClient；最终全量 731/731（新增 4 项）。
