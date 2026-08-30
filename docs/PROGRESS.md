@@ -1,5 +1,66 @@
 # Progress
 
+## 2026-08-30：linked-legacy 文档绑定哈希接受能力完成代码复核、提交与 canonical 合入
+
+- 食溯迁移 Task 1 的旧路径活动入口收口与新旧路径回归已完成；Task 2 的官方 `prepare-upgrade` 因 DEVLOG、NEXT、PRD 三条 Stable 登记哈希与当前已验收权威文件不一致而失败关闭。没有提交 `project.upgradeManaged`，也没有直接修改 Stable 数据库。
+- `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE` 新增能力 `project.document-bindings.accept-current`。它只允许 `linked_legacy`，由 Host 重新读取全部登记文档，并要求 project revision、完整 changed 集合、旧登记哈希和新观察哈希精确一致；缺失、不可读、阻断诊断、重绑提案或并发漂移均拒绝。
+- 事务只更新既有 `project_document_bindings`、对应 document state 和项目 revision，并写一份 CommandReceipt 与一条 append-only event；不保存文档正文、不写 outbox、不加 migration、不制造第二套 rebind。代码复核未发现阻断项。
+- 产品提交 `cf479676636caab52801bc339d3399eb90912e2b` 精确包含 6 个 Project Control 源码/测试/bundle 文件，并从 `4b1bc2553f2e3c85505ea55aea464f70566544d8` 严格 ff-only 合入 canonical。6 个文件与验收收据 SHA 全匹配，定向复跑 5/5；完整既有验收为 Project Control 207/207、安全仓库套件 848/848、build/plugins/checkout/launch/governance/diff 通过。
+- 实现验收 receipt=`../local/receipts/op_b_g4_legacy_document_binding_hash_acceptance_20260830_02-acceptance.json`，SHA-256=`acf5f8f10ce8d4edb7995f4de25f4468e5a3a15aaee720768d4dc06d3cd64bc1`；提交/合入 receipt=`../local/receipts/op_b_g4_legacy_document_binding_hash_acceptance_20260830_03-commit-and-integration.json`，SHA-256=`b5a01834b1bd81738d718b39112845a7ff07431fe9680a732d877aec28415522`。
+- 当前下一任务为 `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE`，只制作一份本地单插件候选。candidate commit/push/Release、Stable 安装、真实食溯哈希接受、`prepare-upgrade`、迁移/rebind、UI 与 B1b 均未授权进入。
+
+## 2026-08-30：GitHub 深层清除改为异步收尾，食溯迁移与 UI/B1b 顺序重新冻结
+
+- Cyrus 已通过登录态 GitHub Support 提交工单 [#4708849](https://support.github.com/ticket/personal/0/4708849)，状态 open。服务器 GC、内部引用/fork 和缓存视图清除仍未验证，继续保持事故未关闭；Cyrus 当前决定不再让该外部等待阻断食溯迁移，不删除或重建 GitHub 仓库。
+- 只读重冻结确认旧源 `F:\QClawData\workspace\meal_tracker` 存在、目标 `F:\Projects\meal-tracker` 不存在；正式 `master` 与 `origin/master` 均为清洁提交 `a278843dae95c08285f2c03c535ef6eba5f86d78`，旧 First Changed Commit 与旧 tip 均不在清洁主线可达。
+- 六个 worktree HEAD 全部为 `a278843...`，既有 dirty/untracked 继续按各自 status hash 保护；未覆盖、清理或提交。tracked 文件中仍有 27 个旧绝对路径引用，比旧预检的 20 个更多，迁移前必须分类收口并通过新旧路径回归，不能直接移动后再补救。
+- 后续顺序正式改为：`G4-MEAL-TRACKER-MIGRATION-REBIND` → `B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B` → `B1B-APPROVAL-INBOX-MVP` → `B2-GOVERNANCE-VIEW`。UI 地基只稳定项目身份、导航、列表/详情、搜索筛选、状态反馈和危险操作交互，不提前实现审批 DB/收件箱。
+- 本轮只更新 DSH canonical 六份治理文件并写本地对齐 receipt；未修改食溯源、目标路径、Stable、GitHub 仓库或任何 binding，未 commit/push。receipt=`../local/receipts/op_g4_meal_tracker_support_async_decoupling_20260830_01.json`，SHA-256=`21042afe51607cbee3219c67fe9e2faee27ef40885130642fb66ca88b93d05b0`。
+
+## 2026-08-29：食溯 GitHub 深层清除已证明必要，Support 材料就绪
+
+- `project-governance-context` 开工为 `ready`，6/6 authority hash 匹配；Cyrus 明确授权 `G4-MEAL-TRACKER-GITHUB-SENSITIVE-DATA-PURGE-CLOSURE`。
+- 官方 `filter-repo` 证据为 1 个 First Changed Commit、changed refs 仅 `master`、affected PR count=0、LFS 未使用。匿名 GitHub 页面因私有仓库返回 404，不能作为清除证据。
+- 在 task-owned bare repo 中请求 blob filter 并各只执行一次 fetch：旧 First Changed Commit `d4b9bb6...` 与旧 tip `e2dab202...` 均被 GitHub 成功按 SHA 返回，证明未公布的服务器对象仍存在；正式食溯 repo、refs、六工作树与远端均未修改。
+- 已生成不含原始个人数据或凭据值的 Support 正文、结构化证据和 first-changed-commits attachment。pre-support receipt=`../local/receipts/op_g4_meal_tracker_github_sensitive_data_purge_closure_20260829_01-pre-support.json`，SHA-256=`81a31bfe79fbdafa86537f9ec920d5520047f7559f184096f5f9bd84ab4850ad`。
+- GitHub Support 必须使用 Cyrus 的已登录网页会话提交；代理没有该登录态，Codex 内浏览器入口已排队，系统默认浏览器启动被宿主策略在启动前拒绝。当前未生成 ticket、未冒充提交完成。
+- 最终门禁同时观察到多个新的未跟踪 Skill/plugin 目录由并行外部活动出现；本任务严格只修改既有六份治理文档与 Project Home `local` 下的 task-owned 材料，没有触碰、暂存或清理这些目录。
+
+## 2026-08-29：食溯 advertised master 完成清洁替换，GitHub 深层清除另行闭环
+
+- 远端只读预检确认 `origin=https://github.com/SeeiiLee/nutrisight.git`、无 `pushurl`、远端只有 `master@e2dab202...` 且无 tag；精确 `force-with-lease` dry-run 退出 0，远端未变化。六个 worktree、R3/local-integration receipt、refs 与 Git 锁全部匹配冻结基线。
+- 先原子创建本地恢复 ref `refs/dsh/recovery/g4-meal-tracker-pre-remote-replacement-20260829@e2dab202...`，随后只进行一次 `master` 精确 lease 替换。GitHub receive-pack 接受，远端和本地 `origin/master` 均变为清洁提交 `a278843dae95c08285f2c03c535ef6eba5f86d78`；未重试、未创建或修改其他远端 ref/tag。
+- 替换后 advertised 远端仍只有一个 `master` ref；其 90 个可达提交的禁止历史路径 0、tip 禁止路径 0、GitHub token/URL userinfo 凭据位置 0，额外 advertised `refs/pull/*` 查询为 0，未输出匹配值。六工作树状态哈希、29 个 `outputs/**` 文件 / 35,047,644 bytes、remote 配置与源文件保持不变；`fsck` 退出 0、锁和操作 marker 均为 0。
+- 最终复核依据 GitHub 官方敏感数据移除说明纠正结论：force push 只证明主分支可达历史已替换，不能单独证明缓存提交页、内部 PR refs、fork/clone 或服务器对象已被物理清除。所以下一步新增 `G4-MEAL-TRACKER-GITHUB-SENSITIVE-DATA-PURGE-CLOSURE`；GitHub Support 未联系，另需外部动作授权。
+- 本地恢复 ref 仍可到达旧远端历史，专用于另行授权的恢复；没有 GC/prune。GitHub 对既有 `data/ref/dris2023_full.pdf`（66,464,175 bytes）给出超过推荐 50 MiB 的警告，本任务仅登记，未做 LFS 转换或再次改写历史。
+- receipt=`../local/receipts/op_g4_meal_tracker_remote_history_replacement_20260829_01.json`，SHA-256=`a7356ecd35ef8b2c6f45ce47d6c7078797226ae10a246bbe236d888fc9281ca4`。最终门禁期间另有外部活动创建未跟踪 `demos/ui-craft-pilot`，本任务按边界未触碰并已在收据排除。当前下一任务为 GitHub 深层清除闭环，必须另行授权；迁移/rebind、审核证据迁入、恢复历史清理、Stable 直接写入和 B1b 均未执行。
+
+## 2026-08-29：食溯 R3 清洁历史完成正式本地接入
+
+- 写入前冻结 `master`、5 个 linked-worktree HEAD、全部 refs、六个 index hash、status 条数与 status SHA；task-owned fixture 完成原子多 ref 事务的正向、回滚验证。fixture 首次测试暴露 PowerShell native pipeline 末行编码问题，但 fixture refs 未变化、无锁残留；改用显式 UTF-8 stdin 后正反事务均通过，源仓库从未参与该失败尝试。
+- R3 对象仅从 task-owned 本地候选导入，未访问网络或私有远端。一次 `git update-ref --stdin` prepare/commit 事务创建 `refs/dsh/candidates/g4-meal-tracker-clean-history-r3@cc23e344...`，并把正式 `master` 与 5 个 detached worktree HEAD 从 `46c395c1...` 映射为树完全相同的清洁提交 `a278843d...`。
+- 六个工作树的 index SHA、tracked/dirty/untracked 条数和 status SHA 与冻结值逐项一致，0 个 Git 锁残留；`master` 与候选 ref 的禁止路径、凭据扫描均为 0，22 个已知旧 blob 从二者均不可达，`fsck --full --no-reflogs` 退出 0。当前 `outputs/**` 29 个文件 / 35,047,644 bytes 原地不变。
+- `origin/master=e2dab202...` 和 remote 配置完全未变；3 个已知旧敏感 blob 仍可从 remote-tracking ref 到达。为保留回滚与远端替换证据，没有运行 GC/prune，也没有 force/push、联网、写 Stable、迁移/rebind、修改业务/个人数据或删除源文件。
+- receipt=`../local/receipts/op_g4_meal_tracker_clean_history_local_integration_20260829_01.json`，SHA-256=`4322162341c725413917af07fca52c53da0cea84f2ed1fdc3858fa193b272238`。下一任务为 `G4-MEAL-TRACKER-REMOTE-HISTORY-REPLACEMENT`，必须单独授权私有远端访问与 force-with-lease；食溯物理迁移/rebind 仍是另一道门。
+
+## 2026-08-29：食溯 R3 清洁历史候选通过，正式本地接入待授权
+
+- 在新的 task-owned staging 中从原始本地源重新制作 R3；R2 收据 SHA、候选 HEAD 与 pack SHA 均保持不变。R3 使用冻结的 `git-filter-repo v2.47.0`，全程未联网、未访问私有远端。
+- 全历史删除范围为 R2 五个隐私路径，加 `data/output/**` 与 `outputs/**`。90/90 源提交一一映射，授权删除范围以外树差异 0、元数据差异 0；一个提交说明里的 7 位旧提交号由工具确定性映射为新提交号。
+- 候选 HEAD=`cc23e344faec89564148cddbf78a0eda84b0fe7b`、tree=`aac900299ccc05d2df3a6b7a451bcb329d0c408e`；7 类禁止路径历史命中 0，22 个已知旧 blob 在 GC 后物理存在数 0，91 个候选提交凭据扫描命中 0，独立 clone 状态 0，`fsck` 0，唯一 gitlink 仍为 `data/china_fct@1cd312b...`。
+- 当前 `outputs/**` 29 个审核生成物（35,047,644 bytes）原地保留且不进 Git；候选只新增 `outputs/` 忽略规则。未来迁入 `F:\Projects\meal-tracker\local\evidence` 仅登记，未创建、复制或移动。
+- 六个源 worktree 的 HEAD、status 条数与 status SHA 逐项等于冻结值；源 `master`、linked worktree、refs、`.gitignore` 与源文件零漂移。候选 `git log --check` 仍有 816 条 / 70 文件的既有非安全格式债务，本任务未改写内容掩盖它。
+- receipt=`../local/receipts/op_g4_meal_tracker_credential_git_integrity_closure_r3_20260829_01.json`，SHA-256=`7c3fb089af18ab2bd99597e4ab133c2b3734851df72c48ca4d33920c94e4ef84`。当前只证明本地候选通过，不代表已接入正式项目；下一任务 `G4-MEAL-TRACKER-CLEAN-HISTORY-LOCAL-INTEGRATION` 仍需单独授权，force/push、远端替换、迁移/rebind、Stable、源删除和 B1b 均未执行。
+
+## 2026-08-29：量化 canonical 迁移与治理权威链闭环
+
+- 量化正式项目 `prj_01a01cb8-5e2c-7c76-90ae-54e8f97bf99a` 已完成保留 wrapper 的物理迁移、managed upgrade 和唯一 `project.rebindLocation`：Stable 项目 revision 3，`F:\Projects\cyrus-quant-trading\workspace` 为唯一 active primary location，旧含 U+200C 路径 inactive 且只留在路径历史。
+- Codex saved-project 与 Kimi workspace locator 均已指向 canonical workspace；Cyrus 已确认 Kimi 可以把旧项目会话移动到新项目。验收未读取或改写聊天正文。
+- 量化外层新增人工/机器治理索引、current-state、NEXT、BLOCKED、PROGRESS 与文档索引；`project-governance-context` 返回 `ready`，Project Home/manifest/index/current-state 的 ID 一致，6 份固定 authority hash 全部 matched。
+- 内层 Git 继续是 `main@c8b0e6b1e06b561507dfca3abd9a5383446da138`，53 项既有 dirty/untracked 的规范化 SHA-256 仍为 `7f2953882ba51b64abe62539d3e092e213cdedc123c1b88c39d5b24bba4ed4ea`；本轮没有清理、覆盖、提交、运行付费/联网任务或写业务状态。
+- DSH canonical 权威链已将量化的预检、迁移/rebind 与治理初始化标记为完成；下一任务晋升为 `G4-MEAL-TRACKER-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`，只读范围仍需 Cyrus 新授权，真实迁移不自动开始。
+- 收据：`../local/receipts/op_g4_quant_governance_authority_bootstrap_and_dsh_alignment_20260829_01.json`。本轮未 commit、push、发布、安装或修改 `release-staging/`。
+
 ## 2026-08-28：Project Control rc.14 Stable 验收与空文档升级生产治理收口完成
 
 - rc.14 交付提交 `6e2a1d0c09bb78140a4f99929acf2242a9635bfa` 已无 force 推送并发布为 [plugins-v2026.08.28.2](https://github.com/SeeiiLee/deepseek-projectpl-console/releases/tag/plugins-v2026.08.28.2)（Release `378493785`）；仅 Project Control `0.1.0-rc.14`，tgz 310,029 bytes，SHA-256=`7d068ae6aa5c2552f8b389bd77e06f1442922af418cf6fb9c40d75de7df65a21`。

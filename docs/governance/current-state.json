@@ -1,24 +1,24 @@
 {
   "schemaVersion": "current-state/v1",
   "projectId": "prj_01a0082e-fea8-7d6f-b6c2-08a259fba389",
-  "recordedAt": "2026-08-28T21:50:27.4157596+08:00",
+  "recordedAt": "2026-08-30T19:21:01.4087929+08:00",
   "authorityIndex": "docs/governance/governance-index.json",
   "projectHome": {
     "path": "F:\\Projects\\deepseek-harness-personal",
     "marker": ".project-home/project-home.json",
-    "status": "canonical-dsh-rebound-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
+    "status": "canonical-product-history-includes-legacy-document-binding-acceptance-rc15-local-candidate-next",
     "canonicalWorkspaceReady": true
   },
   "workspace": {
     "path": "F:\\Projects\\deepseek-harness-personal\\workspace",
     "branch": "codex/governance-alignment",
-    "approvedParentCommit": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
-    "headAtRecord": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa",
-    "workingTreeState": "single-authorized-docs-only-rc14-stable-acceptance-closure-release-staging-preserved-untracked",
+    "approvedParentCommit": "cf479676636caab52801bc339d3399eb90912e2b",
+    "headAtRecord": "cf479676636caab52801bc339d3399eb90912e2b",
+    "workingTreeState": "authorized-docs-only-product-integration-alignment-pending-commit-existing-untracked-preserved",
     "commitAuthorized": false,
-    "lastAuthorizedCommit": "docs-only-commit-created-by-current-closure",
+    "lastAuthorizedCommit": "cf479676636caab52801bc339d3399eb90912e2b",
     "lastCommitAuthorizationConsumed": true,
-    "selfCommitRecordPolicy": "the exact docs-only commit containing this state and its non-force push result are recorded in ../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01-governance-commit.json to avoid a self-referential hash",
+    "selfCommitRecordPolicy": "the current docs-only alignment commit is authorized and consumed in this task; rc15 candidate remains local and any later candidate commit push release or Stable install requires separate Cyrus authorization",
     "continuousAuthorizationId": "governance-development-continuous-v1"
   },
   "releaseBaseline": {
@@ -29,7 +29,7 @@
     "developmentParent": "6e2a1d0c09bb78140a4f99929acf2242a9635bfa"
   },
   "governanceConvergence": {
-    "phase": "stable-v046-project-control-rc14-empty-document-upgrade-installed-and-machine-accepted-quant-read-only-preflight-next",
+    "phase": "stable-v046-project-control-rc14-legacy-document-binding-acceptance-integrated-rc15-local-candidate-next",
     "importPlan": "../local/receipts/op_canonical_workspace_import_20260825_01-plan.json",
     "plannedItems": 47,
     "b1aExactCopyItemsApplied": 33,
@@ -82,7 +82,7 @@
       "stableInstallReceiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc",
       "amazonPostRebindReceipt": "F:\\Projects\\amazon-store\\local\\receipts\\op_g4_amazon_post_rebind_governance_20260826_01.json",
       "governanceAlignmentReceipt": "../local/receipts/op_dsh_governance_alignment_20260826_01.json",
-      "candidateClosureStatus": "stable-installed-restarted-exact-rc14-artifact-and-25-installed-files-machine-accepted; empty-document regression is present in the accepted package; real Quant prepare-upgrade or upgrade was not executed"
+      "candidateClosureStatus": "stable-installed-restarted-exact-rc14-artifact-and-25-installed-files-machine-accepted; Quant managed upgrade and single rebind later completed through official Host transactions and were independently accepted"
     },
     "candidateCenterFirstBatch": {
       "status": "history-merged-rc11-build-reproducibility-closed-committed-pushed-published-stable-installed-and-accepted",
@@ -256,9 +256,29 @@
         "releaseReceiptSha256": "d8a7a3d1ee84aed5fe238a79e551f822242083c5497692b4dd2899b47c52d9cd",
         "stableAcceptanceReceipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json",
         "stableAcceptanceReceiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc",
-        "acceptance": "exact released package and all 25 installed files accepted after Stable restart; real Quant prepare-upgrade and upgradeManaged were intentionally not executed"
+        "acceptance": "exact released package and all 25 installed files accepted after Stable restart; Quant prepare-upgrade and upgradeManaged were intentionally not executed during rc14 acceptance and were completed later under separate authorization"
       },
-      "next": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"
+      "next": "G4-MEAL-TRACKER-CLEAN-HISTORY-LOCAL-INTEGRATION"
+    },
+    "legacyDocumentBindingHashAcceptance": {
+      "status": "source-reviewed-committed-and-ff-only-integrated-rc15-local-candidate-next",
+      "taskId": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE",
+      "branch": "codex/legacy-document-binding-hash-acceptance",
+      "worktree": "F:\\Projects\\deepseek-harness-personal\\worktrees\\active\\wt_legacy_document_binding_hash_acceptance_20260830",
+      "baseCommit": "4b1bc2553f2e3c85505ea55aea464f70566544d8",
+      "productCommit": "cf479676636caab52801bc339d3399eb90912e2b",
+      "historyIntegration": "ff-only-into-codex-governance-alignment",
+      "capability": "project.document-bindings.accept-current",
+      "route": "/__personal/project-control/v1alpha1/projects/:projectId/document-bindings/accept-current",
+      "scope": ["linked-legacy-only", "host-fresh-reread", "exact-old-and-new-hash-set", "atomic-binding-state-project-revision-and-audit"],
+      "excluded": ["database-schema", "document-content-write", "outbox", "second-rebind-transaction", "stable-write", "meal-tracker-operation", "b1b"],
+      "projectControlTests": "207/207; fail=0; skipped=0; todo=0",
+      "safeRepositoryTests": "848/848 excluding protected packed Stable E2E; fail=0; skipped=0; todo=0",
+      "acceptanceReceipt": "../local/receipts/op_b_g4_legacy_document_binding_hash_acceptance_20260830_02-acceptance.json",
+      "acceptanceReceiptSha256": "acf5f8f10ce8d4edb7995f4de25f4468e5a3a15aaee720768d4dc06d3cd64bc1",
+      "commitIntegrationReceipt": "../local/receipts/op_b_g4_legacy_document_binding_hash_acceptance_20260830_03-commit-and-integration.json",
+      "commitIntegrationReceiptSha256": "b5a01834b1bd81738d718b39112845a7ff07431fe9680a732d877aec28415522",
+      "next": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE"
     },
     "g0_5Commit": {
       "commit": "28d7c8c25e7e879fba8b9170a4ecad8b4ad0d8ef",
@@ -443,7 +463,7 @@
       "stableMutation": false
     },
     "g4": {
-      "status": "amazon-and-dsh-stable-bindings-aligned-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
+      "status": "amazon-dsh-and-quant-canonical-alignment-complete-meal-tracker-support-ticket-open-migration-next",
       "projectHome": "F:\\Projects\\amazon-store",
       "canonicalWorkspace": "F:\\Projects\\amazon-store\\workspace",
       "workspaceFilesAfterGovernance": 5256,
@@ -485,8 +505,43 @@
       "emptyDocumentUpgradeCommit": "613f53588bcd3585b7298db323f682c46d6129df",
       "emptyDocumentUpgradeProductionInstalled": true,
       "legacySourceDeleted": false,
-      "quantMigrationStarted": false,
-      "mealTrackerMigrationStarted": false
+      "quantMigrationStarted": true,
+      "quantMigrationCompleted": true,
+      "quantCanonicalWorkspace": "F:\\Projects\\cyrus-quant-trading\\workspace",
+      "quantGovernanceContext": "ready-six-authorities-matched",
+      "mealTrackerMigrationStarted": false,
+      "mealTrackerProjectId": "prj_01a0109b-0dd8-7bfb-be07-ee80c768640d",
+      "mealTrackerLegacyAuthorityRoot": "F:\\QClawData\\workspace\\meal_tracker",
+      "mealTrackerR3Status": "clean-history-formally-integrated-local-master-six-worktree-heads-and-remote-advertised-master-github-deep-purge-unverified",
+      "mealTrackerR3Candidate": "F:\\Projects\\deepseek-harness-personal\\local\\staging\\g4-meal-tracker-credential-git-integrity-closure-r3-20260829\\history-sanitized.git",
+      "mealTrackerR3CandidateHead": "cc23e344faec89564148cddbf78a0eda84b0fe7b",
+      "mealTrackerR3Receipt": "../local/receipts/op_g4_meal_tracker_credential_git_integrity_closure_r3_20260829_01.json",
+      "mealTrackerR3ReceiptSha256": "7c3fb089af18ab2bd99597e4ab133c2b3734851df72c48ca4d33920c94e4ef84",
+      "mealTrackerLocalMaster": "a278843dae95c08285f2c03c535ef6eba5f86d78",
+      "mealTrackerLocalCandidateRef": "refs/dsh/candidates/g4-meal-tracker-clean-history-r3",
+      "mealTrackerLocalIntegrationReceipt": "../local/receipts/op_g4_meal_tracker_clean_history_local_integration_20260829_01.json",
+      "mealTrackerLocalIntegrationReceiptSha256": "4322162341c725413917af07fca52c53da0cea84f2ed1fdc3858fa193b272238",
+      "mealTrackerRemoteMaster": "a278843dae95c08285f2c03c535ef6eba5f86d78",
+      "mealTrackerRemoteRecoveryRef": "refs/dsh/recovery/g4-meal-tracker-pre-remote-replacement-20260829",
+      "mealTrackerRemoteHistoryReceipt": "../local/receipts/op_g4_meal_tracker_remote_history_replacement_20260829_01.json",
+      "mealTrackerRemoteHistoryReceiptSha256": "a7356ecd35ef8b2c6f45ce47d6c7078797226ae10a246bbe236d888fc9281ca4",
+      "mealTrackerGithubPhysicalPurgeVerified": false,
+      "mealTrackerGithubOldFirstChangedCommitStillFetchable": true,
+      "mealTrackerGithubFormerTipStillFetchable": true,
+      "mealTrackerGithubPurgePreSupportReceipt": "../local/receipts/op_g4_meal_tracker_github_sensitive_data_purge_closure_20260829_01-pre-support.json",
+      "mealTrackerGithubPurgePreSupportReceiptSha256": "81a31bfe79fbdafa86537f9ec920d5520047f7559f184096f5f9bd84ab4850ad",
+      "mealTrackerGithubSupportTicketId": 4708849,
+      "mealTrackerGithubSupportTicketUrl": "https://support.github.com/ticket/personal/0/4708849",
+      "mealTrackerGithubSupportTicketStatus": "open-external-asynchronous",
+      "mealTrackerGithubSupportBlocksMigration": false,
+      "mealTrackerGithubSupportBlocksFinalIncidentClosure": true,
+      "mealTrackerSupportAsyncAlignmentReceipt": "../local/receipts/op_g4_meal_tracker_support_async_decoupling_20260830_01.json",
+      "mealTrackerSupportAsyncAlignmentReceiptSha256": "21042afe51607cbee3219c67fe9e2faee27ef40885130642fb66ca88b93d05b0",
+      "mealTrackerTargetProjectHome": "F:\\Projects\\meal-tracker",
+      "mealTrackerTargetWorkspace": "F:\\Projects\\meal-tracker\\workspace",
+      "mealTrackerTargetExists": false,
+      "mealTrackerTrackedLegacyAbsolutePathFiles": 27,
+      "mealTrackerOutputsDisposition": "29-files-35047644-bytes-retained-at-source-excluded-from-git-future-local-evidence-migration-registered-only"
     }
   },
   "g4MigrationOrder": [
@@ -541,7 +596,7 @@
   },
   "standingAuthorization": {
     "id": "governance-development-continuous-v1",
-    "status": "consumed-through-rc14-stable-acceptance-and-governance-closure",
+    "status": "consumed-through-support-async-decoupling-governance-alignment",
     "grantedBy": "Cyrus",
     "grantedAt": "2026-08-25T06:27:48.385Z",
     "localValidatedCommits": true,
@@ -550,15 +605,15 @@
     "publish": false,
     "realStableOrDevCutover": false,
     "legacyProjectSourceDeletion": false,
-    "scopeEnd": "pause-before-quant-read-only-preflight-authorization"
+    "scopeEnd": "pause-before-meal-tracker-migration-execution-authorization"
   },
   "currentAuthorization": {
-    "scope": "rc14 Stable acceptance receipt, exact seven-file docs-only governance commit and non-force push; consumed at closure",
-    "allowed": ["read-only status and planning after this closure"],
-    "forbidden": ["additional commit or push", "release or publish", "Stable install or write", "prepare-upgrade or project.upgradeManaged", "project archive unarchive or rebind", "Quant or meal-tracker file migration", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
+    "scope": "Cyrus approved docs-only governance alignment: record GitHub Support ticket 4708849 as an external asynchronous final-incident gate, make meal-tracker migration/rebind the next task, queue console UI foundation after migration and before B1b, and preserve all current source, Stable, GitHub and worktree state",
+    "allowed": ["read-only meal-tracker and Git status inventory", "task-owned local receipt", "docs-only governance alignment"],
+    "forbidden": ["commit or push", "GitHub ticket or repository mutation", "another force or remote history replacement", "remote ref or tag mutation", "local recovery ref cleanup", "release or publish", "Stable install or write", "prepare-upgrade or project.upgradeManaged", "project archive unarchive or rebind", "meal-tracker source master or linked worktree mutation", "meal-tracker file migration", "meal-tracker target creation", "outputs evidence relocation", "console UI product implementation", "B1b approval database or inbox", "client package-set build", "delete or overwrite remaining release staging"]
   },
   "g4MigrationGate": {
-    "mode": "amazon-and-dsh-canonical-rebind-complete-empty-document-upgrade-rc14-stable-machine-accepted-quant-read-only-preflight-next",
+    "mode": "amazon-dsh-and-quant-canonical-alignment-complete-meal-tracker-support-ticket-open-migration-next",
     "amazonStore": "stable-rebind-complete-k3-canonical-context-verified",
     "amazonPreflightReceipt": "../local/receipts/op_g4_amazon_preflight_20260825_01.json",
     "amazonCopyReceipt": "../local/receipts/op_g4_amazon_migration_20260825_01.json",
@@ -578,8 +633,46 @@
     "deepseekHarnessExternalSwitchReceiptSha256": "1863568a5667c0841c2b865c1b92f9cee88efcde241d7f5bab5f9a391f300eac",
     "deepseekHarnessWebProfileRepairReceipt": "../local/receipts/op_g4_stable_web_profile_self_containment_repair_20260828_01.json",
     "deepseekHarnessWebProfileRepairReceiptSha256": "28da74b1fd21a5c6027257a37d9c49d41d13fc5a42e39e1b9ede202f6593ea67",
-    "cyrusQuantTrading": "paused-unchanged; read-only-preflight-is-next-and-requires-new-authorization; no-prepare-upgrade-or-migration-executed",
-    "mealTracker": "paused-until-quant-migration-rebind-complete"
+    "cyrusQuantTrading": "physical-migration-managed-upgrade-single-rebind-codex-kimi-locators-and-canonical-governance-authority-chain-complete",
+    "quantProjectId": "prj_01a01cb8-5e2c-7c76-90ae-54e8f97bf99a",
+    "quantCanonicalWorkspace": "F:\\Projects\\cyrus-quant-trading\\workspace",
+    "quantProjectRevision": 3,
+    "quantSourceHead": "c8b0e6b1e06b561507dfca3abd9a5383446da138",
+    "quantSourceStatusEntries": 53,
+    "quantSourceStatusSha256WithFinalLf": "7f2953882ba51b64abe62539d3e092e213cdedc123c1b88c39d5b24bba4ed4ea",
+    "quantStableAcceptanceReceipt": "../local/receipts/op_g4_quant_migration_rebind_20260828_08-stable-rebind-acceptance.json",
+    "quantExternalLocatorAcceptanceReceipt": "../local/receipts/op_g4_quant_migration_rebind_20260828_09-external-locator-acceptance.json",
+    "quantGovernanceContext": "ready-six-authorities-matched",
+    "quantGovernanceAlignmentReceipt": "../local/receipts/op_g4_quant_governance_authority_bootstrap_and_dsh_alignment_20260829_01.json",
+    "mealTracker": "R3 clean history is integrated locally and on advertised master; GitHub Support ticket 4708849 remains an external asynchronous incident-closure gate. Migration is now paused at the official linked-legacy document binding hash gate until rc15 is released, installed and used through the Host acceptance transaction; no Stable data was directly changed.",
+    "mealTrackerR3Receipt": "../local/receipts/op_g4_meal_tracker_credential_git_integrity_closure_r3_20260829_01.json",
+    "mealTrackerR3ReceiptSha256": "7c3fb089af18ab2bd99597e4ab133c2b3734851df72c48ca4d33920c94e4ef84",
+    "mealTrackerR3CandidateHead": "cc23e344faec89564148cddbf78a0eda84b0fe7b",
+    "mealTrackerLocalMaster": "a278843dae95c08285f2c03c535ef6eba5f86d78",
+    "mealTrackerLocalIntegrationReceipt": "../local/receipts/op_g4_meal_tracker_clean_history_local_integration_20260829_01.json",
+    "mealTrackerLocalIntegrationReceiptSha256": "4322162341c725413917af07fca52c53da0cea84f2ed1fdc3858fa193b272238",
+    "mealTrackerRemoteMaster": "a278843dae95c08285f2c03c535ef6eba5f86d78",
+    "mealTrackerRemoteRecoveryRef": "refs/dsh/recovery/g4-meal-tracker-pre-remote-replacement-20260829",
+    "mealTrackerRemoteHistoryReceipt": "../local/receipts/op_g4_meal_tracker_remote_history_replacement_20260829_01.json",
+    "mealTrackerRemoteHistoryReceiptSha256": "a7356ecd35ef8b2c6f45ce47d6c7078797226ae10a246bbe236d888fc9281ca4",
+    "mealTrackerRemoteHistoryState": "advertised-master-clean-old-unadvertised-first-changed-and-former-tip-still-fetchable-support-ticket-4708849-open-external-async-migration-nonblocking",
+    "mealTrackerGithubPurgePreSupportReceipt": "../local/receipts/op_g4_meal_tracker_github_sensitive_data_purge_closure_20260829_01-pre-support.json",
+    "mealTrackerGithubPurgePreSupportReceiptSha256": "81a31bfe79fbdafa86537f9ec920d5520047f7559f184096f5f9bd84ab4850ad",
+    "mealTrackerGithubSupportTicketId": 4708849,
+    "mealTrackerGithubSupportTicketUrl": "https://support.github.com/ticket/personal/0/4708849",
+    "mealTrackerGithubSupportTicketStatus": "open-external-asynchronous",
+    "mealTrackerGithubSupportBlocksMigration": false,
+    "mealTrackerGithubSupportBlocksFinalIncidentClosure": true,
+    "mealTrackerSupportAsyncAlignmentReceipt": "../local/receipts/op_g4_meal_tracker_support_async_decoupling_20260830_01.json",
+    "mealTrackerSupportAsyncAlignmentReceiptSha256": "21042afe51607cbee3219c67fe9e2faee27ef40885130642fb66ca88b93d05b0",
+    "mealTrackerTargetProjectHome": "F:\\Projects\\meal-tracker",
+    "mealTrackerTargetWorkspace": "F:\\Projects\\meal-tracker\\workspace",
+    "mealTrackerTargetExists": false,
+    "mealTrackerTrackedLegacyAbsolutePathFiles": 27,
+    "mealTrackerMigrationAuthorized": false,
+    "mealTrackerDocumentBindingBlocker": "three registered hashes differ from current DEVLOG NEXT and PRD after the accepted authority merge; rc15 Host acceptance capability must be delivered before prepare-upgrade may continue",
+    "legacyDocumentBindingAcceptanceCommit": "cf479676636caab52801bc339d3399eb90912e2b",
+    "nextTask": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE"
   },
   "crossHarnessContext": {
     "codex": {
@@ -600,6 +693,16 @@
       "verificationResult": "context-status-ready-six-authority-hashes-matched-read-only-no-files-modified",
       "oldWorkspaceDisposition": "history-only-no-junction-no-new-writes-no-deletion",
       "receipt": "../local/receipts/op_k3_canonical_context_alignment_20260826_01.json"
+    },
+    "quant": {
+      "projectId": "prj_01a01cb8-5e2c-7c76-90ae-54e8f97bf99a",
+      "canonicalWorkspace": "F:\\Projects\\cyrus-quant-trading\\workspace",
+      "codexLocator": "aligned",
+      "kimiLocator": "aligned",
+      "kimiConversationContinuity": "available-and-user-verified-without-reading-or-rewriting-chat-content",
+      "governanceContext": "ready",
+      "sourceRepository": "F:\\Projects\\cyrus-quant-trading\\workspace\\cyrus-quant",
+      "sourceWorkingTree": "53-existing-dirty-untracked-preserved"
     }
   },
   "stableRegisteredProjectInventory": {
@@ -607,7 +710,7 @@
     "count": 4,
     "amazon": "F:\\Projects\\amazon-store\\workspace",
     "deepseekHarnessPersonal": "F:\\Projects\\deepseek-harness-personal\\workspace",
-    "cyrusQuantTrading": "F:\\documents\\Kimi\\Workspaces\\Cyrus Quant Trading‌",
+    "cyrusQuantTrading": "F:\\Projects\\cyrus-quant-trading\\workspace",
     "mealTracker": "F:\\QClawData\\workspace\\meal_tracker",
     "candidateCounts": {"conflict": 1, "discovered": 3, "ignored": 4, "imported": 5, "relocation_candidate": 1},
     "candidateViewCounts": {"review": 1, "ignored": 3, "history": 10},
@@ -623,7 +726,12 @@
     "windows_scheduled_task_not_created; overdue large-run and package-build preflights fail closed until maintenance catches up",
     "project_governance_context_script_not_projected_into_workspace; canonical toolbox skill source path was used for this alignment",
     "project_search_matches_only_literal_substrings_in_project_id_or_stored_name; aliases_translations_and_pinyin_are_not_supported",
-    "real_quant_empty-document_upgrade_not_executed_under_rc14_acceptance; prepare-upgrade_and_project_mutation_require_separate_authorization"
+    "quant canonical wrapper is not a Git repository; its nested source repository retains 53 unreviewed dirty/untracked entries",
+    "meal-tracker clean history matches local master, all six worktree HEADs and the advertised remote master; GitHub Support ticket 4708849 is open for final server-side purge, remains externally asynchronous and does not block canonical migration by Cyrus decision",
+    "meal-tracker active legacy path references were classified and closed with old/new path regression evidence; migration remains paused until rc15 Stable document-binding reconciliation and a successful official prepare-upgrade, while six worktree ledgers and rollback evidence remain protected",
+    "meal-tracker local recovery ref refs/dsh/recovery/g4-meal-tracker-pre-remote-replacement-20260829 retains the former remote history; GC, prune or recovery-ref cleanup requires a separate retention decision and authorization",
+    "meal-tracker existing data/ref/dris2023_full.pdf is 66464175 bytes and exceeds GitHub's recommended 50 MiB size; LFS conversion or another history rewrite is not authorized",
+    "meal-tracker outputs contains 29 local review artifacts totaling 35047644 bytes; they remain in place and are only registered for future F:\\Projects\\meal-tracker\\local\\evidence migration"
   ],
   "protectedPaths": [
     "D:\\Deepseek Harness",
@@ -649,17 +757,32 @@
     {"order": 15, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-COMMIT-AND-ALIGNMENT"], "authorizationGate": "completed-local-reproducible-candidate"},
     {"order": 16, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-LOCAL-CANDIDATE"], "authorizationGate": "completed-6e2a1d0-plugins-v2026.08.28.2-release-378493785"},
     {"order": 17, "id": "B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-COMMIT-PUSH-RELEASE"], "authorizationGate": "completed-stable-installed-restarted-exact-artifact-machine-accepted-quant-untouched", "receipt": "../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json", "receiptSha256": "e70813412cadb479200c0f999bf74e93b6d36b8eeaf20e9b02d67e9f3bf2c7dc"},
-    {"order": 18, "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "current-awaiting-new-authorization", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "new-read-only-inventory-and-plan-authorization"},
-    {"order": 19, "id": "G4-QUANT-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"], "authorizationGate": "migration-and-rebind-authorization"},
-    {"order": 20, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "pending", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "separate-complex-project-plan-and-authorization"},
-    {"order": 21, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused", "dependsOn": ["G4-migration-closure"], "authorizationGate": "class-a"},
-    {"order": 22, "id": "B2-GOVERNANCE-VIEW", "status": "pending", "dependsOn": ["B1B-APPROVAL-INBOX-MVP", "ADR-005"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 23, "id": "B3-AUTHORIZATION-SESSION-CALENDAR", "status": "pending", "dependsOn": ["B2-GOVERNANCE-VIEW"], "authorizationGate": "new-cyrus-authorization"},
-    {"order": 24, "id": "G3-CROSS-HARNESS-ACTIVATION", "status": "pending", "dependsOn": ["per-harness-discovery"], "authorizationGate": "per-harness-authorization"},
-    {"order": 25, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
+    {"order": 18, "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "completed", "dependsOn": ["B-G4-EMPTY-DOCUMENT-MANAGED-UPGRADE-RC14-STABLE-INSTALL-ACCEPTANCE"], "authorizationGate": "completed-read-only-inventory-and-plan"},
+    {"order": 19, "id": "G4-QUANT-MIGRATION-REBIND", "status": "completed", "dependsOn": ["G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"], "authorizationGate": "completed-wrapper-preserved-physical-migration-managed-upgrade-single-rebind-and-external-locator-alignment"},
+    {"order": 20, "id": "G4-QUANT-GOVERNANCE-AUTHORITY-BOOTSTRAP-AND-DSH-ALIGNMENT", "status": "completed", "dependsOn": ["G4-QUANT-MIGRATION-REBIND"], "authorizationGate": "completed-docs-only-uncommitted-context-ready"},
+    {"order": 21, "id": "G4-MEAL-TRACKER-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT", "status": "completed", "dependsOn": ["G4-QUANT-GOVERNANCE-AUTHORITY-BOOTSTRAP-AND-DSH-ALIGNMENT"], "authorizationGate": "completed-read-only-inventory-and-plan"},
+    {"order": 22, "id": "G4-MEAL-TRACKER-AUTHORITY-RECONCILIATION", "status": "completed", "dependsOn": ["G4-MEAL-TRACKER-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT"], "authorizationGate": "completed-read-only-six-worktree-ledger-and-plan"},
+    {"order": 23, "id": "G4-MEAL-TRACKER-AUTHORITY-MERGE", "status": "completed-local-no-commit", "dependsOn": ["G4-MEAL-TRACKER-AUTHORITY-RECONCILIATION"], "authorizationGate": "completed-authority-files-and-task-evidence-merged-source-preserved"},
+    {"order": 24, "id": "G4-MEAL-TRACKER-CREDENTIAL-AND-GIT-INTEGRITY-CLOSURE", "status": "completed-partial-safe-fixes", "dependsOn": ["G4-MEAL-TRACKER-AUTHORITY-MERGE"], "authorizationGate": "completed-token-revocation-and-local-safety-inventory"},
+    {"order": 25, "id": "G4-MEAL-TRACKER-CREDENTIAL-AND-GIT-INTEGRITY-CLOSURE-R2", "status": "completed-preserved-superseded-by-r3", "dependsOn": ["G4-MEAL-TRACKER-CREDENTIAL-AND-GIT-INTEGRITY-CLOSURE"], "authorizationGate": "completed-local-clean-history-candidate-five-path-scope"},
+    {"order": 26, "id": "G4-MEAL-TRACKER-CREDENTIAL-AND-GIT-INTEGRITY-CLOSURE-R3", "status": "completed-local-candidate-ready", "dependsOn": ["G4-MEAL-TRACKER-CREDENTIAL-AND-GIT-INTEGRITY-CLOSURE-R2"], "authorizationGate": "completed-seven-scope-history-equivalence-privacy-credential-gitlink-clone-and-zero-drift-acceptance", "receipt": "../local/receipts/op_g4_meal_tracker_credential_git_integrity_closure_r3_20260829_01.json", "receiptSha256": "7c3fb089af18ab2bd99597e4ab133c2b3734851df72c48ca4d33920c94e4ef84"},
+    {"order": 27, "id": "G4-MEAL-TRACKER-CLEAN-HISTORY-LOCAL-INTEGRATION", "status": "completed-local-refs-and-six-worktree-heads-integrated", "dependsOn": ["G4-MEAL-TRACKER-CREDENTIAL-AND-GIT-INTEGRITY-CLOSURE-R3"], "authorizationGate": "completed-atomic-update-ref-six-status-hashes-preserved", "receipt": "../local/receipts/op_g4_meal_tracker_clean_history_local_integration_20260829_01.json", "receiptSha256": "4322162341c725413917af07fca52c53da0cea84f2ed1fdc3858fa193b272238"},
+    {"order": 28, "id": "G4-MEAL-TRACKER-REMOTE-HISTORY-REPLACEMENT", "status": "completed-advertised-master-clean-github-deep-purge-unverified", "dependsOn": ["G4-MEAL-TRACKER-CLEAN-HISTORY-LOCAL-INTEGRATION"], "authorizationGate": "completed-private-remote-read-single-force-with-lease-and-advertised-ref-verification", "receipt": "../local/receipts/op_g4_meal_tracker_remote_history_replacement_20260829_01.json", "receiptSha256": "a7356ecd35ef8b2c6f45ce47d6c7078797226ae10a246bbe236d888fc9281ca4"},
+    {"order": 29, "id": "G4-MEAL-TRACKER-GITHUB-SENSITIVE-DATA-PURGE-CLOSURE", "status": "external-waiting-support-ticket-4708849-open-nonblocking-for-migration", "dependsOn": ["G4-MEAL-TRACKER-REMOTE-HISTORY-REPLACEMENT"], "authorizationGate": "submitted-by-cyrus-final-incident-closure-waits-support-and-read-only-sha-verification", "receipt": "../local/receipts/op_g4_meal_tracker_github_sensitive_data_purge_closure_20260829_01-pre-support.json", "receiptSha256": "81a31bfe79fbdafa86537f9ec920d5520047f7559f184096f5f9bd84ab4850ad", "ticketId": 4708849, "ticketUrl": "https://support.github.com/ticket/personal/0/4708849", "alignmentReceipt": "../local/receipts/op_g4_meal_tracker_support_async_decoupling_20260830_01.json", "alignmentReceiptSha256": "21042afe51607cbee3219c67fe9e2faee27ef40885130642fb66ca88b93d05b0"},
+    {"order": 30, "id": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE", "status": "completed-source-reviewed-committed-and-ff-only-integrated", "dependsOn": ["G4-MEAL-TRACKER-DOCUMENT-BINDING-RECONCILIATION"], "authorizationGate": "completed-cf479676-local-only", "receipt": "../local/receipts/op_b_g4_legacy_document_binding_hash_acceptance_20260830_03-commit-and-integration.json", "receiptSha256": "b5a01834b1bd81738d718b39112845a7ff07431fe9680a732d877aec28415522"},
+    {"order": 31, "id": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE", "status": "current-authorized-local-only", "dependsOn": ["B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE"], "authorizationGate": "authorized-one-local-single-plugin-candidate"},
+    {"order": 32, "id": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-COMMIT-PUSH-RELEASE", "status": "pending", "dependsOn": ["B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE"], "authorizationGate": "separate-commit-push-release-authorization"},
+    {"order": 33, "id": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-STABLE-ACCEPTANCE-AND-MEAL-DOCUMENT-RECONCILIATION", "status": "pending", "dependsOn": ["B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-COMMIT-PUSH-RELEASE"], "authorizationGate": "separate-stable-install-and-real-linked-legacy-binding-acceptance-authorization"},
+    {"order": 34, "id": "G4-MEAL-TRACKER-MIGRATION-REBIND", "status": "paused-until-rc15-stable-document-reconciliation", "dependsOn": ["B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-STABLE-ACCEPTANCE-AND-MEAL-DOCUMENT-RECONCILIATION"], "authorizationGate": "resume-existing-complex-project-migration-and-real-rebind-authorization-after-prepare-upgrade-passes"},
+    {"order": 35, "id": "B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B", "status": "queued-after-meal-tracker-migration", "dependsOn": ["G4-MEAL-TRACKER-MIGRATION-REBIND"], "authorizationGate": "separate-console-ui-foundation-implementation-authorization"},
+    {"order": 36, "id": "B1B-APPROVAL-INBOX-MVP", "status": "paused-until-ui-foundation-complete", "dependsOn": ["B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B"], "authorizationGate": "class-a"},
+    {"order": 37, "id": "B2-GOVERNANCE-VIEW", "status": "pending", "dependsOn": ["B1B-APPROVAL-INBOX-MVP", "ADR-005"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 38, "id": "B3-AUTHORIZATION-SESSION-CALENDAR", "status": "pending", "dependsOn": ["B2-GOVERNANCE-VIEW"], "authorizationGate": "new-cyrus-authorization"},
+    {"order": 39, "id": "G3-CROSS-HARNESS-ACTIVATION", "status": "pending", "dependsOn": ["per-harness-discovery"], "authorizationGate": "per-harness-authorization"},
+    {"order": 40, "id": "G2-MAINTENANCE-DEBT", "status": "pending", "dependsOn": [], "authorizationGate": "system-configuration-and-deletion-authorized-separately"}
   ],
   "nextTask": {
-    "id": "G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT",
-    "goal": "Refresh the prior read-only Quant preflight after rc14 acceptance: verify the formal project_id, current Stable binding and path history through read-only Host API calls, old Kimi and Codex workspace paths including U+200C, file structure, target-path occupancy and the exact migration/rollback plan. Do not create a Quant Project Home, move copy delete or rewrite project files, modify Kimi, write Stable, read the Stable database directly, call prepare-upgrade or project.upgradeManaged, execute rebind, operate meal-tracker, or enter B1b without new authorization."
+    "id": "B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE",
+    "goal": "From canonical product commit cf479676636caab52801bc339d3399eb90912e2b, version only Project Control as 0.1.0-rc.15 and produce exactly one local single-plugin candidate through the existing reproducible release pipeline. Verify package identity, dual-path reproducibility, isolated generation activation and rollback, plugin gates, checkout, launch, governance and diff; write a local receipt. Do not commit candidate versioning, push, create or modify a Release, install or write Stable, accept real meal-tracker document hashes, run prepare-upgrade, migrate or rebind any project, touch release-staging outside the one task-owned candidate, or enter B1b."
   }
 }

@@ -6,7 +6,7 @@
 
 ## 一句话结论
 
-当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结，B1b 继续暂停。DSH 正式 Project Control binding 已切换到 canonical workspace；旧目录保留为可回滚历史且 Stable web profile 的失效绝对 link 已离线修复。原生 Workspace/旧会话连续性已随 Project Control `0.1.0-rc.13` 完成生产验收；空文档 managed upgrade 修复随后随 `0.1.0-rc.14` 发布，Stable 已重启并完成精确包与 25 个安装文件的机器验收。真实量化项目尚未调用 `prepare-upgrade` 或执行升级。当前唯一下一任务为 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT`，只读刷新量化项目身份、路径历史、旧路径、U+200C、目录占用和回滚方案；真实迁移/rebind、食溯和 B1b 仍分门授权。项目搜索仍只支持 project_id 与已存名称的字面子串匹配。完整队列见 `docs/NEXT.md::权威后续任务队列` 与 `docs/governance/current-state.json::futureTasks`。
+当前唯一 canonical 开发入口是 `F:\Projects\deepseek-harness-personal\workspace`；A 线生产链保持冻结。食溯清洁本地/远端主线与 GitHub Support 异步事故收尾状态不变；真实物理迁移尚未开始。迁移 Task 1 已完成旧路径活动入口收口，但官方 `prepare-upgrade` 因 DEVLOG、NEXT、PRD 登记哈希落后于已验收权威合并而正确失败关闭。Project Control 产品提交 `cf479676636caab52801bc339d3399eb90912e2b` 已提供 linked-legacy 专用、Host 新鲜重读且精确匹配的 `project.document-bindings.accept-current` 事务，并已 ff-only 合入 canonical；未写 Stable、未操作真实食溯。当前下一任务为 `B-G4-LEGACY-DOCUMENT-BINDING-HASH-ACCEPTANCE-RC15-LOCAL-CANDIDATE`，只制作一份本地单插件候选；其后依次经过 candidate commit/push/Release、Stable 安装与官方食溯哈希接受/prepare-upgrade，才恢复迁移/rebind。迁移闭环后先做 UI 地基，再进入 B1b。完整队列见 `docs/NEXT.md` 与机器治理索引。
 
 ## 权威链
 

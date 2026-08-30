@@ -1,6 +1,6 @@
 # Blocked
 
-## 当前阻断（2026-08-28，rc.14 已安装并完成精确产物机器验收；量化只读预检待新授权）
+## 当前门禁（2026-08-30，文档哈希接受产品代码已合入；rc.15 本地候选为当前门）
 
 已关闭：rc.9 安装前阻断、rc.10 自包含 Schema 缺口、Amazon manifest 校验、Amazon Stable rebind。当前 Amazon 正式项目 revision 2，唯一 active location 为 `F:\Projects\amazon-store\workspace`；旧路径 inactive 且 path history 已记录。
 
@@ -11,11 +11,17 @@
 - **项目生命周期第二批生产门已关闭**：Stable 已激活 Project Control `0.1.0-rc.12`；generation=`pending-1787848154807`，25 个安装文件 hash 一致，Host schema 9、active 4 / archived 0，Cyrus 已确认“归档”和“更换工作区”入口正常且未点击。receipt=`../local/receipts/op_b_g4_project_lifecycle_rc12_stable_acceptance_20260828_01.json`，SHA-256=`51f254b3...33f37`。
 - **DSH 正式换绑阻断已关闭，旧目录继续受保护**：外部切换器 R3 已把旧目录原子改名为 `D:\Deepseek Harness Personal.legacy-pre-rebind-20260828`，修复 linked worktree 指针且未复制、删除或建立 junction；Stable web profile 绝对 link 已离线修复。Cyrus 随后通过唯一主动入口确认正式 binding 指向 `F:\Projects\deepseek-harness-personal\workspace`；本轮不重复 rebind、不直接读写数据库。
 - **原生工作区历史产品与生产阻断已关闭**：源码 `1d00c8f` 已随 Project Control `0.1.0-rc.13` 发布并在 Stable generation `pending-1787905720701` 激活；25 个安装文件无缺失/哈希不符。Cyrus 已确认旧位置历史可见、旧会话可打开、新会话在 canonical workspace 继续且原旧会话仍存在。receipt=`../local/receipts/op_b_g4_native_workspace_history_rc13_stable_acceptance_20260828_01.json`，SHA-256=`b52c7738...11b00`。
-- **空文档项目升级的源码、发布与 Stable 精确产物门已关闭**：源码提交 `613f535` 已由 rc.14 交付提交 `6e2a1d0` 发布为 `plugins-v2026.08.28.2`（Release `378493785`）；Stable generation=`pending-1787924242823`，25 个安装文件无缺失/哈希不符，启动到 ready。验收 receipt=`../local/receipts/op_b_g4_empty_document_managed_upgrade_rc14_stable_acceptance_20260828_01.json`，SHA-256=`e7081341...2c7dc`。本次没有对真实量化项目执行 `prepare-upgrade` 或升级事务，因此不把“真实量化升级成功”写成已验证事实。
-- **量化与食溯继续暂停写入；量化只读预检成为下一门**：量化仍在旧 Kimi 路径且含 U+200C；meal-tracker 仍在 `F:\QClawData\workspace\meal_tracker`。下一任务只刷新量化身份、路径历史、文件和目标占用证据，且需新授权；真实建目录、移动/复制、Stable rebind、`prepare-upgrade` 和食溯迁移仍需分别授权。
+- **空文档项目升级及量化真实使用门已关闭**：源码提交 `613f535` 已由 rc.14 交付提交 `6e2a1d0` 发布为 `plugins-v2026.08.28.2`（Release `378493785`）；Stable generation=`pending-1787924242823`，25 个安装文件无缺失/哈希不符。量化随后通过官方事务完成 managed upgrade 与单次 rebind，正式项目 revision 3，canonical workspace 为唯一 active location；没有直接改库或第二套 rebind。
+- **量化 canonical 与跨 Harness 治理阻断已关闭**：物理迁移保留 wrapper，Codex/Kimi locator 均指向 `F:\Projects\cyrus-quant-trading\workspace`，Kimi 会话承接由 Cyrus 人工确认；量化机器上下文 `ready`，6 份 authority hash 匹配。内层 Git 的 53 项既有 dirty/untracked 继续受保护，不等于已审查或已授权提交。
+- **食溯 R3 正式本地接入阻断已关闭**：本地对象导入后，以一次 prepare/commit 原子事务把正式 `master` 和 5 个 detached worktree HEAD 映射到清洁等价提交 `a278843dae95c08285f2c03c535ef6eba5f86d78`，并保留正确权威快照 ref `refs/dsh/candidates/g4-meal-tracker-clean-history-r3@cc23e344...`。六个 index/status hash 均未变化，0 锁残留，receipt SHA-256=`43221623...72238`。
+- **食溯远端 advertised `master` 替换已关闭，但不能冒充 GitHub 物理清除完成**：远端原 tip `e2dab202...` 经唯一一次精确 `force-with-lease` 替换为 `a278843d...`；当前公开查询只有 `master`、无 tag、无 advertised `refs/pull/*`，主分支 90 个可达提交的禁止路径、tip 路径与凭据位置均为 0。GitHub 缓存提交页、内部 PR refs、fork/clone 和服务器对象是否已清除仍未核验；旧 tip 也按回滚合同保留于本地恢复 ref，未 GC/prune。receipt SHA-256=`a7356ecd...9281ca4`。
+- **食溯 GitHub 敏感数据深层清除继续外部等待，但不再阻断迁移**：任务自有 bare probe 各只尝试一次，GitHub 均成功按 SHA 返回旧 First Changed Commit `d4b9bb6...` 和旧 tip `e2dab202...`；advertised PR refs=0、affected PR count=0、LFS 未使用。Cyrus 已提交 Support 工单 [#4708849](https://support.github.com/ticket/personal/0/4708849)，状态 open。服务器 GC、内部引用/fork 和缓存视图清除仍未验证，故不得宣称事故已关闭；但 Cyrus 当前决定将其作为异步收尾，不再作为迁移依赖。不得再次 force push 或清理本地恢复 ref。
+- **食溯物理迁移/rebind 的基础盘点已完成，但真实迁移继续暂停**：尚未建立 `F:\Projects\meal-tracker` 标准三分区，未移动当前物理主源，Stable binding 仍未切换。2026-08-30 只读重冻结确认目标为空、六工作树均为清洁 HEAD `a278843...`；27 个 tracked 旧绝对路径引用已在任务分支分类并完成活动入口回归。下一步不是移动，而是先交付 rc.15 并关闭官方文档哈希门；之后才可恢复 managed upgrade、原子移动、linked-worktree 指针修复和唯一 rebind。对齐 receipt SHA-256=`21042afe...05b0`。
+- **食溯迁移新增一条已定位、可关闭的文档治理门**：旧路径活动入口与回归已经收口；官方 `prepare-upgrade` 发现 DEVLOG、NEXT、PRD 的登记哈希落后于已验收权威合并，按合同停止且未提交升级。产品提交 `cf479676` 已提供 linked-legacy 专用 Host 接受事务，但 Stable rc.14 尚不具备该能力。当前只允许制作一份 rc.15 本地候选；发布、安装、真实哈希接受与再次 `prepare-upgrade` 仍分别待授权，迁移/rebind 在这些门关闭前保持暂停。
+- **食溯审核生成物仍受保护**：`outputs/**` 的 29 个文件 / 35,047,644 bytes 原地保留且未纳入 Git；未来 `F:\Projects\meal-tracker\local\evidence` 迁入只登记未执行，移动、复制或删除仍需独立清单和授权。
 - **项目搜索存在非阻断体验缺口**：当前只对 `project_id` 与已存名称做不区分大小写的字面子串匹配；`亚马逊`/`亚马` 命中，`Amazon` 不命中。别名、翻译和拼音搜索尚未实现，但不改变项目身份，也不阻断 rc.12 既定验收。
-- **B1b 原审批中心任务继续暂停**：候选中心第一批是 G4 路径治理收口，不自动扩张到 migration 0010、审批数据库、审批收件箱或其他 B1b 产品范围。
-- **本轮 rc.14 Stable 收据、7 文件 docs-only commit 与无 force push 授权在本提交后即用完**：`release-staging/` 必须继续排除；不得再次安装或写 Stable，不得调用 `prepare-upgrade`，也不得操作量化项目。下一步 `G4-QUANT-CANONICAL-MIGRATION-READ-ONLY-PREFLIGHT` 仍需新授权；真实迁移/rebind、食溯、物理删除、instance detach 与 B1b 各有独立授权门。
+- **B1b 原审批中心任务继续暂停，前置增加 UI 地基任务**：食溯迁移闭环后先执行 `B-G4-CONSOLE-UI-FOUNDATION-PRE-B1B`，只稳定项目身份、导航、列表/详情、搜索筛选、状态反馈和危险操作交互；不得提前进入 migration 0010、审批数据库、文件摄入或审批收件箱。UI 地基验收后再单独开启 B1b。
+- **DSH 白名单外并行未跟踪内容继续受保护**：`demos/`、`release-staging/`、`tmp/`、`plugins/ui-craft/` 以及本轮门禁期间继续出现的多个未跟踪 Skill/plugin 目录均来自本任务之外；本任务未创建、修改、提交或清理。本次授权只更新治理文件与本地 receipt，不授权 push/force、修改 GitHub 仓库、食溯源/refs/worktree 写入、Stable 写入、迁移/rebind、审核生成物移动、恢复历史清理、物理删除、instance detach 或 B1b。
 
 ## 历史阻断快照（以下为 rc.9 发布后、Stable 安装前的保留记录，不是当前执行指针）
 
